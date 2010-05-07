@@ -39,7 +39,7 @@ class ChargeMenu(Menu):
 				break
 			else:
 				user.credit += amount
-				self.session.add(user)
+#				self.session.add(user)
 				self.session.commit()
 				self.session.close()
 				break
