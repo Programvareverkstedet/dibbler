@@ -154,6 +154,10 @@ class Menu():
 				return self.item_value(item_i)
 
 class Selector(Menu):
+	def __init__(self, name, items=[], prompt='select> ',
+		     return_index=True, exit_msg=None):
+		Menu.__init__(self, name, items, prompt, return_index, exit_msg)
+
 	def print_header(self):
 		print self.name
 
@@ -294,7 +298,7 @@ class ShowUserMenu(Menu):
 		user = self.input_user('User name or card number> ')
 		print 'User name: %s' % user.name
 		print 'Card number: %s' % user.card
-		print 'Credit: %s' % user.credit
+		print 'Credit: %s kr' % user.credit
 		self.print_transactions(user)
 		self.pause()
 
@@ -503,8 +507,16 @@ def search_ui2(search_str, result, thing, session):
 		if confirm(msg):
 			return result[0]
 		return None
-	selector = Selector('%d %ss matching "%s":' % (len(result), thing, search_str),
-			    items=result,
+	limit = 9
+	if len(result) > limit:
+		select_header = '%d %ss matching "%s"; showing first %d' % \
+		    (len(result), thing, search_str, limit)
+		select_items = result[:limit]
+	else:
+		select_header = '%d %ss matching "%s"' % \
+		    (len(result), thing, search_str)
+		select_items = result
+	selector = Selector(select_header, items=select_items,
 			    return_index=False)
 	return selector.execute()
 
