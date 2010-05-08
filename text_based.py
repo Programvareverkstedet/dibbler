@@ -57,6 +57,53 @@ class Menu():
 			except ValueError:
 				print 'Please enter an integer'
 
+	def input_user(self, prompt=None):
+		user = None
+		while user == None:
+			user = retrieve_user(self.input_str(prompt),
+					     self.session)
+		return user
+
+	def input_product(self, prompt=None):
+		product = None
+		while product == None:
+			product = retrieve_product(self.input_str(prompt),
+						   self.session)
+		return product
+
+	def input_thing(self, prompt=None, permitted_things=('user','product'),
+			empty_input_permitted=False):
+		result = None
+		while result == None:
+			search_str = self.input_str(prompt)
+			if search_str == '' and empty_input_permitted:
+				return None
+			result = self.search_for_thing(search_str, permitted_things)
+		return result
+
+	def search_for_thing(self, search_str, permitted_things=('user','product')):
+		search_fun = {'user': search_user,
+			      'product': search_product}
+		results = {}
+		result_values = {}
+		for thing in permitted_things:
+			results[thing] = search_fun[thing](search_str, self.session)
+			result_values[thing] = self.search_result_value(results[thing])
+		selected_thing = argmax(result_values)
+		return search_ui2(search_str, results[selected_thing],
+				  selected_thing, self.session)
+
+	def search_result_value(self, result):
+		if result == None:
+			return 0
+		if not isinstance(result, list):
+			return 3
+		if len(result) == 0:
+			return 0
+		if len(result) == 1:
+			return 2
+		return 1
+
 	def print_header(self):
 		print
 		print '[%s]' % self.name
@@ -136,21 +183,63 @@ class ChargeMenu(Menu):
 				self.session.close()
 				break
 
+class TransferMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Transfer credit between users')
+
+	def _execute(self):
+		self.print_header()
+		self.session = Session()
+		amount = self.input_int('Transfer amount> ')
+		user1 = self.input_user('From user> ')
+		user2 = self.input_user('To user> ')
+		t1 = Transaction(user1, amount,
+				 'Transfer to '+user2.name)
+		t2 = Transaction(user2, -amount,
+				 'Transfer from '+user1.name)
+		t1.perform_transaction()
+		t2.perform_transaction()
+		self.session.add(t1)
+		self.session.add(t2)
+		self.session.commit()
+		print 'Transfered %d kr from %s to %s' % (amount, user1, user2)
+		print 'User %s\'s credit is now %d kr' % (user1, user1.credit)
+		print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
+		self.session.close()
+		self.pause()
+
+
 class ShowUserMenu(Menu):
 	def __init__(self):
 		Menu.__init__(self, 'Show user')
 
 	def _execute(self):
+		self.session = Session()
 		self.print_header()
-		user = None
-		while user == None:
-			search_str = self.input_str('User name or card number> ')
-			user = search_ui(search_user, search_str, 'user', Session())
+		user = self.input_user('User name or card number> ')
 		print 'User name: %s' % user.name
 		print 'Card number: %s' % user.card
 		print 'Credit: %s' % user.credit
+		self.print_transactions(user)
 		self.pause()
 
+	def print_transactions(self, user):
+		if len(user.transactions) == 0:
+			print 'No transactions'
+			return
+		print 'Transactions:'
+		for t in user.transactions:
+			string = ' * %s: %d kr, ' % \
+			    (t.time.strftime('%Y-%m-%d %H:%M'), t.amount)
+			if t.purchase:
+				string += 'purchase ('
+				string += ', '.join(map(lambda e: e.product.name,
+							t.purchase.entries))
+				string += ')'
+			else:
+				string += t.description
+			print string
+		
 
 class BuyMenu(Menu):
 	def __init__(self):
@@ -158,49 +247,75 @@ class BuyMenu(Menu):
 
 	def _execute(self):
 		self.print_header()
-		session = Session()
-		user = None
-		products = []
+		self.session = Session()
+		self.purchase = Purchase()
 		while True:
-			self.print_partial_purchase(user, products)
+			self.print_purchase()
 			print {(False,False): 'Enter user or product identification',
 			       (False,True): 'Enter user identification or more products',
-			       (True,False): 'Enter product identification',
-			       (True,True): 'Enter more products, or an empty line to confirm'
-			       }[(user != None, len(products) > 0)]
-			string = self.input_str()
-			if string == '':
-				if user == None or len(products) == 0:
+			       (True,False): 'Enter product identification or more users',
+			       (True,True): 'Enter more products or users, or an empty line to confirm'
+			       }[(len(self.purchase.transactions) > 0,
+				  len(self.purchase.entries) > 0)]
+			thing = self.input_thing(empty_input_permitted=True)
+			if thing == None:
+				if not self.complete_input():
 					if confirm('Not enough information entered.  Abort purchase? (y/n) '):
 						return False
 					continue
 				break
-			(value_type,value) = dwim_search(string, session)
-			if value != None:
-				if value_type == 'user':
-					user = value
-				elif value_type == 'product':
-					products.append(value)
-		print 'OK purchase'
-		print self.format_partial_purchase(user, products)
-		# TODO build Purchase object and commit
-		self.pause()
-		
-			
-	def format_partial_purchase(self, user, products):
-		if user == None and len(products) == 0:
-			return
-		strings = []
-		if user != None:
-			strings.append(' user: ' + user.name)
-		if len(products) > 0:
-			strings.append(' products: ' + ', '.join(map(lambda p: p.name, products)))
-		return '\n'.join(strings)
+			if isinstance(thing, User):
+				Transaction(thing, purchase=self.purchase)
+			elif isinstance(thing, Product):
+				PurchaseEntry(self.purchase, thing, 1)
 
-	def print_partial_purchase(self, user, products):
-		info = self.format_partial_purchase(user, products)
+# 		for user in self.users:
+# 			Transaction(user, purchase=self.purchase)
+# 		for product in self.products:
+# 			PurchaseEntry(self.purchase, product, 1)
+		self.purchase.perform_purchase()
+
+		self.session.add(self.purchase)
+		self.session.commit()
+
+		print 'Purchase stored.' # TODO print info about purchase
+		self.print_purchase()
+		for t in self.purchase.transactions:
+			print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
+		self.session.close()
+		self.pause()
+		return True
+		
+	def complete_input(self):
+		return self.purchase.is_complete()
+			
+	def format_purchase(self):
+		self.purchase.set_price()
+		transactions = self.purchase.transactions
+		entries = self.purchase.entries
+		if len(transactions) == 0 and len(entries) == 0:
+			return None
+		string = 'Purchase:'
+		string += '\n buyers: '
+		if len(transactions) == 0:
+			string += '(empty)'
+		else:
+			string += ', '.join(map(lambda t: t.user.name, transactions))
+		string += '\n products: '
+		if len(entries) == 0:
+			string += '(empty)'
+		else:
+			string += ', '.join(map(lambda e: '%s (%d kr)'%(e.product.name, e.product.price),
+						entries))
+		if len(transactions) > 1:
+			string += '\n price per person: %d kr' % self.purchase.price_per_transaction()
+		string += '\n total price: %d kr' % self.purchase.price
+		return string
+
+	def print_purchase(self):
+		info = self.format_purchase()
 		if info != None:
-			print 'Your purchase:\n' + info
+			print info
 
 
 class ProductListMenu(Menu):
@@ -258,6 +373,9 @@ def dwim_search(string, session):
 
 def search_ui(search_fun, search_str, thing, session):
 	result = search_fun(search_str, session)
+	return search_ui2(search_str, result, thing, session)
+
+def search_ui2(search_str, result, thing, session):
 	if not isinstance(result, list):
 		return result
 	if len(result) == 0:
@@ -282,7 +400,7 @@ def retrieve_product(search_str, session):
 
 #main = MainMenu()
 main = Menu('Dibbler main menu',
-	    items=[BuyMenu(), ChargeMenu(), Menu('Add user'), Menu('Add product'),
+	    items=[BuyMenu(), ChargeMenu(), TransferMenu(), Menu('Add user'), Menu('Add product'),
 		   ShowUserMenu(), ProductListMenu()],
 	    exit_msg='happy happy joy joy')
 main.execute()

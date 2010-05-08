@@ -69,3 +69,18 @@ def select_from_list(list):
 			return list[int(choice)-1]
 		else:
 			return None
+
+def argmax(d, all=False, value=None):
+	maxarg = None
+	maxargs = []
+	if value != None:
+		dd = d
+		d = {}
+		for key in dd.keys():
+			d[key] = value(dd[key])
+	for key in d.keys():
+		if maxarg == None or d[key] > d[maxarg]:
+			maxarg = key
+	if all:
+		return filter(lambda k: d[k] == d[maxarg], d.keys())
+	return maxarg
