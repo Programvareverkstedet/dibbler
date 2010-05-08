@@ -13,6 +13,9 @@ class User(Base):
 	card = Column(String(10))
 	credit = Column(Integer)
 
+	name_re = r"[a-z]+"
+	card_re = r"((NTNU)?[0-9]+)?"
+
 	def __init__(self, name, card, credit=0):
 		self.name = name
 		self.card = card

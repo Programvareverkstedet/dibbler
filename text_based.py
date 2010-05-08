@@ -1,3 +1,5 @@
+import sqlalchemy
+import re
 from helpers import *
 
 exit_commands = ['exit', 'abort', 'quit']
@@ -6,10 +8,12 @@ class ExitMenu(Exception):
 	pass
 
 class Menu():
-	def __init__(self, name, items=[], prompt='> ', exit_msg=None):
+	def __init__(self, name, items=[], prompt='> ',
+		     return_index=True, exit_msg=None):
 		self.name = name
 		self.items = items
 		self.prompt = prompt
+		self.return_index = return_index
 		self.exit_msg = exit_msg
 
 	def at_exit(self):
@@ -22,10 +26,26 @@ class Menu():
 	def item_name(self, i):
 		if self.item_is_submenu(i):
 			return self.items[i].name
+		elif isinstance(self.items[i], tuple):
+			return self.items[i][1]
 		else:
 			return str(self.items[i])
 
-	def input_str(self, prompt=None):
+	def item_value(self, i):
+		if isinstance(self.items[i], tuple):
+			return self.items[i][0]
+		if self.return_index:
+			return i
+		return self.items[i]
+
+	def input_str(self, prompt=None, regex=None):
+		if regex != None:
+			while True:
+				result = self.input_str(prompt)
+				if re.match(regex+'$', result):
+					return result
+				else:
+					print 'Value must match regular expression "%s"' % regex
 		if prompt == None:
 			prompt = self.prompt
 		try:
@@ -131,17 +151,12 @@ class Menu():
 			if self.item_is_submenu(item_i):
 				self.items[item_i].execute()
 			else:
-				return item_i
+				return self.item_value(item_i)
 
 class Selector(Menu):
 	def print_header(self):
 		print self.name
 
-	def _execute(self):
-		result = Menu._execute(self)
-		if result != None:
-			return self.items[result]
-		return None
 
 class ChargeMenu(Menu):
 	def __init__(self):
@@ -184,6 +199,89 @@ class TransferMenu(Menu):
 		print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
 		self.session.close()
 		self.pause()
+
+
+class AddUserMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Add user')
+
+	def _execute(self):
+		self.print_header()
+		self.session = Session()
+		username = self.input_str('User name> ', regex=User.name_re)
+		cardnum = self.input_str('Card number> ', regex=User.card_re)
+		user = User(username, cardnum)
+		self.session.add(user)
+		try:
+			self.session.commit()
+			print 'User %s stored' % username
+		except sqlalchemy.exc.IntegrityError, e:
+			print 'Could not store user %s: %s' % (username,e)
+		self.session.close()
+		self.pause()
+
+
+class EditUserMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Edit user')
+
+	def _execute(self):
+		self.print_header()
+		self.session = Session()
+		user = self.input_user('User> ')
+		user.card = self.input_str('Card number (currently "%s")> ' % user.card,
+					   regex=User.card_re)
+		self.session.commit()
+		print 'User %s stored' % user.name
+		self.session.close()
+		self.pause()
+
+
+class AddProductMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Add product')
+
+	def _execute(self):
+		self.session = Session()
+		self.print_header()
+		bar_code = self.input_int('Bar code> ')
+		name = self.input_str('Name> ', regex=r".+")
+		price = self.input_int('Price> ', (1,None))
+		product = Product(bar_code, name, price)
+		self.session.add(product)
+		try:
+			self.session.commit()
+			print 'Product %s stored' % name
+		except sqlalchemy.exc.IntegrityError, e:
+			print 'Could not store product %s: %s' % (name,e)
+		self.session.close()
+		self.pause()
+
+
+class EditProductMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Edit product')
+
+	def _execute(self):
+		self.print_header()
+		self.session = Session()
+		product = self.input_product('Product> ')
+		while True:
+			selector = Selector('Do what with %s?' % product.name,
+					    items=[('name', 'Edit name'),
+						   ('price', 'Edit price (currently %d)' % product.price),
+						   ('store', 'Store')])
+			what = selector.execute()
+			if what == 'name':
+				product.name = self.input_str('Name> ')
+			elif what == 'price':
+				product.price = self.input_int('Price> ')
+			elif what == 'store':
+				self.session.commit()
+				print 'Product %s stored' % product.name
+				self.session.close()
+				self.pause()
+				return
 
 
 class ShowUserMenu(Menu):
@@ -246,16 +344,12 @@ class BuyMenu(Menu):
 			elif isinstance(thing, Product):
 				PurchaseEntry(self.purchase, thing, 1)
 
-# 		for user in self.users:
-# 			Transaction(user, purchase=self.purchase)
-# 		for product in self.products:
-# 			PurchaseEntry(self.purchase, product, 1)
 		self.purchase.perform_purchase()
 
 		self.session.add(self.purchase)
 		self.session.commit()
 
-		print 'Purchase stored.' # TODO print info about purchase
+		print 'Purchase stored.'
 		self.print_purchase()
 		for t in self.purchase.transactions:
 			print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
@@ -293,6 +387,28 @@ class BuyMenu(Menu):
 		info = self.format_purchase()
 		if info != None:
 			print info
+
+
+class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combined to one
+	def __init__(self):
+		Menu.__init__(self, 'Adjust credit')
+
+	def _execute(self):
+		self.print_header()
+		self.session = Session()
+		user = self.input_user('User> ')
+		print 'User %s\'s credit is %d kr' % (user.name, user.credit)
+		amount = self.input_int('Add amount> ')
+		description = self.input_str('Log message> ')
+		if description == '':
+			description = 'manually adjusted credit'
+		transaction = Transaction(user, -amount, description)
+		transaction.perform_transaction()
+		self.session.add(transaction)
+		self.session.commit()
+		print 'User %s\'s credit is now %d kr' % (user.name, user.credit)
+		self.session.close()
+		self.pause()
 
 
 class ProductListMenu(Menu):
@@ -382,7 +498,7 @@ def search_ui2(search_str, result, thing, session):
 		return None
 	selector = Selector('%d %ss matching "%s":' % (len(result), thing, search_str),
 			    items=result,
-			    prompt='select> ')
+			    return_index=False)
 	return selector.execute()
 
 def retrieve_user(search_str, session):
@@ -393,8 +509,12 @@ def retrieve_product(search_str, session):
 
 #main = MainMenu()
 main = Menu('Dibbler main menu',
-	    items=[BuyMenu(), ChargeMenu(), TransferMenu(), Menu('Add user'), AddProductMenu(),
-		   ShowUserMenu(), ProductListMenu()],
+	    items=[BuyMenu(), ProductListMenu(), ShowUserMenu(),
+		   AdjustCreditMenu(), ChargeMenu(), TransferMenu(),
+		   Menu('Add/edit',
+			items=[AddUserMenu(), EditUserMenu(),
+			       AddProductMenu(), EditProductMenu()])
+		   ],
 	    exit_msg='happy happy joy joy')
 main.execute()
 
