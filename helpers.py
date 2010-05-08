@@ -30,24 +30,24 @@ def guess_data_type(string):
 
 
 def retrieve_user(string, session):
-	first = session.query(User).filter(or_(User.name==string, User.card==string)).first()
-	if first:
-		print "Found user "+first.name
-		return first
+#	first = session.query(User).filter(or_(User.name==string, User.card==string)).first()
+	search = search_user(string,session)
+	if isinstance(search,User):
+		print "Found user "+search.name
+		return search
 	else:
-		list = session.query(User).filter(or_(User.name.like('%'+string+'%'),User.card.like('%'+string+'%'))).all()
-		if len(list) == 0:
+		if len(search) == 0:
 			print "No users found matching your search"
 			return None
-		if len(list) == 1:
+		if len(search) == 1:
 			print "Found one user: "+list[0].name
 			if confirm():
 				return list[0]
 			else:
 				return None
 		else:
-			print "Found "+str(len(list))+" users:"
-			return select_from_list(list)
+			print "Found "+str(len(search))+" users:"
+			return select_from_list(search)
 			
 
 def confirm(prompt='Confirm? (y/n) '):
