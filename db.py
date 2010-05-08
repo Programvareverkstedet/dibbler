@@ -54,41 +54,74 @@ class PurchaseEntry(Base):
 	def __init__(self, purchase, product, amount):
 		self.product = product
 		self.product_bar_code = product.bar_code
-		self.purchase_id = purchase.id
+		self.purchase = purchase
 		self.amount = amount
 
 	def __repr__(self):
 		return "<PurchaseEntry('%s', '%s', '%s')>" % (self.purchase.user.user, self.product.name, self.amount )
 		
 
+class Transaction(Base):
+	__tablename__ = 'transactions'
+
+	id = Column(Integer, primary_key=True)
+	time = Column(DateTime)
+	user_name = Column(String(10), ForeignKey('users.name'))
+	amount = Column(Integer)
+	description = Column(String(50))
+	purchase_id = Column(Integer, ForeignKey('purchases.id'))
+
+	user = relationship(User, backref=backref('transactions', order_by=time))
+
+	def __init__(self, user, amount=0, description=None, purchase=None):
+		self.user = user
+		self.amount = amount
+		self.description = description
+		self.purchase = purchase
+
+	def perform_transaction(self):
+		self.time = datetime.datetime.now()
+		self.user.credit -= self.amount
+
+
 class Purchase(Base):
 	__tablename__ = 'purchases'
 	
 	id = Column(Integer, primary_key=True)
 	time = Column(DateTime)
-	user_name = Column(Integer, ForeignKey('users.name'))
+#	user_name = Column(Integer, ForeignKey('users.name'))
 	price = Column(Integer)
-	performed = Column(Boolean)
+#	performed = Column(Boolean)
 
-	user = relationship(User, backref=backref('purchases', order_by=id))
-	products = relationship(PurchaseEntry, backref=backref("purchase"))
+#	user = relationship(User, backref=backref('purchases', order_by=id))
+#	users = relationship(User, secondary=purchase_user, backref='purhcases'
+	transactions = relationship(Transaction, order_by=Transaction.user_name, backref='purchase')
+	entries = relationship(PurchaseEntry, backref=backref("purchase"))
 
-	def __init__(self ,performed=False):
-		self.performed = performed
+	def __init__(self):
+		pass
 
 	def __repr__(self):
 		return "<Purchase('%s', '%s', '%s')>" % (self.user.name, self.price, self.time.strftime('%c'))
 
+	def is_complete(self):
+		return len(self.transactions) > 0 and len(self.entries) > 0
+
+	def price_per_transaction(self):
+		return self.price/len(self.transactions)
+
 	def set_price(self):
 		self.price = 0
-		for entry in self.products:
+		for entry in self.entries:
 			self.price += entry.amount*entry.product.price
+		if len(self.transactions) > 0:
+			for t in self.transactions:
+				t.amount = self.price_per_transaction()
 	
 	def perform_purchase(self):
-		if self.performed:
-			print "This transaction has already been performed"
-		else:
-			self.time = datetime.datetime.now()
-			self.set_price()
-			self.user.credit -= self.price
-			self.performed = True
+		self.time = datetime.datetime.now()
+		self.set_price()
+		for t in self.transactions:
+			t.perform_transaction()
+#		self.user.credit -= self.price
+#		self.performed = True
