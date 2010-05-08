@@ -186,9 +186,9 @@ class TransferMenu(Menu):
 		user1 = self.input_user('From user> ')
 		user2 = self.input_user('To user> ')
 		t1 = Transaction(user1, amount,
-				 'Transfer to '+user2.name)
+				 'transfer to '+user2.name)
 		t2 = Transaction(user2, -amount,
-				 'Transfer from '+user1.name)
+				 'transfer from '+user1.name)
 		t1.perform_transaction()
 		t2.perform_transaction()
 		self.session.add(t1)
@@ -304,8 +304,10 @@ class ShowUserMenu(Menu):
 			return
 		print 'Transactions:'
 		for t in user.transactions:
-			string = ' * %s: %d kr, ' % \
-			    (t.time.strftime('%Y-%m-%d %H:%M'), t.amount)
+			string = ' * %s: %s %d kr, ' % \
+			    (t.time.strftime('%Y-%m-%d %H:%M'),
+			     {True:'in', False:'out'}[t.amount<0],
+			     abs(t.amount))
 			if t.purchase:
 				string += 'purchase ('
 				string += ', '.join(map(lambda e: e.product.name,
@@ -421,6 +423,7 @@ class ProductListMenu(Menu):
 		product_list = session.query(Product).all()
 		line_format = '%-20s %6s %-15s'
 		print line_format % ('name', 'price', 'bar code')
+		print '-------------------------------------------'
 		for p in product_list:
 			print line_format % (p.name, p.price, p.bar_code)
 		self.pause()
