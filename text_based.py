@@ -309,7 +309,7 @@ class ProductListMenu(Menu):
 			print line_format % (p.name, p.price, p.bar_code)
 		self.pause()
 
-class AddProductMenu(Menu)
+class AddProductMenu(Menu):
 	def __init__(self):
 		Menu.__init__(self, 'Add product')
 	
@@ -322,7 +322,7 @@ class AddProductMenu(Menu)
 		session.add(product)
 		session.commit()
 		session.close()
-		print 'Added product %s, price %d, bar code %d' (name,price,bar_code)
+		print 'Added product %s, price %d, bar code %d' % (name,price,bar_code)
 		self.pause()
 
 
@@ -393,7 +393,7 @@ def retrieve_product(search_str, session):
 
 #main = MainMenu()
 main = Menu('Dibbler main menu',
-	    items=[BuyMenu(), ChargeMenu(), TransferMenu(), Menu('Add user'), Menu('Add product'),
+	    items=[BuyMenu(), ChargeMenu(), TransferMenu(), Menu('Add user'), AddProductMenu(),
 		   ShowUserMenu(), ProductListMenu()],
 	    exit_msg='happy happy joy joy')
 main.execute()
