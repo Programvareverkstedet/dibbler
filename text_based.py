@@ -145,43 +145,20 @@ class Selector(Menu):
 
 class ChargeMenu(Menu):
 	def __init__(self):
-		self.name = "Add Credits to a User Account"
+		self.name = "Add credits to a user account"
 
 	def execute(self):
 		self.session = Session()
-		while 1:
-			abort = False
-			while 1:
-				user_string = raw_input('\nEnter the user name or card number of the account you wish to add credits to, or type "exit" to exit:\n')
-				if user_string in ['exit', 'abort', 'quit']:
-					abort = True
-					break
-				else:
-					user = retrieve_user(user_string,self.session)
-					if user:
-						break
-			if abort:
-				break
-			while 1:
-				print '\nHow much do you wish to charge?\n'
-				amount_string = raw_input('Enter an amount, or type "exit" to exit:\n')
-	
-				if amount_string in ['exit', 'abort', 'quit']:
-					abort = True
-					break
-				try:
-					amount = int(amount_string)
-					break
-				except:
-					print "Please enter an integer"
-			if abort:
-				break
-			else:
-				user.credit += amount
-#				self.session.add(user)
-				self.session.commit()
-				self.session.close()
-				break
+		amount = self.input_int('Amount to be added> ')
+		user = self.input_user('To user>')
+		t = Transaction(user, -amount, 'Add '+str(amount)+' to user '+user.name)
+		t.perform_transaction()
+		self.session.add(t)
+		self.session.commit()
+		print 'Added %d kr to user %s\'s account' % (amount, user.name)
+		print 'User %s\'s credit is now %d kr' % (user,user.credit)
+		self.session.close()
+		self.pause()
 
 class TransferMenu(Menu):
 	def __init__(self):
@@ -332,24 +309,40 @@ class ProductListMenu(Menu):
 			print line_format % (p.name, p.price, p.bar_code)
 		self.pause()
 
-
-class MainMenu():
+class AddProductMenu(Menu)
 	def __init__(self):
-		self.menu_list = [Menu("Buy"),ChargeMenu(), Menu("Add User"), Menu("Add Product")]
+		Menu.__init__(self, 'Add product')
+	
+	def _execute(self):
+		name = self.input_str('Product name> ')
+		bar_code = self.input_int('Bar code> ')
+		price = self.input_int('Price> ')
+		product = Product(bar_code,name,price)
+		session = Session()
+		session.add(product)
+		session.commit()
+		session.close()
+		print 'Added product %s, price %d, bar code %d' (name,price,bar_code)
+		self.pause()
 
-	def execute(self):
-		while 1:
-			print "Main Menu: \nWhat do you want to do? \n"
-			for i in range(len(self.menu_list)):
-				print i+1," ) ",self.menu_list[i].name
-			result = raw_input('\nEnter a number corresponding to your action, or "exit" to exit \n')
-			if result in ["1","2","3","4"]:
-				self.menu_list[int(result)-1].execute()	
-			elif result in ["quit", "exit", "abort"]:
-				print "OK, quitting"
-				break
-			else:
-				print "This does not make sense"
+
+#class MainMenu():
+#	def __init__(self):
+#		self.menu_list = [Menu("Buy"),ChargeMenu(), Menu("Add User"), Menu("Add Product")]
+
+#	def execute(self):
+#		while 1:
+#			print "Main Menu: \nWhat do you want to do? \n"
+#			for i in range(len(self.menu_list)):
+#				print i+1," ) ",self.menu_list[i].name
+#			result = raw_input('\nEnter a number corresponding to your action, or "exit" to exit \n')
+#			if result in ["1","2","3","4"]:
+#				self.menu_list[int(result)-1].execute()	
+#			elif result in ["quit", "exit", "abort"]:
+#				print "OK, quitting"
+#				break
+#			else:
+#				print "This does not make sense"
 
 
 def dwim_search(string, session):
