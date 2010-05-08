@@ -21,6 +21,9 @@ class User(Base):
 	def __repr__(self):
 		return "<User('%s')>" % self.name
 
+	def __str__(self):
+		return self.name
+
 class Product(Base):
 	__tablename__ = 'products'
 
@@ -35,6 +38,9 @@ class Product(Base):
 
 	def __repr__(self):
 		return "<Product('%s', '%s', '%s')>" % (self.name, self.bar_code, self.price)
+
+	def __str__(self):
+		return self.name
 
 class PurchaseEntry(Base):
 	__tablename__ = 'purchase_entries'

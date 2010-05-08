@@ -1,6 +1,34 @@
 from db import *
 from sqlalchemy import or_
 
+def search_user(string, session):
+	exact_match = session.query(User).filter(or_(User.name==string, User.card==string)).first()
+	if exact_match:
+		return exact_match
+	user_list = session.query(User).filter(or_(User.name.like('%'+string+'%'),User.card.like('%'+string+'%'))).all()
+	return user_list
+
+def search_product(string, session):
+	exact_match = session.query(Product)\
+		      .filter(or_(Product.bar_code==string,
+				  Product.name==string)).first()
+	if exact_match:
+		return exact_match
+	product_list = session.query(Product)\
+		       .filter(or_(Product.bar_code.like('%'+string+'%'),
+				   Product.name.like('%'+string+'%'))).all()
+	return product_list
+
+def guess_data_type(string):
+	if string.startswith('NTNU'):
+		return 'card'
+	if string.isdigit():
+		return 'bar_code'
+	if string.isalpha() and string.islower():
+		return 'username'
+	return 'product_name'
+
+
 def retrieve_user(string, session):
 	first = session.query(User).filter(or_(User.name==string, User.card==string)).first()
 	if first:
@@ -22,9 +50,9 @@ def retrieve_user(string, session):
 			return select_from_list(list)
 			
 
-def confirm():
+def confirm(prompt='Confirm? (y/n) '):
 	while True:
-		input = raw_input("Confirm? (y/n)\n")
+		input = raw_input(prompt)
 		if input in ["y","yes"]:
 			return True
 		elif input in ["n","no"]:
