@@ -299,11 +299,15 @@ class ShowUserMenu(Menu):
 		self.pause()
 
 	def print_transactions(self, user):
+		limit = 20
 		if len(user.transactions) == 0:
 			print 'No transactions'
 			return
-		print 'Transactions:'
-		for t in user.transactions:
+		if len(user.transactions) <= limit:
+			print 'Transactions:'
+		else:
+			print 'Transactions (last %d):' % limit
+		for t in user.transactions[-limit:]:
 			string = ' * %s: %s %d kr, ' % \
 			    (t.time.strftime('%Y-%m-%d %H:%M'),
 			     {True:'in', False:'out'}[t.amount<0],
