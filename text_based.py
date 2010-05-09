@@ -2,23 +2,55 @@ import sqlalchemy
 import re
 from helpers import *
 
-exit_commands = ['exit', 'abort', 'quit']
+exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death']
+help_commands = ['help', '?']
+context_commands = ['what', '??']
+local_help_commands = ['help!', '???']
 
 class ExitMenu(Exception):
 	pass
 
 class Menu():
 	def __init__(self, name, items=[], prompt='> ',
-		     return_index=True, exit_msg=None):
+		     return_index=True,
+		     exit_msg=None, exit_confirm_msg=None,
+		     help_text=None):
 		self.name = name
 		self.items = items
 		self.prompt = prompt
 		self.return_index = return_index
 		self.exit_msg = exit_msg
+		self.exit_confirm_msg = exit_confirm_msg
+		self.help_text = help_text
+		self.context = None
+		self.header_format = '[%s]'
+
+	def exit_menu(self):
+		if self.exit_confirm_msg != None:
+			if not confirm(self.exit_confirm_msg):
+				return
+		raise ExitMenu()
 
 	def at_exit(self):
 		if self.exit_msg:
 			print self.exit_msg
+
+	def set_context(self, string, display=True):
+		self.context = string
+		if self.context != None and display:
+			print self.context
+
+	def printc(self, string):
+		print string
+		if self.context == None:
+			self.context = string
+		else:
+			self.context += '\n' + string
+
+	def show_context(self):
+		print self.header_format % self.name
+		if self.context != None:
+			print self.context
 
 	def item_is_submenu(self, i):
 		return isinstance(self.items[i], Menu)
@@ -63,16 +95,28 @@ class Menu():
 					return result
 		if prompt == None:
 			prompt = self.prompt
-		try:
-			result = raw_input(prompt)
-		except EOFError:
-			print 'quit'
-			raise ExitMenu()
-		if result in exit_commands:
-			raise ExitMenu()
-		if empty_string_is_none and result == '':
-			return None
-		return result
+		while True:
+			try:
+				result = raw_input(prompt)
+			except EOFError:
+				print 'quit'
+				self.exit_menu()
+				continue
+			if result in exit_commands:
+				self.exit_menu()
+				continue
+			if result in help_commands:
+				self.general_help()
+				continue
+			if result in local_help_commands:
+				self.local_help()
+				continue
+			if result in context_commands:
+				self.show_context()
+				continue
+			if empty_string_is_none and result == '':
+				return None
+			return result
 
 	def input_int(self, prompt=None, allowed_range=(None,None)):
 		if prompt == None:
@@ -143,10 +187,34 @@ class Menu():
 
 	def print_header(self):
 		print
-		print '[%s]' % self.name
+		print self.header_format % self.name
 
 	def pause(self):
 		self.input_str('.')
+
+	def general_help(self):
+		print '''
+DIBBLER HELP
+
+The following commands are recognized (almost) everywhere:
+
+ help, ?          -- display this help
+ what, ??         -- redisplay the current context
+ help!, ???       -- display context-specific help (if any)
+ exit, quit, etc. -- exit from the current menu
+
+When prompted for a user, you can type (parts of) the user name or
+card number.  When prompted for a product, you can type (parts of) the
+product name or barcode.
+'''
+
+	def local_help(self):
+		if self.help_text == None:
+			print 'no help here'
+		else:
+			print 'Help for %s' % (self.header_format%self.name)
+			print
+			print self.help_text
 
 	def execute(self):
 		try:
@@ -158,12 +226,13 @@ class Menu():
 	def _execute(self):
 		while True:
 			self.print_header()
+			self.set_context(None)
 			if len(self.items)==0:
-				print '(empty menu)'
+				self.printc('(empty menu)')
 				self.pause()
 				return None
 			for i in range(len(self.items)):
-				print '%d ) %s' % (i+1, self.item_name(i))
+				self.printc('%d ) %s' % (i+1, self.item_name(i)))
 			item_i = self.input_int(self.prompt, (1,len(self.items)))-1
 			if self.item_is_submenu(item_i):
 				self.items[item_i].execute()
@@ -172,11 +241,23 @@ class Menu():
 
 class Selector(Menu):
 	def __init__(self, name, items=[], prompt='select> ',
-		     return_index=True, exit_msg=None):
+		     return_index=True,
+		     exit_msg=None, exit_confirm_msg=None,
+		     help_text=None):
 		Menu.__init__(self, name, items, prompt, return_index, exit_msg)
+		self.header_format = '%s'
 
 	def print_header(self):
-		print self.name
+		print self.header_format % self.name
+
+	def local_help(self):
+		if self.help_text == None:
+			print 'This is a selection menu.  Enter one of the listed numbers, or'
+			print '\'exit\' to go out and do something else.'
+		else:
+			print 'Help for selector (%s)' % self.name
+			print
+			print self.help_text
 
 
 # class ChargeMenu(Menu):
@@ -253,7 +334,7 @@ class EditUserMenu(Menu):
 		self.print_header()
 		self.session = Session()
 		user = self.input_user('User> ')
-		print 'Editing user %s' % user.name
+		self.printc('Editing user %s' % user.name)
 		user.card = self.input_str('Card number (currently "%s")> ' % user.card,
 					   User.card_re, (0,10),
 					   empty_string_is_none=True)
@@ -295,6 +376,7 @@ class EditProductMenu(Menu):
 		self.print_header()
 		self.session = Session()
 		product = self.input_product('Product> ')
+		self.printc('Editing product %s' % product.name)
 		while True:
 			selector = Selector('Do what with %s?' % product.name,
 					    items=[('name', 'Edit name'),
@@ -331,14 +413,15 @@ class ShowUserMenu(Menu):
 		self.pause()
 
 	def print_transactions(self, user):
-		limit = 20
-		if len(user.transactions) == 0:
+		limit = 10
+		num_trans = len(user.transactions)
+		if num_trans == 0:
 			print 'No transactions'
 			return
-		if len(user.transactions) <= limit:
-			print 'Transactions:'
+		if num_trans <= limit:
+			print 'Transactions (%d):' % num_trans
 		else:
-			print 'Transactions (last %d):' % limit
+			print 'Transactions (%d, showing only last %d):' % (num_trans,limit)
 		for t in user.transactions[-limit:]:
 			string = ' * %s: %s %d kr, ' % \
 			    (t.time.strftime('%Y-%m-%d %H:%M'),
@@ -357,6 +440,15 @@ class ShowUserMenu(Menu):
 class BuyMenu(Menu):
 	def __init__(self):
 		Menu.__init__(self, 'Buy')
+		self.help_text = '''
+Each purchase may contain one or more products and one or more buyers.
+
+Enter products (by name or bar code) and buyers (by name or bar code)
+in any order.  The information gathered so far is displayed after each
+addition, and you can type 'what' at any time to redisplay it.
+
+When finished, write an empty line to confirm the purchase.
+'''
 
 	def _execute(self):
 		self.print_header()
@@ -364,12 +456,12 @@ class BuyMenu(Menu):
 		self.purchase = Purchase()
 		while True:
 			self.print_purchase()
-			print {(False,False): 'Enter user or product identification',
-			       (False,True): 'Enter user identification or more products',
-			       (True,False): 'Enter product identification or more users',
-			       (True,True): 'Enter more products or users, or an empty line to confirm'
-			       }[(len(self.purchase.transactions) > 0,
-				  len(self.purchase.entries) > 0)]
+			self.printc({(False,False): 'Enter user or product identification',
+				     (False,True): 'Enter user identification or more products',
+				     (True,False): 'Enter product identification or more users',
+				     (True,True): 'Enter more products or users, or an empty line to confirm'
+				     }[(len(self.purchase.transactions) > 0,
+					len(self.purchase.entries) > 0)])
 			thing = self.input_thing(empty_input_permitted=True)
 			if thing == None:
 				if not self.complete_input():
@@ -426,7 +518,7 @@ class BuyMenu(Menu):
 	def print_purchase(self):
 		info = self.format_purchase()
 		if info != None:
-			print info
+			self.set_context(info)
 
 
 class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combined to one
@@ -438,6 +530,7 @@ class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combine
 		self.session = Session()
 		user = self.input_user('User> ')
 		print 'User %s\'s credit is %d kr' % (user.name, user.credit)
+		self.set_context('Adjusting credit for user %s' % user.name, display=False)
 		amount = self.input_int('Add amount> ', (-100000,100000))
 		description = self.input_str('Log message> ', length_range=(0,50))
 		if description == '':
@@ -532,7 +625,8 @@ main = Menu('Dibbler main menu',
 			items=[AddUserMenu(), EditUserMenu(),
 			       AddProductMenu(), EditProductMenu()])
 		   ],
-	    exit_msg='happy happy joy joy')
+	    exit_msg='happy happy joy joy',
+	    exit_confirm_msg='Really quit Dibbler? (y/n) ')
 main.execute()
 
 
