@@ -38,14 +38,29 @@ class Menu():
 			return i
 		return self.items[i]
 
-	def input_str(self, prompt=None, regex=None):
+	def input_str(self, prompt=None, regex=None, length_range=(None,None),
+		      empty_string_is_none=False):
 		if regex != None:
 			while True:
-				result = self.input_str(prompt)
+				result = self.input_str(prompt, length_range=length_range)
 				if re.match(regex+'$', result):
 					return result
 				else:
 					print 'Value must match regular expression "%s"' % regex
+		if length_range != (None,None):
+			while True:
+				result = self.input_str(prompt)
+				length = len(result)
+				if ((length_range[0] and length < length_range[0]) or
+				    (length_range[1] and length > length_range[1])):
+					if length_range[0] and length_range[1]:
+						print 'Value must have length in range [%d,%d]' % length_range
+					elif allowed_range[0]:
+						print 'Value must have length at least %d' % length_range[0]
+					else:
+						print 'Value must have length at most %d' % length_range[1]
+				else:
+					return result
 		if prompt == None:
 			prompt = self.prompt
 		try:
@@ -55,6 +70,8 @@ class Menu():
 			raise ExitMenu()
 		if result in exit_commands:
 			raise ExitMenu()
+		if empty_string_is_none and result == '':
+			return None
 		return result
 
 	def input_int(self, prompt=None, allowed_range=(None,None)):
@@ -162,22 +179,22 @@ class Selector(Menu):
 		print self.name
 
 
-class ChargeMenu(Menu):
-	def __init__(self):
-		self.name = "Add credits to a user account"
+# class ChargeMenu(Menu):
+# 	def __init__(self):
+# 		self.name = "Add credits to a user account"
 
-	def execute(self):
-		self.session = Session()
-		amount = self.input_int('Amount to be added> ')
-		user = self.input_user('To user>')
-		t = Transaction(user, -amount, 'Add '+str(amount)+' to user '+user.name)
-		t.perform_transaction()
-		self.session.add(t)
-		self.session.commit()
-		print 'Added %d kr to user %s\'s account' % (amount, user.name)
-		print 'User %s\'s credit is now %d kr' % (user,user.credit)
-		self.session.close()
-		self.pause()
+# 	def execute(self):
+# 		self.session = Session()
+# 		amount = self.input_int('Amount to be added> ')
+# 		user = self.input_user('To user>')
+# 		t = Transaction(user, -amount, 'Add '+str(amount)+' to user '+user.name)
+# 		t.perform_transaction()
+# 		self.session.add(t)
+# 		self.session.commit()
+# 		print 'Added %d kr to user %s\'s account' % (amount, user.name)
+# 		print 'User %s\'s credit is now %d kr' % (user,user.credit)
+# 		self.session.close()
+# 		self.pause()
 
 class TransferMenu(Menu):
 	def __init__(self):
@@ -186,7 +203,7 @@ class TransferMenu(Menu):
 	def _execute(self):
 		self.print_header()
 		self.session = Session()
-		amount = self.input_int('Transfer amount> ')
+		amount = self.input_int('Transfer amount> ', (-100000,100000))
 		user1 = self.input_user('From user> ')
 		user2 = self.input_user('To user> ')
 		t1 = Transaction(user1, amount,
@@ -197,10 +214,13 @@ class TransferMenu(Menu):
 		t2.perform_transaction()
 		self.session.add(t1)
 		self.session.add(t2)
-		self.session.commit()
-		print 'Transfered %d kr from %s to %s' % (amount, user1, user2)
-		print 'User %s\'s credit is now %d kr' % (user1, user1.credit)
-		print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
+		try:
+			self.session.commit()
+			print 'Transfered %d kr from %s to %s' % (amount, user1, user2)
+			print 'User %s\'s credit is now %d kr' % (user1, user1.credit)
+			print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
+		except sqlalchemy.exc.SQLAlchemyError, e:
+			print 'Could not perform transfer: %s' % e
 		self.session.close()
 		self.pause()
 
@@ -212,8 +232,8 @@ class AddUserMenu(Menu):
 	def _execute(self):
 		self.print_header()
 		self.session = Session()
-		username = self.input_str('User name> ', regex=User.name_re)
-		cardnum = self.input_str('Card number> ', regex=User.card_re)
+		username = self.input_str('User name> ', User.name_re, (1,10))
+		cardnum = self.input_str('Card number> ', User.card_re, (0,10))
 		user = User(username, cardnum)
 		self.session.add(user)
 		try:
@@ -233,10 +253,15 @@ class EditUserMenu(Menu):
 		self.print_header()
 		self.session = Session()
 		user = self.input_user('User> ')
+		print 'Editing user %s' % user.name
 		user.card = self.input_str('Card number (currently "%s")> ' % user.card,
-					   regex=User.card_re)
-		self.session.commit()
-		print 'User %s stored' % user.name
+					   User.card_re, (0,10),
+					   empty_string_is_none=True)
+		try:
+			self.session.commit()
+			print 'User %s stored' % user.name
+		except sqlalchemy.exc.SQLAlchemyError, e:
+			print 'Could not store user %s: %s' % (user.name,e)
 		self.session.close()
 		self.pause()
 
@@ -249,14 +274,14 @@ class AddProductMenu(Menu):
 		self.session = Session()
 		self.print_header()
 		bar_code = self.input_int('Bar code> ')
-		name = self.input_str('Name> ', regex=r".+")
-		price = self.input_int('Price> ', (1,None))
+		name = self.input_str('Name> ', Product.name_re, (1,30))
+		price = self.input_int('Price> ', (1,100000))
 		product = Product(bar_code, name, price)
 		self.session.add(product)
 		try:
 			self.session.commit()
 			print 'Product %s stored' % name
-		except sqlalchemy.exc.IntegrityError, e:
+		except sqlalchemy.exc.SQLAlchemyError, e:
 			print 'Could not store product %s: %s' % (name,e)
 		self.session.close()
 		self.pause()
@@ -277,12 +302,15 @@ class EditProductMenu(Menu):
 						   ('store', 'Store')])
 			what = selector.execute()
 			if what == 'name':
-				product.name = self.input_str('Name> ')
+				product.name = self.input_str('Name> ', Product.name_re, (1,30))
 			elif what == 'price':
-				product.price = self.input_int('Price> ')
+				product.price = self.input_int('Price> ', (1,100000))
 			elif what == 'store':
-				self.session.commit()
-				print 'Product %s stored' % product.name
+				try:
+					self.session.commit()
+					print 'Product %s stored' % product.name
+				except sqlalchemy.exc.SQLAlchemyError, e:
+					print 'Could not store product %s: %s' % (product.name, e)					
 				self.session.close()
 				self.pause()
 				return
@@ -355,14 +383,16 @@ class BuyMenu(Menu):
 				PurchaseEntry(self.purchase, thing, 1)
 
 		self.purchase.perform_purchase()
-
 		self.session.add(self.purchase)
-		self.session.commit()
-
-		print 'Purchase stored.'
-		self.print_purchase()
-		for t in self.purchase.transactions:
-			print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
+		try:
+			self.session.commit()
+		except sqlalchemy.exc.SQLAlchemyError, e:
+			print 'Could not store purchase: %s' % e
+		else:
+			print 'Purchase stored.'
+			self.print_purchase()
+			for t in self.purchase.transactions:
+				print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
 		self.session.close()
 		self.pause()
 		return True
@@ -408,15 +438,18 @@ class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combine
 		self.session = Session()
 		user = self.input_user('User> ')
 		print 'User %s\'s credit is %d kr' % (user.name, user.credit)
-		amount = self.input_int('Add amount> ')
-		description = self.input_str('Log message> ')
+		amount = self.input_int('Add amount> ', (-100000,100000))
+		description = self.input_str('Log message> ', length_range=(0,50))
 		if description == '':
 			description = 'manually adjusted credit'
 		transaction = Transaction(user, -amount, description)
 		transaction.perform_transaction()
 		self.session.add(transaction)
-		self.session.commit()
-		print 'User %s\'s credit is now %d kr' % (user.name, user.credit)
+		try:
+			self.session.commit()
+			print 'User %s\'s credit is now %d kr' % (user.name, user.credit)
+		except sqlalchemy.exc.SQLAlchemyError, e:
+			print 'Could not store transaction: %s' % e
 		self.session.close()
 		self.pause()
 
@@ -429,47 +462,12 @@ class ProductListMenu(Menu):
 		self.print_header()
 		session = Session()
 		product_list = session.query(Product).all()
-		line_format = '%-20s %6s %-15s'
+		line_format = '%-30s | %6s | %-15s'
 		print line_format % ('name', 'price', 'bar code')
-		print '-------------------------------------------'
+		print '---------------------------------------------------------'
 		for p in product_list:
 			print line_format % (p.name, p.price, p.bar_code)
 		self.pause()
-
-class AddProductMenu(Menu):
-	def __init__(self):
-		Menu.__init__(self, 'Add product')
-	
-	def _execute(self):
-		name = self.input_str('Product name> ')
-		bar_code = self.input_int('Bar code> ')
-		price = self.input_int('Price> ')
-		product = Product(bar_code,name,price)
-		session = Session()
-		session.add(product)
-		session.commit()
-		session.close()
-		print 'Added product %s, price %d, bar code %d' % (name,price,bar_code)
-		self.pause()
-
-
-#class MainMenu():
-#	def __init__(self):
-#		self.menu_list = [Menu("Buy"),ChargeMenu(), Menu("Add User"), Menu("Add Product")]
-
-#	def execute(self):
-#		while 1:
-#			print "Main Menu: \nWhat do you want to do? \n"
-#			for i in range(len(self.menu_list)):
-#				print i+1," ) ",self.menu_list[i].name
-#			result = raw_input('\nEnter a number corresponding to your action, or "exit" to exit \n')
-#			if result in ["1","2","3","4"]:
-#				self.menu_list[int(result)-1].execute()	
-#			elif result in ["quit", "exit", "abort"]:
-#				print "OK, quitting"
-#				break
-#			else:
-#				print "This does not make sense"
 
 
 def dwim_search(string, session):
@@ -529,7 +527,7 @@ def retrieve_product(search_str, session):
 #main = MainMenu()
 main = Menu('Dibbler main menu',
 	    items=[BuyMenu(), ProductListMenu(), ShowUserMenu(),
-		   AdjustCreditMenu(), ChargeMenu(), TransferMenu(),
+		   AdjustCreditMenu(), TransferMenu(),
 		   Menu('Add/edit',
 			items=[AddUserMenu(), EditUserMenu(),
 			       AddProductMenu(), EditProductMenu()])

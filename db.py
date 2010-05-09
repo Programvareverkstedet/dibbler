@@ -18,6 +18,8 @@ class User(Base):
 
 	def __init__(self, name, card, credit=0):
 		self.name = name
+		if card == '':
+			card = None
 		self.card = card
 		self.credit = credit
 
@@ -33,6 +35,9 @@ class Product(Base):
 	bar_code = Column(Integer, primary_key=True)
 	name = Column(String(30))
 	price = Column(Integer)
+
+	bar_code_re = r"[0-9]+"
+	name_re = r".+"
 
 	def __init__(self, bar_code, name, price):
 		self.name = name
