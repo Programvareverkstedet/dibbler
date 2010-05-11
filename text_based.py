@@ -35,7 +35,7 @@ class Menu():
 			print self.exit_disallowed_msg
 			return
 		if self.exit_confirm_msg != None:
-			if not confirm(self.exit_confirm_msg):
+			if not self.confirm(self.exit_confirm_msg):
 				return
 		raise ExitMenu()
 
@@ -105,7 +105,7 @@ class Menu():
 			prompt = self.prompt
 		while True:
 			try:
-				result = raw_input(prompt)
+				result = raw_input(safe_str(prompt))
 			except EOFError:
 				print 'quit'
 				self.exit_menu()
@@ -193,6 +193,9 @@ class Menu():
 			return 2
 		return 1
 
+	def confirm(self, prompt, default=None):
+		return ConfirmMenu(prompt, default).execute()
+
 	def print_header(self):
 		print
 		print self.header_format % self.name
@@ -248,6 +251,7 @@ product name or barcode.
 			else:
 				return self.item_value(item_i)
 
+
 class Selector(Menu):
 	def __init__(self, name, items=[], prompt='select> ',
 		     return_index=True,
@@ -267,6 +271,26 @@ class Selector(Menu):
 			print
 			print 'Help for selector (%s):' % self.name
 			print self.help_text
+
+
+class ConfirmMenu(Menu):
+	def __init__(self, prompt='confirm?', default=None):
+		Menu.__init__(self, 'question', prompt=prompt,
+			      exit_disallowed_msg='Please answer yes or no')
+		self.default=default
+
+	def _execute(self):
+		options = {True: 'Y/n', False: 'y/N', None: 'y/n'}[self.default]
+		while True:
+			result = self.input_str('%s (%s) ' % (self.prompt, options))
+			if result in ['y','yes']:
+				return True
+			if result in ['n','no']:
+				return False
+			if self.default != None and result == '':
+				return self.default
+			print 'Please answer yes or no'
+
 
 
 # class ChargeMenu(Menu):
@@ -479,7 +503,8 @@ When finished, write an empty line to confirm the purchase.
 			thing = self.input_thing(empty_input_permitted=True)
 			if thing == None:
 				if not self.complete_input():
-					if confirm('Not enough information entered.  Abort purchase? (y/n) '):
+					if self.confirm('Not enough information entered.  Abort purchase?',
+							default=True):
 						return False
 					continue
 				break
@@ -607,9 +632,9 @@ def search_ui2(search_str, result, thing, session):
 		print 'No %ss matching "%s"' % (thing, search_str)
 		return None
 	if len(result) == 1:
-		msg = 'One %s matching "%s": %s.  Use this? (y/n) ' %\
-		      (thing, search_str, result[0])
-		if confirm(msg):
+		msg = 'One %s matching "%s": %s.  Use this?' %\
+		      (thing, search_str, unicode(result[0]))
+		if ConfirmMenu(msg, default=True).execute():
 			return result[0]
 		return None
 	limit = 9
@@ -640,7 +665,7 @@ main = Menu('Dibbler main menu',
 			       AddProductMenu(), EditProductMenu()])
 		   ],
 	    exit_msg='happy happy joy joy',
-	    exit_confirm_msg='Really quit Dibbler? (y/n) ')
+	    exit_confirm_msg='Really quit Dibbler?')
 if not conf.quit_allowed:
 	main.exit_disallowed_msg = 'You can check out any time you like, but you can never leave.'
 while True:
