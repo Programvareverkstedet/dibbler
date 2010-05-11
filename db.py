@@ -33,7 +33,7 @@ class User(Base):
 class Product(Base):
 	__tablename__ = 'products'
 
-	bar_code = Column(Integer, primary_key=True)
+	bar_code = Column(String(13), primary_key=True)
 	name = Column(String(30))
 	price = Column(Integer)
 

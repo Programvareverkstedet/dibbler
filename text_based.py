@@ -360,7 +360,7 @@ class AddProductMenu(Menu):
 	def _execute(self):
 		self.session = Session()
 		self.print_header()
-		bar_code = self.input_int('Bar code> ')
+		bar_code = self.input_str('Bar code> ', Product.bar_code_re, (8,13))
 		name = self.input_str('Name> ', Product.name_re, (1,30))
 		price = self.input_int('Price> ', (1,100000))
 		product = Product(bar_code, name, price)
