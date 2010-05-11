@@ -644,7 +644,7 @@ while True:
 		print 'Interrupted.'
 	except:
 		print 'Something went wrong.'
-		print '%s: %s' % sys.exc_info()[0:1]
+		print '%s: %s' % sys.exc_info()[0:2]
 	else:
 		break
 	print 'Restarting main menu.'
