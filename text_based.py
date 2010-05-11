@@ -492,6 +492,7 @@ When finished, write an empty line to confirm the purchase.
 		self.print_header()
 		self.session = Session()
 		self.purchase = Purchase()
+		self.exit_confirm_msg=None
 		while True:
 			self.print_purchase()
 			self.printc({(False,False): 'Enter user or product identification',
@@ -508,6 +509,11 @@ When finished, write an empty line to confirm the purchase.
 						return False
 					continue
 				break
+			else:
+				# once we get something in the
+				# purchase, we want to protect the
+				# user from accidentally killing it
+				self.exit_confirm_msg='Abort purchase?'
 			if isinstance(thing, User):
 				Transaction(thing, purchase=self.purchase)
 			elif isinstance(thing, Product):
