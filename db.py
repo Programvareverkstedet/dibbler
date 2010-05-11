@@ -55,7 +55,7 @@ class PurchaseEntry(Base):
 	__tablename__ = 'purchase_entries'
 	id = Column(Integer, primary_key=True)
 	purchase_id = Column(Integer,ForeignKey("purchases.id"))
-	product_bar_code = Column(Integer,ForeignKey("products.bar_code"))
+	product_bar_code = Column(String(13),ForeignKey("products.bar_code"))
 	amount = Column(Integer)
 
 	product = relationship(Product,backref="purchases")
