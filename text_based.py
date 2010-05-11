@@ -35,7 +35,7 @@ class Menu():
 			print self.exit_disallowed_msg
 			return
 		if self.exit_confirm_msg != None:
-			if not self.confirm(self.exit_confirm_msg):
+			if not self.confirm(self.exit_confirm_msg, default=True):
 				return
 		raise ExitMenu()
 
@@ -47,6 +47,9 @@ class Menu():
 		self.context = string
 		if self.context != None and display:
 			print self.context
+
+	def add_to_context(self, string):
+		self.context += string
 
 	def printc(self, string):
 		print string
@@ -82,15 +85,19 @@ class Menu():
 		      empty_string_is_none=False):
 		if regex != None:
 			while True:
-				result = self.input_str(prompt, length_range=length_range)
-				if re.match(regex+'$', result):
+				result = self.input_str(prompt, length_range=length_range,
+							empty_string_is_none=empty_string_is_none)
+				if result == None or re.match(regex+'$', result):
 					return result
 				else:
 					print 'Value must match regular expression "%s"' % regex
 		if length_range != (None,None):
 			while True:
-				result = self.input_str(prompt)
-				length = len(result)
+				result = self.input_str(prompt, empty_string_is_none=empty_string_is_none)
+				if result == None:
+					length = 0
+				else:
+					length = len(result)
 				if ((length_range[0] and length < length_range[0]) or
 				    (length_range[1] and length > length_range[1])):
 					if length_range[0] and length_range[1]:
@@ -317,9 +324,13 @@ class TransferMenu(Menu):
 	def _execute(self):
 		self.print_header()
 		self.session = Session()
-		amount = self.input_int('Transfer amount> ', (-100000,100000))
+		amount = self.input_int('Transfer amount> ', (1,100000))
+		self.set_context('Transfering %d kr' % amount, display=False)
 		user1 = self.input_user('From user> ')
+		self.add_to_context(' from ' + user1.name)
 		user2 = self.input_user('To user> ')
+		self.add_to_context(' to ' + user2.name)
+
 		t1 = Transaction(user1, amount,
 				 'transfer to '+user2.name)
 		t2 = Transaction(user2, -amount,
@@ -362,13 +373,22 @@ class AddUserMenu(Menu):
 class EditUserMenu(Menu):
 	def __init__(self):
 		Menu.__init__(self, 'Edit user')
+		self.help_text = '''
+The only editable part of a user is its card number.
+
+First select an existing user, then enter a new card number for that
+user (write an empty line to remove the card number).
+'''
 
 	def _execute(self):
 		self.print_header()
 		self.session = Session()
 		user = self.input_user('User> ')
 		self.printc('Editing user %s' % user.name)
-		user.card = self.input_str('Card number (currently "%s")> ' % user.card,
+		card_str = '"%s"' % user.card
+		if user.card == None:
+			card_str = 'empty'
+		user.card = self.input_str('Card number (currently %s)> ' % card_str,
 					   User.card_re, (0,10),
 					   empty_string_is_none=True)
 		try:
