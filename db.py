@@ -2,8 +2,9 @@ from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, cre
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
+import conf
 
-engine = create_engine('sqlite:////var/local/pvvvv/dibbler/data')
+engine = create_engine(conf.db_url)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 

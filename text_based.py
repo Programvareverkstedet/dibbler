@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import sqlalchemy
 import re
 from helpers import *
@@ -13,7 +15,7 @@ class ExitMenu(Exception):
 class Menu():
 	def __init__(self, name, items=[], prompt='> ',
 		     return_index=True,
-		     exit_msg=None, exit_confirm_msg=None,
+		     exit_msg=None, exit_confirm_msg=None, exit_disallowed_msg=None,
 		     help_text=None):
 		self.name = name
 		self.items = items
@@ -21,11 +23,15 @@ class Menu():
 		self.return_index = return_index
 		self.exit_msg = exit_msg
 		self.exit_confirm_msg = exit_confirm_msg
+		self.exit_disallowed_msg = exit_disallowed_msg
 		self.help_text = help_text
 		self.context = None
 		self.header_format = '[%s]'
 
 	def exit_menu(self):
+		if self.exit_disallowed_msg != None:
+			print self.exit_disallowed_msg
+			return
 		if self.exit_confirm_msg != None:
 			if not confirm(self.exit_confirm_msg):
 				return
@@ -212,8 +218,8 @@ product name or barcode.
 		if self.help_text == None:
 			print 'no help here'
 		else:
-			print 'Help for %s' % (self.header_format%self.name)
 			print
+			print 'Help for %s:' % (self.header_format%self.name)
 			print self.help_text
 
 	def execute(self):
@@ -255,8 +261,8 @@ class Selector(Menu):
 			print 'This is a selection menu.  Enter one of the listed numbers, or'
 			print '\'exit\' to go out and do something else.'
 		else:
-			print 'Help for selector (%s)' % self.name
 			print
+			print 'Help for selector (%s):' % self.name
 			print self.help_text
 
 
@@ -627,6 +633,17 @@ main = Menu('Dibbler main menu',
 		   ],
 	    exit_msg='happy happy joy joy',
 	    exit_confirm_msg='Really quit Dibbler? (y/n) ')
-main.execute()
-
-
+if not conf.quit_allowed:
+	main.exit_disallowed_msg = 'You can check out any time you like, but you can never leave.'
+while True:
+	try:
+		main.execute()
+	except KeyboardInterrupt:
+		print
+		print 'Interrupted.'
+	except:
+		print 'Something went wrong.'
+		print '%s: %s' % sys.exc_info()[0:1]
+	else:
+		break
+	print 'Restarting main menu.'
