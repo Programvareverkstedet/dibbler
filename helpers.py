@@ -5,7 +5,8 @@ def search_user(string, session):
 	exact_match = session.query(User).filter(or_(User.name==string, User.card==string)).first()
 	if exact_match:
 		return exact_match
-	user_list = session.query(User).filter(or_(User.name.like('%'+string+'%'),User.card.like('%'+string+'%'))).all()
+	user_list = session.query(User).filter(or_(User.name.ilike('%'+string+'%'),
+						   User.card.ilike('%'+string+'%'))).all()
 	return user_list
 
 def search_product(string, session):
@@ -15,8 +16,8 @@ def search_product(string, session):
 	if exact_match:
 		return exact_match
 	product_list = session.query(Product)\
-		       .filter(or_(Product.bar_code.like('%'+string+'%'),
-				   Product.name.like('%'+string+'%'))).all()
+		       .filter(or_(Product.bar_code.ilike('%'+string+'%'),
+				   Product.name.ilike('%'+string+'%'))).all()
 	return product_list
 
 def guess_data_type(string):
