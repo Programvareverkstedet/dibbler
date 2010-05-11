@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 import datetime
 
-engine = create_engine('sqlite:///data')
+engine = create_engine('sqlite:////var/local/pvvvv/dibbler/data')
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
 
@@ -14,7 +14,7 @@ class User(Base):
 	credit = Column(Integer)
 
 	name_re = r"[a-z]+"
-	card_re = r"((NTNU)?[0-9]+)?"
+	card_re = r"((ntnu)?[0-9]+)?"
 
 	def __init__(self, name, card, credit=0):
 		self.name = name
