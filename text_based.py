@@ -3,6 +3,7 @@
 import sqlalchemy
 import re
 import sys
+import traceback
 from helpers import *
 
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death']
@@ -68,7 +69,7 @@ class Menu():
 		elif isinstance(self.items[i], tuple):
 			return self.items[i][1]
 		else:
-			return str(self.items[i])
+			return self.items[i]
 
 	def item_value(self, i):
 		if isinstance(self.items[i], tuple):
@@ -645,6 +646,8 @@ while True:
 	except:
 		print 'Something went wrong.'
 		print '%s: %s' % sys.exc_info()[0:2]
+		if conf.show_tracebacks:
+			traceback.print_tb(sys.exc_info()[2])
 	else:
 		break
 	print 'Restarting main menu.'
