@@ -404,6 +404,11 @@ class EditProductMenu(Menu):
 				self.session.close()
 				self.pause()
 				return
+			elif what == None:
+				print 'Edit aborted'
+				return
+			else:
+				print 'What what?'
 
 
 class ShowUserMenu(Menu):
