@@ -2,6 +2,7 @@
 
 import sqlalchemy
 import re
+import sys
 from helpers import *
 
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death']
