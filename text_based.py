@@ -225,6 +225,7 @@ product name or barcode.
 			print self.help_text
 
 	def execute(self):
+		self.set_context(None)
 		try:
 			return self._execute()
 		except ExitMenu:
