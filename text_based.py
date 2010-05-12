@@ -3,6 +3,7 @@
 import sqlalchemy
 import re
 import sys
+import os
 import traceback
 import signal
 from helpers import *
@@ -11,6 +12,7 @@ exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death']
 help_commands = ['help', '?']
 context_commands = ['what', '??']
 local_help_commands = ['help!', '???']
+restart_commands = ['restart']
 
 class ExitMenu(Exception):
 	pass
@@ -129,6 +131,10 @@ class Menu():
 				continue
 			if result in context_commands:
 				self.show_context()
+				continue
+			if result in restart_commands:
+				if self.confirm('Restart Dibbler?'):
+					restart()
 				continue
 			if empty_string_is_none and result == '':
 				return None
@@ -681,6 +687,12 @@ def retrieve_user(search_str, session):
 	return search_ui(search_user, search_str, 'user', session)
 def retrieve_product(search_str, session):
 	return search_ui(search_product, search_str, 'product', session)
+
+
+def restart():
+	# Does not work if the script is not executable, or if it was
+	# started by searching $PATH.
+	os.execv(sys.argv[0], sys.argv)
 
 
 if not conf.stop_allowed:
