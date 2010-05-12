@@ -4,6 +4,7 @@ import sqlalchemy
 import re
 import sys
 import traceback
+import signal
 from helpers import *
 
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death']
@@ -682,7 +683,8 @@ def retrieve_product(search_str, session):
 	return search_ui(search_product, search_str, 'product', session)
 
 
-#main = MainMenu()
+if not conf.stop_allowed:
+	signal.signal(signal.SIGTSTP, signal.SIG_IGN)
 main = Menu('Dibbler main menu',
 	    items=[BuyMenu(), ProductListMenu(), ShowUserMenu(),
 		   AdjustCreditMenu(), TransferMenu(),
