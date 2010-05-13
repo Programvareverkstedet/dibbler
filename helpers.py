@@ -1,5 +1,6 @@
 from db import *
 from sqlalchemy import or_
+import pwd
 
 def search_user(string, session):
 	exact_match = session.query(User).filter(or_(User.name==string, User.card==string)).first()
@@ -20,14 +21,25 @@ def search_product(string, session):
 				   Product.name.ilike('%'+string+'%'))).all()
 	return product_list
 
-# def guess_data_type(string):
-# 	if string.startswith('NTNU'):
+
+def system_user_exists(username):
+	try:
+		pwd.getpwnam(username)
+	except KeyError:
+		return False
+	else:
+		return True
+
+def guess_data_type(string):
+	if string.startswith('ntnu') and string[4:].isdigit():
+		return 'card'
+	if string.isdigit() and len(string) in [8,13]:
+		return 'bar_code'
+# 	if string.isdigit() and len(string) > 5:
 # 		return 'card'
-# 	if string.isdigit():
-# 		return 'bar_code'
-# 	if string.isalpha() and string.islower():
-# 		return 'username'
-# 	return 'product_name'
+	if string.isalpha() and string.islower() and system_user_exists(string):
+		return 'username'
+	return None
 
 
 # def retrieve_user(string, session):

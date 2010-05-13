@@ -163,28 +163,33 @@ class Menu():
 	def input_user(self, prompt=None):
 		user = None
 		while user == None:
-			user = retrieve_user(self.input_str(prompt),
-					     self.session)
+			user = self.retrieve_user(self.input_str(prompt))
 		return user
+
+	def retrieve_user(self, search_str):
+		return self.search_ui(search_user, search_str, 'user')
 
 	def input_product(self, prompt=None):
 		product = None
 		while product == None:
-			product = retrieve_product(self.input_str(prompt),
-						   self.session)
+			product = self.retrieve_product(self.input_str(prompt))
 		return product
 
+	def retrieve_product(self, search_str):
+		return self.search_ui(search_product, search_str, 'product')
+
 	def input_thing(self, prompt=None, permitted_things=('user','product'),
-			empty_input_permitted=False):
+			add_nonexisting=(), empty_input_permitted=False):
 		result = None
 		while result == None:
 			search_str = self.input_str(prompt)
 			if search_str == '' and empty_input_permitted:
 				return None
-			result = self.search_for_thing(search_str, permitted_things)
+			result = self.search_for_thing(search_str, permitted_things, add_nonexisting)
 		return result
 
-	def search_for_thing(self, search_str, permitted_things=('user','product')):
+	def search_for_thing(self, search_str, permitted_things=('user','product'),
+			     add_nonexisting=()):
 		search_fun = {'user': search_user,
 			      'product': search_product}
 		results = {}
@@ -193,8 +198,15 @@ class Menu():
 			results[thing] = search_fun[thing](search_str, self.session)
 			result_values[thing] = self.search_result_value(results[thing])
 		selected_thing = argmax(result_values)
-		return search_ui2(search_str, results[selected_thing],
-				  selected_thing, self.session)
+		if results[selected_thing] == []:
+			thing_for_type = {'card': 'user', 'username': 'user',
+					  'bar_code': 'product'}
+			type_guess = guess_data_type(search_str)
+			if type_guess != None and thing_for_type[type_guess] in add_nonexisting:
+				return self.search_add(search_str)
+			print 'No match found for "%s".' % search_str
+			return None
+		return self.search_ui2(search_str, results[selected_thing], selected_thing)
 
 	def search_result_value(self, result):
 		if result == None:
@@ -206,6 +218,69 @@ class Menu():
 		if len(result) == 1:
 			return 2
 		return 1
+
+	def search_add(self, string):
+		type_guess = guess_data_type(string)
+		if type_guess == 'username':
+			print '"%s" looks like a username, but no such user exists.' % string
+			if self.confirm('Create user %s?' % string):
+				user = User(string, None)
+				self.session.add(user)
+				return user
+			return None
+		if type_guess == 'card':
+			selector = Selector('"%s" looks like a card number, but no user with that card number exists.' % string,
+					    [('create', 'Create user with card number %s' % string),
+					     ('set', 'Set card number of an existing user to %s' % string)])
+			selection = selector.execute()
+			if selection == 'create':
+				username = self.input_str('Username for new user (should be same as PVV username)> ',
+							  User.name_re, (1,10))
+				user = User(username, string)
+				self.session.add(user)
+				return user
+			if selection == 'set':
+				user = self.input_user('User to set card number for> ')
+				old_card = user.card
+				user.card = string
+				print 'Card number of %s set to %s (was %s)' % (user.name, string, old_card)
+				return user
+			return None
+		if type_guess == 'bar_code':
+			print '"%s" looks like the bar code for a product, but no such product exists.' % string
+			return None
+
+
+	def search_ui(self, search_fun, search_str, thing):
+		result = search_fun(search_str, self.session)
+		return self.search_ui2(search_str, result, thing)
+
+	def search_ui2(self, search_str, result, thing):
+		if not isinstance(result, list):
+			return result
+		if len(result) == 0:
+			print 'No %ss matching "%s"' % (thing, search_str)
+			return None
+		if len(result) == 1:
+			msg = 'One %s matching "%s": %s.  Use this?' %\
+			      (thing, search_str, unicode(result[0]))
+			if self.confirm(msg, default=True):
+				return result[0]
+			return None
+		limit = 9
+		if len(result) > limit:
+			select_header = '%d %ss matching "%s"; showing first %d' % \
+			    (len(result), thing, search_str, limit)
+			select_items = result[:limit]
+		else:
+			select_header = '%d %ss matching "%s"' % \
+			    (len(result), thing, search_str)
+			select_items = result
+		selector = Selector(select_header, items=select_items,
+				    return_index=False)
+		return selector.execute()
+
+
 
 	def confirm(self, prompt, default=None):
 		return ConfirmMenu(prompt, default).execute()
@@ -297,6 +372,7 @@ class ConfirmMenu(Menu):
 		options = {True: 'Y/n', False: 'y/N', None: 'y/n'}[self.default]
 		while True:
 			result = self.input_str('%s (%s) ' % (self.prompt, options))
+			result = result.lower()
 			if result in ['y','yes']:
 				return True
 			if result in ['n','no']:
@@ -364,8 +440,8 @@ class AddUserMenu(Menu):
 	def _execute(self):
 		self.print_header()
 		self.session = Session()
-		username = self.input_str('User name> ', User.name_re, (1,10))
-		cardnum = self.input_str('Card number> ', User.card_re, (0,10))
+		username = self.input_str('Username (should be same as PVV username)> ', User.name_re, (1,10))
+		cardnum = self.input_str('Card number (optional)> ', User.card_re, (0,10))
 		user = User(username, cardnum)
 		self.session.add(user)
 		try:
@@ -528,7 +604,8 @@ When finished, write an empty line to confirm the purchase.
 				     (True,True): 'Enter more products or users, or an empty line to confirm'
 				     }[(len(self.purchase.transactions) > 0,
 					len(self.purchase.entries) > 0)])
-			thing = self.input_thing(empty_input_permitted=True)
+			thing = self.input_thing(add_nonexisting=('user',),
+						 empty_input_permitted=True)
 			if thing == None:
 				if not self.complete_input():
 					if self.confirm('Not enough information entered.  Abort purchase?',
@@ -575,7 +652,8 @@ When finished, write an empty line to confirm the purchase.
 		if len(transactions) == 0:
 			string += '(empty)'
 		else:
-			string += ', '.join(map(lambda t: t.user.name, transactions))
+			string += ', '.join(map(lambda t: t.user.name,
+						transactions))
 		string += '\n products: '
 		if len(entries) == 0:
 			string += '(empty)'
@@ -635,58 +713,24 @@ class ProductListMenu(Menu):
 		self.pause()
 
 
-def dwim_search(string, session):
-	typ = guess_data_type(string)
-	if typ == None:
-		print 'This does not make sense'
-		return
-	retriever = {'card': retrieve_user,
-		     'username': retrieve_user,
-		     'bar_code': retrieve_product,
-		     'product_name': retrieve_product}
-	value_type = {'card': 'user',
-		      'username': 'user',
-		      'bar_code': 'product',
-		      'product_name': 'product'}
-	value = retriever[typ](string, session)
-# 	if value == None:
-# 		print 'Input "%s" interpreted as %s; no matching %s found.' \
-# 		      % (string, typ, value_type[typ])
-	return (value_type[typ], value)
-
-def search_ui(search_fun, search_str, thing, session):
-	result = search_fun(search_str, session)
-	return search_ui2(search_str, result, thing, session)
-
-def search_ui2(search_str, result, thing, session):
-	if not isinstance(result, list):
-		return result
-	if len(result) == 0:
-		print 'No %ss matching "%s"' % (thing, search_str)
-		return None
-	if len(result) == 1:
-		msg = 'One %s matching "%s": %s.  Use this?' %\
-		      (thing, search_str, unicode(result[0]))
-		if ConfirmMenu(msg, default=True).execute():
-			return result[0]
-		return None
-	limit = 9
-	if len(result) > limit:
-		select_header = '%d %ss matching "%s"; showing first %d' % \
-		    (len(result), thing, search_str, limit)
-		select_items = result[:limit]
-	else:
-		select_header = '%d %ss matching "%s"' % \
-		    (len(result), thing, search_str)
-		select_items = result
-	selector = Selector(select_header, items=select_items,
-			    return_index=False)
-	return selector.execute()
-
-def retrieve_user(search_str, session):
-	return search_ui(search_user, search_str, 'user', session)
-def retrieve_product(search_str, session):
-	return search_ui(search_product, search_str, 'product', session)
+# def dwim_search(string, session):
+# 	typ = guess_data_type(string)
+# 	if typ == None:
+# 		print 'This does not make sense'
+# 		return
+# 	retriever = {'card': retrieve_user,
+# 		     'username': retrieve_user,
+# 		     'bar_code': retrieve_product,
+# 		     'product_name': retrieve_product}
+# 	value_type = {'card': 'user',
+# 		      'username': 'user',
+# 		      'bar_code': 'product',
+# 		      'product_name': 'product'}
+# 	value = retriever[typ](string, session)
+# # 	if value == None:
+# # 		print 'Input "%s" interpreted as %s; no matching %s found.' \
+# # 		      % (string, typ, value_type[typ])
+# 	return (value_type[typ], value)
 
 
 def restart():
