@@ -578,6 +578,29 @@ class ShowUserMenu(Menu):
 			print string
 		
 
+class UserListMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'User list')
+
+	def _execute(self):
+		self.print_header()
+		self.session = Session()
+		user_list = self.session.query(User).all()
+		total_credit = self.session.query(sqlalchemy.func.sum(User.credit)).first()[0]
+
+		line_format = '%-12s | %6s'
+		hline = '---------------------'
+		print line_format % ('username', 'credit')
+		print hline
+		for user in user_list:
+			print line_format % (user.name, user.credit)
+		print hline
+		print line_format % ('total credit', total_credit)
+
+		self.session.close()
+		self.pause()
+
+
 class BuyMenu(Menu):
 	def __init__(self):
 		Menu.__init__(self, 'Buy')
@@ -703,13 +726,14 @@ class ProductListMenu(Menu):
 
 	def _execute(self):
 		self.print_header()
-		session = Session()
-		product_list = session.query(Product).all()
+		self.session = Session()
+		product_list = self.session.query(Product).all()
 		line_format = '%-30s | %6s | %-15s'
 		print line_format % ('name', 'price', 'bar code')
 		print '---------------------------------------------------------'
 		for p in product_list:
 			print line_format % (p.name, p.price, p.bar_code)
+		self.session.close()
 		self.pause()
 
 
@@ -742,7 +766,7 @@ def restart():
 if not conf.stop_allowed:
 	signal.signal(signal.SIGTSTP, signal.SIG_IGN)
 main = Menu('Dibbler main menu',
-	    items=[BuyMenu(), ProductListMenu(), ShowUserMenu(),
+	    items=[BuyMenu(), ProductListMenu(), ShowUserMenu(), UserListMenu(),
 		   AdjustCreditMenu(), TransferMenu(),
 		   Menu('Add/edit',
 			items=[AddUserMenu(), EditUserMenu(),
