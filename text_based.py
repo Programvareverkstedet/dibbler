@@ -462,7 +462,7 @@ Answer #3:  YOU are unintuitive.
 					  'There is.  Have you tried typing "help"?'),
 			      MessageMenu('Where are the easter eggs?  I tried saying "moo", but nothing happened.',
 					  'Don\'t say "moo".'),
-			      MessageMenu('Why does the program insist on using English even though all the users are Norwegian?',
+			      MessageMenu('Why does the program speak English when all the users are Norwegians?',
 					  u'Godt spørsmål.  Det virket sikkert som en god idé der og da.'),
 			      MessageMenu('My question isn\'t listed here; what do I do?',
 					  '''
