@@ -116,7 +116,8 @@ class Menu():
 			prompt = self.prompt
 		while True:
 			try:
-				result = raw_input(safe_str(prompt))
+				result = unicode(raw_input(safe_str(prompt)),
+						 conf.input_encoding)
 			except EOFError:
 				print 'quit'
 				self.exit_menu()
