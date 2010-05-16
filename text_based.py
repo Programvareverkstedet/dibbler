@@ -309,6 +309,13 @@ The following commands are recognized (almost) everywhere:
 When prompted for a user, you can type (parts of) the user name or
 card number.  When prompted for a product, you can type (parts of) the
 product name or barcode.
+
+About payment and "credit": When paying for something, use either
+Dibbler or the good old money box -- never both at the same time.
+Dibbler keeps track of a "credit" for each user, which is the amount
+of money PVVVV owes the user.  This value decreases with the
+appropriate amount when you register a purchase, and you may increase
+it by putting money in the box and using the "Adjust credit" menu.
 '''
 
 	def local_help(self):
@@ -699,7 +706,13 @@ class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combine
 		user = self.input_user('User> ')
 		print 'User %s\'s credit is %d kr' % (user.name, user.credit)
 		self.set_context('Adjusting credit for user %s' % user.name, display=False)
+		print '(Note on sign convention: Enter a positive amount here if you have'
+		print 'added money to the PVVVV money box, a negative amount if you have'
+		print 'taken money from it)'
 		amount = self.input_int('Add amount> ', (-100000,100000))
+		print '(The "log message" will show up in the transaction history in the'
+		print '"Show user" menu.  It is not necessary to enter a message, but it'
+		print 'might be useful to help you remember why you adjusted the credit)'
 		description = self.input_str('Log message> ', length_range=(0,50))
 		if description == '':
 			description = 'manually adjusted credit'
