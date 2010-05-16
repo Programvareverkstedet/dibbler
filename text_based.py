@@ -6,6 +6,7 @@ import sys
 import os
 import traceback
 import signal
+import readline
 from helpers import *
 
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death']
