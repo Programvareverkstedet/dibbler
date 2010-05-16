@@ -22,7 +22,7 @@ class Menu():
 	def __init__(self, name, items=[], prompt='> ',
 		     return_index=True,
 		     exit_msg=None, exit_confirm_msg=None, exit_disallowed_msg=None,
-		     help_text=None):
+		     help_text=None, uses_db=False):
 		self.name = name
 		self.items = items
 		self.prompt = prompt
@@ -33,6 +33,7 @@ class Menu():
 		self.help_text = help_text
 		self.context = None
 		self.header_format = '[%s]'
+		self.uses_db = uses_db
 
 	def exit_menu(self):
 		if self.exit_disallowed_msg != None:
@@ -321,10 +322,18 @@ product name or barcode.
 	def execute(self):
 		self.set_context(None)
 		try:
+			if self.uses_db:
+				self.session = Session()
+			else:
+				self.session = None
 			return self._execute()
 		except ExitMenu:
 			self.at_exit()
 			return None
+		finally:
+			if self.session != None:
+				self.session.close()
+				self.session = None
 
 	def _execute(self):
 		while True:
@@ -404,11 +413,11 @@ class ConfirmMenu(Menu):
 
 class TransferMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Transfer credit between users')
+		Menu.__init__(self, 'Transfer credit between users',
+			      uses_db=True)
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		amount = self.input_int('Transfer amount> ', (1,100000))
 		self.set_context('Transfering %d kr' % amount, display=False)
 		user1 = self.input_user('From user> ')
@@ -431,17 +440,15 @@ class TransferMenu(Menu):
 			print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
 		except sqlalchemy.exc.SQLAlchemyError, e:
 			print 'Could not perform transfer: %s' % e
-		self.session.close()
 		self.pause()
 
 
 class AddUserMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Add user')
+		Menu.__init__(self, 'Add user', uses_db=True)
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		username = self.input_str('Username (should be same as PVV username)> ', User.name_re, (1,10))
 		cardnum = self.input_str('Card number (optional)> ', User.card_re, (0,10))
 		user = User(username, cardnum)
@@ -451,13 +458,12 @@ class AddUserMenu(Menu):
 			print 'User %s stored' % username
 		except sqlalchemy.exc.IntegrityError, e:
 			print 'Could not store user %s: %s' % (username,e)
-		self.session.close()
 		self.pause()
 
 
 class EditUserMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Edit user')
+		Menu.__init__(self, 'Edit user', uses_db=True)
 		self.help_text = '''
 The only editable part of a user is its card number.
 
@@ -467,7 +473,6 @@ user (write an empty line to remove the card number).
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		user = self.input_user('User> ')
 		self.printc('Editing user %s' % user.name)
 		card_str = '"%s"' % user.card
@@ -481,16 +486,14 @@ user (write an empty line to remove the card number).
 			print 'User %s stored' % user.name
 		except sqlalchemy.exc.SQLAlchemyError, e:
 			print 'Could not store user %s: %s' % (user.name,e)
-		self.session.close()
 		self.pause()
 
 
 class AddProductMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Add product')
+		Menu.__init__(self, 'Add product', uses_db=True)
 
 	def _execute(self):
-		self.session = Session()
 		self.print_header()
 		bar_code = self.input_str('Bar code> ', Product.bar_code_re, (8,13))
 		name = self.input_str('Name> ', Product.name_re, (1,30))
@@ -502,17 +505,15 @@ class AddProductMenu(Menu):
 			print 'Product %s stored' % name
 		except sqlalchemy.exc.SQLAlchemyError, e:
 			print 'Could not store product %s: %s' % (name,e)
-		self.session.close()
 		self.pause()
 
 
 class EditProductMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Edit product')
+		Menu.__init__(self, 'Edit product', uses_db=True)
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		product = self.input_product('Product> ')
 		self.printc('Editing product %s' % product.name)
 		while True:
@@ -531,7 +532,6 @@ class EditProductMenu(Menu):
 					print 'Product %s stored' % product.name
 				except sqlalchemy.exc.SQLAlchemyError, e:
 					print 'Could not store product %s: %s' % (product.name, e)					
-				self.session.close()
 				self.pause()
 				return
 			elif what == None:
@@ -543,10 +543,9 @@ class EditProductMenu(Menu):
 
 class ShowUserMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Show user')
+		Menu.__init__(self, 'Show user', uses_db=True)
 
 	def _execute(self):
-		self.session = Session()
 		self.print_header()
 		user = self.input_user('User name or card number> ')
 		print 'User name: %s' % user.name
@@ -582,11 +581,10 @@ class ShowUserMenu(Menu):
 
 class UserListMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'User list')
+		Menu.__init__(self, 'User list', uses_db=True)
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		user_list = self.session.query(User).all()
 		total_credit = self.session.query(sqlalchemy.func.sum(User.credit)).first()[0]
 
@@ -598,14 +596,12 @@ class UserListMenu(Menu):
 			print line_format % (user.name, user.credit)
 		print hline
 		print line_format % ('total credit', total_credit)
-
-		self.session.close()
 		self.pause()
 
 
 class BuyMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Buy')
+		Menu.__init__(self, 'Buy', uses_db=True)
 		self.help_text = '''
 Each purchase may contain one or more products and one or more buyers.
 
@@ -618,7 +614,6 @@ When finished, write an empty line to confirm the purchase.
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		self.purchase = Purchase()
 		self.exit_confirm_msg=None
 		while True:
@@ -659,7 +654,6 @@ When finished, write an empty line to confirm the purchase.
 			self.print_purchase()
 			for t in self.purchase.transactions:
 				print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
-		self.session.close()
 		self.pause()
 		return True
 		
@@ -698,11 +692,10 @@ When finished, write an empty line to confirm the purchase.
 
 class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combined to one
 	def __init__(self):
-		Menu.__init__(self, 'Adjust credit')
+		Menu.__init__(self, 'Adjust credit', uses_db=True)
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		user = self.input_user('User> ')
 		print 'User %s\'s credit is %d kr' % (user.name, user.credit)
 		self.set_context('Adjusting credit for user %s' % user.name, display=False)
@@ -718,24 +711,21 @@ class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combine
 			print 'User %s\'s credit is now %d kr' % (user.name, user.credit)
 		except sqlalchemy.exc.SQLAlchemyError, e:
 			print 'Could not store transaction: %s' % e
-		self.session.close()
 		self.pause()
 
 
 class ProductListMenu(Menu):
 	def __init__(self):
-		Menu.__init__(self, 'Product list')
+		Menu.__init__(self, 'Product list', uses_db=True)
 
 	def _execute(self):
 		self.print_header()
-		self.session = Session()
 		product_list = self.session.query(Product).all()
 		line_format = '%-30s | %6s | %-15s'
 		print line_format % ('name', 'price', 'bar code')
 		print '---------------------------------------------------------'
 		for p in product_list:
 			print line_format % (p.name, p.price, p.bar_code)
-		self.session.close()
 		self.pause()
 
 
