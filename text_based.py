@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 import sqlalchemy
 import re
@@ -13,6 +14,7 @@ exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death']
 help_commands = ['help', '?']
 context_commands = ['what', '??']
 local_help_commands = ['help!', '???']
+faq_commands = ['faq']
 restart_commands = ['restart']
 
 class ExitMenu(Exception):
@@ -134,6 +136,9 @@ class Menu():
 				continue
 			if result in context_commands:
 				self.show_context()
+				continue
+			if result in faq_commands:
+				FAQMenu().execute()
 				continue
 			if result in restart_commands:
 				if self.confirm('Restart Dibbler?'):
@@ -304,6 +309,7 @@ The following commands are recognized (almost) everywhere:
  help, ?          -- display this help
  what, ??         -- redisplay the current context
  help!, ???       -- display context-specific help (if any)
+ faq              -- display frequently asked questions (with answers)
  exit, quit, etc. -- exit from the current menu
 
 When prompted for a user, you can type (parts of) the user name or
@@ -398,6 +404,78 @@ class ConfirmMenu(Menu):
 			if self.default != None and result == '':
 				return self.default
 			print 'Please answer yes or no'
+
+
+class MessageMenu(Menu):
+	def __init__(self, name, message, pause_after_message=True):
+		Menu.__init__(self, name)
+		self.message = message.strip()
+		self.pause_after_message = pause_after_message
+
+	def _execute(self):
+		self.print_header()
+		print
+		print self.message
+		if self.pause_after_message:
+			self.pause()
+
+
+class FAQMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Frequently Asked Questions')
+		self.items = [MessageMenu('What is the meaning with this program?',
+					  '''
+We want to avoid keeping lots of cash in PVVVV\'s money box and to
+make it easy to pay for stuff without using money.  (Without using
+money each time, that is.  You do of course have to pay for the things
+you buy eventually).
+
+Dibbler stores a "credit" amount for each user.  When you register a
+purchase in Dibbler, this amount is decreased.  To increase your
+credit, add money to the money box and use "Adjust credit" to tell
+Dibbler about it.
+'''),
+			      MessageMenu('Can I still pay for stuff using cash?',
+					  'Yes.  You can safely ignore this program completely.'),
+			      MessageMenu('How do I exit from a submenu/dialog/thing?',
+					  'Type "exit".'),
+			      MessageMenu('What does "." mean?',
+					  '''
+The "." character, known as "full stop" or "period", is most often
+used to indicate the end of a sentence.
+
+It is also used by Dibbler to indicate that the program wants you to
+read some text before continuing.  Whenever some output ends with a
+line containing only a period, you should read the lines above and
+then press enter to continue.
+					  '''),
+			      MessageMenu('Why is the user interface so terribly unintuitive?',
+					  '''
+Answer #1:  It is not.
+
+Answer #2:  We are trying to compete with PVV\'s microwave oven in
+userfriendliness.
+
+Answer #3:  YOU are unintuitive.
+'''),
+			      MessageMenu('Why is there no help command?',
+					  'There is.  Have you tried typing "help"?'),
+			      MessageMenu('Where are the easter eggs?  I tried saying "moo", but nothing happened.',
+					  'Don\'t say "moo".'),
+			      MessageMenu('Why does the program insist on using English even though all the users are Norwegian?',
+					  u'Godt spørsmål.  Det virket sikkert som en god idé der og da.'),
+			      MessageMenu('My question isn\'t listed here; what do I do?',
+					  '''
+DON\'T PANIC.
+
+Follow this procedure:
+
+1. Ask someone (or read the source code) and get an answer.
+
+2. Check out the Dibbler code from https://dev.pvv.ntnu.no/svn/dibbler
+
+3. Add your question (with answer) to the FAQ and commit.
+''')]
 
 
 
@@ -775,7 +853,8 @@ main = Menu('Dibbler main menu',
 		   AdjustCreditMenu(), TransferMenu(),
 		   Menu('Add/edit',
 			items=[AddUserMenu(), EditUserMenu(),
-			       AddProductMenu(), EditProductMenu()])
+			       AddProductMenu(), EditProductMenu()]),
+		   FAQMenu()
 		   ],
 	    exit_msg='happy happy joy joy',
 	    exit_confirm_msg='Really quit Dibbler?')
