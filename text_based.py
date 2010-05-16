@@ -369,7 +369,7 @@ class ConfirmMenu(Menu):
 		self.default=default
 
 	def _execute(self):
-		options = {True: 'Y/n', False: 'y/N', None: 'y/n'}[self.default]
+		options = {True: '[y]/n', False: 'y/[n]', None: 'y/n'}[self.default]
 		while True:
 			result = self.input_str('%s (%s) ' % (self.prompt, options))
 			result = result.lower()
