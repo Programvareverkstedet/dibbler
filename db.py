@@ -111,7 +111,7 @@ class Purchase(Base):
 		pass
 
 	def __repr__(self):
-		return "<Purchase('%s', '%s', '%s')>" % (self.user.name, self.price, self.time.strftime('%c'))
+		return "<Purchase(%d, %d, '%s')>" % (self.id, self.price, self.time.strftime('%c'))
 
 	def is_complete(self):
 		return len(self.transactions) > 0 and len(self.entries) > 0
