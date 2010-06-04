@@ -464,6 +464,13 @@ Answer #3:  YOU are unintuitive.
 					  'Don\'t say "moo".'),
 			      MessageMenu('Why does the program speak English when all the users are Norwegians?',
 					  u'Godt spørsmål.  Det virket sikkert som en god idé der og da.'),
+			      MessageMenu('What is that cat thing?',
+					  'Bar code reader.'),
+			      MessageMenu('Why doesn\'t the bar code reader work?',
+					  '''
+It does.  You are probably not moving it over the bar code at exactly
+the right speed.
+'''),
 			      MessageMenu('My question isn\'t listed here; what do I do?',
 					  '''
 DON\'T PANIC.
