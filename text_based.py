@@ -349,6 +349,7 @@ it by putting money in the box and using the "Adjust credit" menu.
 				self.session = None
 
 	def _execute(self):
+		line_format = '%' + str(len(str(len(self.items)))) + 'd ) %s'
 		while True:
 			self.print_header()
 			self.set_context(None)
@@ -357,7 +358,7 @@ it by putting money in the box and using the "Adjust credit" menu.
 				self.pause()
 				return None
 			for i in range(len(self.items)):
-				self.printc('%d ) %s' % (i+1, self.item_name(i)))
+				self.printc(line_format % (i+1, self.item_name(i)))
 			item_i = self.input_int(self.prompt, (1,len(self.items)))-1
 			if self.item_is_submenu(item_i):
 				self.items[item_i].execute()
