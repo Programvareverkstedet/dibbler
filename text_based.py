@@ -109,7 +109,7 @@ class Menu():
 				    (length_range[1] and length > length_range[1])):
 					if length_range[0] and length_range[1]:
 						print 'Value must have length in range [%d,%d]' % length_range
-					elif allowed_range[0]:
+					elif length_range[0]:
 						print 'Value must have length at least %d' % length_range[0]
 					else:
 						print 'Value must have length at most %d' % length_range[1]
