@@ -644,9 +644,35 @@ class ShowUserMenu(Menu):
 		print 'User name: %s' % user.name
 		print 'Card number: %s' % user.card
 		print 'Credit: %s kr' % user.credit
-		self.print_transactions(user)
-#		self.print_purchased_products(user)
-		self.pause()
+		selector = Selector('What do you want to know about %s?' % user.name,
+				    items=[('transactions', 'Everything (list of all transactions)'),
+					   ('products', 'Which products %s has bought, and how many' % user.name)])
+		what = selector.execute()
+		if what == 'transactions':
+			self.print_all_transactions(user)
+		elif what == 'products':
+			self.print_purchased_products(user)
+			self.pause()
+		else:
+			print 'What what?'
+
+	def print_all_transactions(self, user):
+		num_trans = len(user.transactions)
+		string = '%s\'s transactions (%d):\n' % (user.name, num_trans)
+		for t in user.transactions:
+			string += ' * %s: %s %d kr, ' % \
+			    (t.time.strftime('%Y-%m-%d %H:%M'),
+			     {True:'in', False:'out'}[t.amount<0],
+			     abs(t.amount))
+			if t.purchase:
+				string += 'purchase ('
+				string += ', '.join(map(lambda e: e.product.name,
+							t.purchase.entries))
+				string += ')'
+			else:
+				string += t.description
+			string += '\n'
+		less(string)
 
 	def print_transactions(self, user, limit=10):
 		num_trans = len(user.transactions)
