@@ -1,6 +1,8 @@
 from db import *
 from sqlalchemy import or_
 import pwd
+import subprocess
+import os
 
 def search_user(string, session):
 	exact_match = session.query(User).filter(or_(User.name==string, User.card==string)).first()
@@ -111,3 +113,12 @@ def safe_str(obj):
 		return obj.encode('utf8')
 	else:
 		return safe_str(unicode(obj))
+
+def less(string):
+	'''
+	Run less with string as input; wait until it finishes.
+	'''
+	env = dict(os.environ)
+	env['LESSSECURE'] = '1'
+	proc = subprocess.Popen('less', env=env, stdin=subprocess.PIPE)
+	proc.communicate(safe_str(string))
