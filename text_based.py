@@ -645,10 +645,10 @@ class ShowUserMenu(Menu):
 		print 'Card number: %s' % user.card
 		print 'Credit: %s kr' % user.credit
 		self.print_transactions(user)
+#		self.print_purchased_products(user)
 		self.pause()
 
-	def print_transactions(self, user):
-		limit = 10
+	def print_transactions(self, user, limit=10):
 		num_trans = len(user.transactions)
 		if num_trans == 0:
 			print 'No transactions'
@@ -670,6 +670,24 @@ class ShowUserMenu(Menu):
 			else:
 				string += t.description
 			print string
+
+	def print_purchased_products(self, user):
+		products = {}
+		for transaction in user.transactions:
+			if transaction.purchase:
+				for entry in transaction.purchase.entries:
+					n = entry.product.name
+					if n in products:
+						products[n]+=1
+					else:
+						products[n]=1
+		num_products = len(products)
+		if num_products == 0:
+			print 'No products purchased yet'
+		else:
+			print 'Products purchased:'
+			for product in products:
+				print '%-30s %3i' % (product, products[product])
 		
 
 class UserListMenu(Menu):
