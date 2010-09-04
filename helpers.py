@@ -29,6 +29,8 @@ def system_user_exists(username):
 		pwd.getpwnam(username)
 	except KeyError:
 		return False
+	except UnicodeEncodeError:
+		return False
 	else:
 		return True
 
