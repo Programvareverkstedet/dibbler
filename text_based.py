@@ -589,7 +589,7 @@ class AddProductMenu(Menu):
 	def _execute(self):
 		self.print_header()
 		bar_code = self.input_str('Bar code> ', Product.bar_code_re, (8,13))
-		name = self.input_str('Name> ', Product.name_re, (1,30))
+		name = self.input_str('Name> ', Product.name_re, (1,Product.name_length))
 		price = self.input_int('Price> ', (1,100000))
 		product = Product(bar_code, name, price)
 		self.session.add(product)
@@ -616,7 +616,7 @@ class EditProductMenu(Menu):
 						   ('store', 'Store')])
 			what = selector.execute()
 			if what == 'name':
-				product.name = self.input_str('Name> ', Product.name_re, (1,30))
+				product.name = self.input_str('Name> ', Product.name_re, (1,product.name_length))
 			elif what == 'price':
 				product.price = self.input_int('Price> ', (1,100000))
 			elif what == 'store':
@@ -713,7 +713,7 @@ class ShowUserMenu(Menu):
 		else:
 			print 'Products purchased:'
 			for product in products:
-				print '%-30s %3i' % (product, products[product])
+				print ('%-'+str(Product.name_length)+'s %3i') % (product, products[product])
 		
 
 class UserListMenu(Menu):
@@ -865,11 +865,11 @@ class ProductListMenu(Menu):
 		self.print_header()
 		text = ''
 		product_list = self.session.query(Product).all()
-		line_format = '%-30s | %6s | %-15s\n'
-		text += line_format % ('name', 'price', 'bar code')
-		text += '---------------------------------------------------------\n'
+		line_format = '%-15s | %5s | %-'+str(Product.name_length)+'s\n'
+		text += line_format % ('bar code', 'price', 'name')
+		text += '-----------------------------------------------------------------------\n'
 		for p in product_list:
-			text += line_format % (p.name, p.price, p.bar_code)
+			text += line_format % (p.bar_code, p.price, p.name)
 		less(text)
 
 

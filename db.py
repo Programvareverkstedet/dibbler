@@ -34,11 +34,12 @@ class Product(Base):
 	__tablename__ = 'products'
 
 	bar_code = Column(String(13), primary_key=True)
-	name = Column(String(30))
+	name = Column(String(45))
 	price = Column(Integer)
 
 	bar_code_re = r"[0-9]+"
 	name_re = r".+"
+	name_length = 45
 
 	def __init__(self, bar_code, name, price):
 		self.name = name
