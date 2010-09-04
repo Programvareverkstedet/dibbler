@@ -863,12 +863,25 @@ class ProductListMenu(Menu):
 
 	def _execute(self):
 		self.print_header()
+		text = ''
 		product_list = self.session.query(Product).all()
-		line_format = '%-30s | %6s | %-15s'
-		print line_format % ('name', 'price', 'bar code')
-		print '---------------------------------------------------------'
+		line_format = '%-30s | %6s | %-15s\n'
+		text += line_format % ('name', 'price', 'bar code')
+		text += '---------------------------------------------------------\n'
 		for p in product_list:
-			print line_format % (p.name, p.price, p.bar_code)
+			text += line_format % (p.name, p.price, p.bar_code)
+		less(text)
+
+
+class ProductSearchMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Product search', uses_db=True)
+
+	def _execute(self):
+		self.print_header()
+		self.set_context('Enter (part of) product name or bar code')
+		product = self.input_product()
+		print 'Result: %s, price: %d kr, bar code: %s' % (product.name, product.price, product.bar_code)
 		self.pause()
 
 
@@ -906,6 +919,7 @@ main = Menu('Dibbler main menu',
 		   Menu('Add/edit',
 			items=[AddUserMenu(), EditUserMenu(),
 			       AddProductMenu(), EditProductMenu()]),
+		   ProductSearchMenu(),
 		   FAQMenu()
 		   ],
 	    exit_msg='happy happy joy joy',
