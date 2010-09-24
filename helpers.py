@@ -3,6 +3,7 @@ from sqlalchemy import or_
 import pwd
 import subprocess
 import os
+import signal
 
 def search_user(string, session):
 	exact_match = session.query(User).filter(or_(User.name==string, User.card==string)).first()
@@ -120,7 +121,11 @@ def less(string):
 	'''
 	Run less with string as input; wait until it finishes.
 	'''
+	# If we don't ignore SIGINT while running the `less` process,
+	# it will become a zombie when someone presses C-c.
+	signal.signal(signal.SIGINT, signal.SIG_IGN)
 	env = dict(os.environ)
 	env['LESSSECURE'] = '1'
 	proc = subprocess.Popen('less', env=env, stdin=subprocess.PIPE)
 	proc.communicate(safe_str(string))
+	signal.signal(signal.SIGINT, signal.SIG_DFL)
