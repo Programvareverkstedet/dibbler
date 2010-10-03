@@ -123,9 +123,9 @@ def less(string):
 	'''
 	# If we don't ignore SIGINT while running the `less` process,
 	# it will become a zombie when someone presses C-c.
-	signal.signal(signal.SIGINT, signal.SIG_IGN)
+	int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 	env = dict(os.environ)
 	env['LESSSECURE'] = '1'
 	proc = subprocess.Popen('less', env=env, stdin=subprocess.PIPE)
 	proc.communicate(safe_str(string))
-	signal.signal(signal.SIGINT, signal.SIG_DFL)
+	signal.signal(signal.SIGINT, int_handler)
