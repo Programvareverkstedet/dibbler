@@ -546,6 +546,7 @@ class AddUserMenu(Menu):
 		self.print_header()
 		username = self.input_str('Username (should be same as PVV username)> ', User.name_re, (1,10))
 		cardnum = self.input_str('Card number (optional)> ', User.card_re, (0,10))
+                cardnum = cardnum.lower()
 		user = User(username, cardnum)
 		self.session.add(user)
 		try:
@@ -576,6 +577,7 @@ user (write an empty line to remove the card number).
 		user.card = self.input_str('Card number (currently %s)> ' % card_str,
 					   User.card_re, (0,10),
 					   empty_string_is_none=True)
+		user.card = user.card.lower()
 		try:
 			self.session.commit()
 			print 'User %s stored' % user.name

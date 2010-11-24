@@ -6,6 +6,7 @@ import os
 import signal
 
 def search_user(string, session):
+	string = string.lower()
 	exact_match = session.query(User).filter(or_(User.name==string, User.card==string)).first()
 	if exact_match:
 		return exact_match
