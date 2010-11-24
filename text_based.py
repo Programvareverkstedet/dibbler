@@ -17,6 +17,8 @@ local_help_commands = ['help!', '???']
 faq_commands = ['faq']
 restart_commands = ['restart']
 
+low_credit_warning_limit = -100
+
 class ExitMenu(Exception):
 	pass
 
@@ -792,6 +794,9 @@ When finished, write an empty line to confirm the purchase.
 			self.print_purchase()
 			for t in self.purchase.transactions:
 				print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
+				if t.user.credit < low_credit_warning_limit:
+					print ('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.'
+					       % (t.user.name, low_credit_warning_limit))
 		self.pause()
 		return True
 		
