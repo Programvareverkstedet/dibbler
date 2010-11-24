@@ -725,15 +725,16 @@ class UserListMenu(Menu):
 		user_list = self.session.query(User).all()
 		total_credit = self.session.query(sqlalchemy.func.sum(User.credit)).first()[0]
 
-		line_format = '%-12s | %6s'
-		hline = '---------------------'
-		print line_format % ('username', 'credit')
-		print hline
+		line_format = '%-12s | %6s\n'
+		hline = '---------------------\n'
+		text = ''
+		text += line_format % ('username', 'credit')
+		text += hline
 		for user in user_list:
-			print line_format % (user.name, user.credit)
-		print hline
-		print line_format % ('total credit', total_credit)
-		self.pause()
+			text += line_format % (user.name, user.credit)
+		text += hline
+		text += line_format % ('total credit', total_credit)
+		less(text)
 
 
 class BuyMenu(Menu):
