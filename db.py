@@ -68,7 +68,7 @@ class PurchaseEntry(Base):
 		self.amount = amount
 
 	def __repr__(self):
-		return "<PurchaseEntry('%s', '%s', '%s')>" % (self.purchase.user.user, self.product.name, self.amount )
+		return "<PurchaseEntry('%s', '%s')>" % (self.product.name, self.amount )
 		
 
 class Transaction(Base):
