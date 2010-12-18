@@ -1,4 +1,4 @@
-\documentclass[a4paper,twocolumn]{article}
+\documentclass[a4paper]{article}
 \usepackage[utf8]{inputenc}
 \usepackage{fullpage}
 \usepackage{pstricks}
@@ -9,22 +9,35 @@
 \begin{document}
 
 \maketitle
+\setlength\tabcolsep{25pt}
 
+
+\begin{tabular}{ccc}
 \begin{pspicture}(3,1.2in) 
 \psbarcode[scalex=0.8,scaley=0.8]{4242424242420}{includetext guardwhitespace}{ean13}
-\end{pspicture}
-\newline
-\newline
-PVV-skjorte
-\newline
-
+\end{pspicture} 
+&
 \begin{pspicture}(3,1.2in) 
 \psbarcode[scalex=0.8,scaley=0.8]{7640140330815}{includetext guardwhitespace}{ean13}
 \end{pspicture}
-\newline
-\newline
-Nespresso-kapsel
-
-
+&
+\begin{pspicture}(3,1.2in) 
+\psbarcode[scalex=0.8,scaley=0.8]{7024850087007}{includetext guardwhitespace}{ean13}
+\end{pspicture}
+\\
+PVV-skjorte &
+Nespresso-kapsel &
+Risengrynsgraut 
+\\
+\begin{pspicture}(3,1.2in) 
+\psbarcode[scalex=0.8,scaley=0.8]{7024850087014}{includetext guardwhitespace}{ean13}
+\end{pspicture}
+&
+&
+\\
+Rømmegraut
+&
+&
+\end{tabular}
 
 \end{document}
