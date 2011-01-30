@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sqlalchemy
+from sqlalchemy.sql import func
+from sqlalchemy import desc
 import re
 import sys
 import os
@@ -907,24 +909,55 @@ class ProductSearchMenu(Menu):
 		self.pause()
 
 
-# def dwim_search(string, session):
-# 	typ = guess_data_type(string)
-# 	if typ == None:
-# 		print 'This does not make sense'
-# 		return
-# 	retriever = {'card': retrieve_user,
-# 		     'username': retrieve_user,
-# 		     'bar_code': retrieve_product,
-# 		     'product_name': retrieve_product}
-# 	value_type = {'card': 'user',
-# 		      'username': 'user',
-# 		      'bar_code': 'product',
-# 		      'product_name': 'product'}
-# 	value = retriever[typ](string, session)
-# # 	if value == None:
-# # 		print 'Input "%s" interpreted as %s; no matching %s found.' \
-# # 		      % (string, typ, value_type[typ])
-# 	return (value_type[typ], value)
+class ProductPopularityMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Products by popularity', uses_db=True)
+
+	def _execute(self):
+		self.print_header()
+		text = ''
+		sub = \
+		    self.session.query(PurchaseEntry.product_bar_code,
+				       func.count('*').label('purchase_count'))\
+		    .group_by(PurchaseEntry.product_bar_code)\
+		    .subquery()
+		product_list = \
+		    self.session.query(Product, sub.c.purchase_count)\
+		    .outerjoin((sub, Product.bar_code==sub.c.product_bar_code))\
+		    .order_by(desc(sub.c.purchase_count))\
+		    .filter(sub.c.purchase_count != None)\
+		    .all()
+		line_format = '%10s | %-'+str(Product.name_length)+'s\n'
+		text += line_format % ('items sold', 'product')
+		text += '-'*58 + '\n'
+		for product, number in product_list:
+			text += line_format % (number, product.name)
+		less(text)
+
+class ProductRevenueMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Products by revenue', uses_db=True)
+
+	def _execute(self):
+		self.print_header()
+		text = ''
+		sub = \
+		    self.session.query(PurchaseEntry.product_bar_code,
+				       func.count('*').label('purchase_count'))\
+		    .group_by(PurchaseEntry.product_bar_code)\
+		    .subquery()
+		product_list = \
+		    self.session.query(Product, sub.c.purchase_count)\
+		    .outerjoin((sub, Product.bar_code==sub.c.product_bar_code))\
+		    .order_by(desc(sub.c.purchase_count*Product.price))\
+		    .filter(sub.c.purchase_count != None)\
+		    .all()
+		line_format = '%7s | %10s | %5s | %-'+str(Product.name_length)+'s\n'
+		text += line_format % ('revenue', 'items sold', 'price', 'product')
+		text += '-'*76 + '\n'
+		for product, number in product_list:
+			text += line_format % (number*product.price, number, product.price, product.name)
+		less(text)
 
 
 def restart():
@@ -936,12 +969,21 @@ def restart():
 if not conf.stop_allowed:
 	signal.signal(signal.SIGTSTP, signal.SIG_IGN)
 main = Menu('Dibbler main menu',
-	    items=[BuyMenu(), ProductListMenu(), ShowUserMenu(), UserListMenu(),
-		   AdjustCreditMenu(), TransferMenu(),
+	    items=[BuyMenu(),
+		   ProductListMenu(),
+		   ShowUserMenu(),
+		   UserListMenu(),
+		   AdjustCreditMenu(),
+		   TransferMenu(),
 		   Menu('Add/edit',
-			items=[AddUserMenu(), EditUserMenu(),
-			       AddProductMenu(), EditProductMenu()]),
+			items=[AddUserMenu(),
+			       EditUserMenu(),
+			       AddProductMenu(),
+			       EditProductMenu()]),
 		   ProductSearchMenu(),
+		   Menu('Statistics',
+			items=[ProductPopularityMenu(),
+			       ProductRevenueMenu()]),
 		   FAQMenu()
 		   ],
 	    exit_msg='happy happy joy joy',
