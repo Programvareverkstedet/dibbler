@@ -441,7 +441,7 @@ Dibbler about it.
 			      MessageMenu('Can I still pay for stuff using cash?',
 					  'Yes.  You can safely ignore this program completely.'),
 			      MessageMenu('How do I exit from a submenu/dialog/thing?',
-					  'Type "exit".'),
+					  'Type "exit" or C-d.'),
 			      MessageMenu('What does "." mean?',
 					  '''
 The "." character, known as "full stop" or "period", is most often
@@ -467,12 +467,33 @@ Answer #3:  YOU are unintuitive.
 					  'Don\'t say "moo".'),
 			      MessageMenu('Why does the program speak English when all the users are Norwegians?',
 					  u'Godt spørsmål.  Det virket sikkert som en god idé der og da.'),
-			      MessageMenu('What is that cat thing?',
-					  'Bar code reader.'),
-			      MessageMenu('Why doesn\'t the bar code reader work?',
+			      MessageMenu('I found a bug; is there a reward?',
 					  '''
-It does.  You are probably not moving it over the bar code at exactly
-the right speed.
+No.
+
+But if you are certain that it is a bug, not a feature, then you
+should fix it (or better: force someone else to do it).
+
+Follow this procedure:
+
+1. Check out the Dibbler code from https://dev.pvv.ntnu.no/svn/dibbler
+
+2. Fix the bug.
+
+3. Check that the program still runs (and, preferably, that the bug is
+   in fact fixed).
+
+4. Commit.
+
+5. Update the running copy from svn:
+
+    $ su -
+    # su -l -s /bin/bash pvvvv
+    $ cd dibbler
+    $ svn up
+
+6. Type "restart" in Dibbler to replace the running process by a new
+   one using the updated files.
 '''),
 			      MessageMenu('My question isn\'t listed here; what do I do?',
 					  '''
@@ -485,26 +506,19 @@ Follow this procedure:
 2. Check out the Dibbler code from https://dev.pvv.ntnu.no/svn/dibbler
 
 3. Add your question (with answer) to the FAQ and commit.
+
+4. Update the running copy from svn:
+
+    $ su -
+    # su -l -s /bin/bash pvvvv
+    $ cd dibbler
+    $ svn up
+
+5. Type "restart" in Dibbler to replace the running process by a new
+   one using the updated files.
 ''')]
 
 
-
-# class ChargeMenu(Menu):
-# 	def __init__(self):
-# 		self.name = "Add credits to a user account"
-
-# 	def execute(self):
-# 		self.session = Session()
-# 		amount = self.input_int('Amount to be added> ')
-# 		user = self.input_user('To user>')
-# 		t = Transaction(user, -amount, 'Add '+str(amount)+' to user '+user.name)
-# 		t.perform_transaction()
-# 		self.session.add(t)
-# 		self.session.commit()
-# 		print 'Added %d kr to user %s\'s account' % (amount, user.name)
-# 		print 'User %s\'s credit is now %d kr' % (user,user.credit)
-# 		self.session.close()
-# 		self.pause()
 
 class TransferMenu(Menu):
 	def __init__(self):
