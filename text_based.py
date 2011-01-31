@@ -672,7 +672,6 @@ class ShowUserMenu(Menu):
 			self.print_all_transactions(user)
 		elif what == 'products':
 			self.print_purchased_products(user)
-			self.pause()
 		else:
 			print 'What what?'
 
@@ -731,9 +730,12 @@ class ShowUserMenu(Menu):
 		if num_products == 0:
 			print 'No products purchased yet'
 		else:
-			print 'Products purchased:'
+			text = ''
+			text += 'Products purchased:\n'
 			for product in products:
-				print ('%-'+str(Product.name_length)+'s %3i') % (product, products[product])
+				text += ('%-'+str(Product.name_length)+'s %3i\n') \
+				    % (product, products[product])
+			less(text)
 		
 
 class UserListMenu(Menu):
