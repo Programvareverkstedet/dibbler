@@ -4,12 +4,7 @@
 import sqlalchemy
 from sqlalchemy.sql import func
 from sqlalchemy import desc
-import re
-import sys
-import os
-import traceback
-import signal
-import readline
+import re, sys, os, traceback, signal, readline
 from helpers import *
 
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death', 'q']
@@ -152,6 +147,32 @@ class Menu():
 				return None
 			return result
 
+	def thing_in_menu_choice(self, result):
+		self.session = Session()
+		thing = self.search_for_thing(result)
+		if thing:
+			BuyMenu(initThing = thing).execute(self.session)
+			print ""
+			self.show_context()
+			self.session.close()
+		else:
+			print "Please enter an integer"
+
+	def input_choice(self, number_of_choices, prompt=None):
+		if prompt == None:
+			prompt = self.prompt
+		while True:
+			result = self.input_str(prompt)
+			try:
+				choice = int(result)
+				if (choice <= 0 or choice > number_of_choices):
+					print 'Not a legal choice'
+				else:
+					return choice
+			except ValueError:
+				self.thing_in_menu_choice(result)
+			
+
 	def input_int(self, prompt=None, allowed_range=(None,None)):
 		if prompt == None:
 			prompt = self.prompt
@@ -170,7 +191,7 @@ class Menu():
 				else:
 					return value
 			except ValueError:
-				print 'Please enter an integer'
+				print "Please enter an integer"	
 
 	def input_user(self, prompt=None):
 		user = None
@@ -336,13 +357,12 @@ it by putting money in the box and using the "Adjust credit" menu.
 			print 'Help for %s:' % (self.header_format%self.name)
 			print self.help_text
 
-	def execute(self):
+	def execute(self, session=None):
 		self.set_context(None)
+		self.session = session
 		try:
-			if self.uses_db:
+			if self.uses_db and not session:
 				self.session = Session()
-			else:
-				self.session = None
 			return self._execute()
 		except ExitMenu:
 			self.at_exit()
@@ -363,7 +383,7 @@ it by putting money in the box and using the "Adjust credit" menu.
 				return None
 			for i in range(len(self.items)):
 				self.printc(line_format % (i+1, self.item_name(i)))
-			item_i = self.input_int(self.prompt, (1,len(self.items)))-1
+			item_i = self.input_choice(len(self.items), prompt=self.prompt)-1
 			if self.item_is_submenu(item_i):
 				self.items[item_i].execute()
 			else:
@@ -760,8 +780,9 @@ class UserListMenu(Menu):
 
 
 class BuyMenu(Menu):
-	def __init__(self):
+	def __init__(self, initThing=None):
 		Menu.__init__(self, 'Buy', uses_db=True)
+		self.initThing = initThing
 		self.help_text = '''
 Each purchase may contain one or more products and one or more buyers.
 
@@ -784,8 +805,12 @@ When finished, write an empty line to confirm the purchase.
 				     (True,True): 'Enter more products or users, or an empty line to confirm'
 				     }[(len(self.purchase.transactions) > 0,
 					len(self.purchase.entries) > 0)])
-			thing = self.input_thing(add_nonexisting=('user',),
-						 empty_input_permitted=True)
+			
+			if self.initThing:
+				thing = self.initThing
+			else:
+				thing = self.input_thing(add_nonexisting=('user',),
+							 empty_input_permitted=True)
 			if thing == None:
 				if not self.complete_input():
 					if self.confirm('Not enough information entered.  Abort purchase?',
@@ -802,6 +827,7 @@ When finished, write an empty line to confirm the purchase.
 				Transaction(thing, purchase=self.purchase)
 			elif isinstance(thing, Product):
 				PurchaseEntry(self.purchase, thing, 1)
+			self.initThing = None
 
 		self.purchase.perform_purchase()
 		self.session.add(self.purchase)
