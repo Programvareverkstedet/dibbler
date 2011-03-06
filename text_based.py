@@ -165,12 +165,11 @@ class Menu():
 			result = self.input_str(prompt)
 			try:
 				choice = int(result)
-				if (choice <= 0 or choice > number_of_choices):
-					print 'Not a legal choice'
-				else:
+				if (choice > 0 and choice <= number_of_choices):
 					return choice
 			except ValueError:
-				self.thing_in_menu_choice(result)
+                                pass
+			self.thing_in_menu_choice(result)
 			
 
 	def input_int(self, prompt=None, allowed_range=(None,None)):
@@ -878,6 +877,31 @@ When finished, write an empty line to confirm the purchase.
 		if info != None:
 			self.set_context(info)
 
+class AdjustStockMenu(Menu):
+        def __init__(self):
+                Menu.__init__(self,'Adjust stock', uses_db=True)
+
+        def _execute(self):
+                self.print_header()
+                product = self.input_product('Product> ')
+
+                print 'The stock of this product is: %d ' % (product.stock)
+                #print 'Write the number of products you have added to the stock'
+             
+                add_stock = self.input_int('Added stock> ', (-1000, 1000))
+                print 'You added %d to the stock of %s' % (add_stock,product)
+                
+                product.stock += add_stock
+                print 'The stock is now %d' % (product.stock)
+
+                try:
+                  self.session.commit()
+                  print 'Stock is now stored'
+                except sqlalchemy.exc.SQLAlchemyError, e:
+                  print 'Could not store stock: %s' % (e)
+                  self.pause()
+                return
+          
 
 class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combined to one
 	def __init__(self):
@@ -917,11 +941,11 @@ class ProductListMenu(Menu):
 		self.print_header()
 		text = ''
 		product_list = self.session.query(Product).all()
-		line_format = '%-15s | %5s | %-'+str(Product.name_length)+'s\n'
-		text += line_format % ('bar code', 'price', 'name')
+		line_format = '%-15s | %5s | %-'+str(Product.name_length)+'s | %5s \n'
+		text += line_format % ('bar code', 'price', 'name', 'stock')
 		text += '-----------------------------------------------------------------------\n'
 		for p in product_list:
-			text += line_format % (p.bar_code, p.price, p.name)
+			text += line_format % (p.bar_code, p.price, p.name, p.stock)
 		less(text)
 
 
@@ -933,7 +957,7 @@ class ProductSearchMenu(Menu):
 		self.print_header()
 		self.set_context('Enter (part of) product name or bar code')
 		product = self.input_product()
-		print 'Result: %s, price: %d kr, bar code: %s' % (product.name, product.price, product.bar_code)
+                print 'Result: %s, price: %d kr, bar code: %s, stock: %d' % (product.name, product.price, product.bar_code, product.stock)
 		self.pause()
 
 
@@ -1007,7 +1031,8 @@ main = Menu('Dibbler main menu',
 			items=[AddUserMenu(),
 			       EditUserMenu(),
 			       AddProductMenu(),
-			       EditProductMenu()]),
+			       EditProductMenu(),
+                               AdjustStockMenu(),]),
 		   ProductSearchMenu(),
 		   Menu('Statistics',
 			items=[ProductPopularityMenu(),
