@@ -36,18 +36,20 @@ class Product(Base):
 	bar_code = Column(String(13), primary_key=True)
 	name = Column(String(45))
 	price = Column(Integer)
+        stock = Column(Integer)
 
 	bar_code_re = r"[0-9]+"
 	name_re = r".+"
 	name_length = 45
 
-	def __init__(self, bar_code, name, price):
+	def __init__(self, bar_code, name, price, stock):
 		self.name = name
 		self.bar_code = bar_code
 		self.price = price
+                self.stock = stock
 
 	def __repr__(self):
-		return "<Product('%s', '%s', '%s')>" % (self.name, self.bar_code, self.price)
+		return "<Product('%s', '%s', '%s', '%s')>" % (self.name, self.bar_code, self.price, self.stock)
 
 	def __str__(self):
 		return self.name
@@ -60,13 +62,13 @@ class PurchaseEntry(Base):
 	amount = Column(Integer)
 
 	product = relationship(Product,backref="purchases")
-
+        
 	def __init__(self, purchase, product, amount):
 		self.product = product
 		self.product_bar_code = product.bar_code
 		self.purchase = purchase
 		self.amount = amount
-
+                self.product.stock -= 1
 	def __repr__(self):
 		return "<PurchaseEntry('%s', '%s')>" % (self.product.name, self.amount )
 		
