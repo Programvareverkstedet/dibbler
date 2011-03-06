@@ -808,7 +808,6 @@ When finished, write an empty line to confirm the purchase.
 				     (True,True): 'Enter more products or users, or an empty line to confirm'
 				     }[(len(self.purchase.transactions) > 0,
 					len(self.purchase.entries) > 0)])
-			
 			if self.initThing:
 				thing = self.initThing
 			else:
@@ -827,7 +826,16 @@ When finished, write an empty line to confirm the purchase.
 				# user from accidentally killing it
 				self.exit_confirm_msg='Abort purchase?'
 			if isinstance(thing, User):
-				Transaction(thing, purchase=self.purchase)
+                          if thing.card=='11122233':
+                                print '--------------------------------------------'
+                                print 'You are now purchasing as the user anonym.'
+                                print 'All you purchases must be done as this user,'
+                                print 'and you have to put money in the anonym-jar.'
+                                print 'Ignore the credit of this user.'
+                                print '--------------------------------------------'
+                                Transaction(thing, purchase=self.purchase)
+                          else: 
+                                Transaction(thing, purchase=self.purchase)
 			elif isinstance(thing, Product):
 				PurchaseEntry(self.purchase, thing, 1)
 			self.initThing = None
@@ -843,7 +851,7 @@ When finished, write an empty line to confirm the purchase.
 			self.print_purchase()
 			for t in self.purchase.transactions:
 				print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
-				if t.user.credit < low_credit_warning_limit:
+				if (t.user.credit < low_credit_warning_limit and thing.card != '42'):
 					print ('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.'
 					       % (t.user.name, low_credit_warning_limit))
 		self.pause()
@@ -1024,7 +1032,28 @@ class ProductRevenueMenu(Menu):
 			text += line_format % (number*product.price, number, product.price, product.name)
 		less(text)
 
+class BalanceMenu(Menu):
+        def __init__(self):
+                Menu.__init__(self, 'Total balance of PVVVV', uses_db=True)
 
+        def _execute(self):
+                self.print_header()
+                text = ''
+                total_value = 0;
+                product_list = self.session.query(Product).all()
+                for p in product_list:
+                  total_value += p.stock*p.price
+                
+                total_credit = self.session.query(sqlalchemy.func.sum(User.credit)).first()[0]
+                total_balance = total_value - total_credit
+                
+                line_format = '%15s | %5d \n'
+                text += line_format % ('Total value', total_value)
+                text += '-------------------------\n'
+                text += line_format % ('Total credit', total_credit)
+                text += '-------------------------\n'
+                text += line_format % ('Total balance', total_balance)
+                less(text) 
 def restart():
 	# Does not work if the script is not executable, or if it was
 	# started by searching $PATH.
@@ -1049,7 +1078,8 @@ main = Menu('Dibbler main menu',
 		   ProductSearchMenu(),
 		   Menu('Statistics',
 			items=[ProductPopularityMenu(),
-			       ProductRevenueMenu()]),
+			       ProductRevenueMenu(),
+                               BalanceMenu()]),
 		   FAQMenu()
 		   ],
 	    exit_msg='happy happy joy joy',
