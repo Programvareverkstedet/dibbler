@@ -6,7 +6,7 @@ from sqlalchemy.sql import func
 from sqlalchemy import desc
 import re, sys, os, traceback, signal, readline
 from helpers import *
-import datetime
+
 
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death', 'q']
 help_commands = ['help', '?']
@@ -17,10 +17,6 @@ restart_commands = ['restart']
 
 low_credit_warning_limit = -100
 
-def time():
-        now=datetime.datetime.now()
-        out=str(now.day)+'-'+str(now.month)+'-'+str(now.year)
-        return(out)
 
 class ExitMenu(Exception):
 	pass
