@@ -160,16 +160,20 @@ class Menu():
 
 	def input_choice(self, number_of_choices, prompt=None):
 		if prompt == None:
-			prompt = self.prompt
+		        prompt = self.prompt	
 		while True:
 			result = self.input_str(prompt)
-			try:
-				choice = int(result)
-				if (choice > 0 and choice <= number_of_choices):
-					return choice
-			except ValueError:
-                                pass
-			self.thing_in_menu_choice(result)
+                        if result == '':
+                            print 'Please enter something'
+                             
+                        else:
+                          try:
+				  choice = int(result)
+				  if (choice > 0 and choice <= number_of_choices):
+			      		  return choice
+			  except ValueError:
+                                  pass
+			  self.thing_in_menu_choice(result)
 			
 
 	def input_int(self, prompt=None, allowed_range=(None,None)):
@@ -950,10 +954,10 @@ class ProductListMenu(Menu):
                       total_value += p.price*p.stock
 		line_format = '%-15s | %5s | %-'+str(Product.name_length)+'s | %5s \n'
 		text += line_format % ('bar code', 'price', 'name', 'stock')
-		text += '-----------------------------------------------------------------------\n'
+		text += '-------------------------------------------------------------------------------\n'
 		for p in product_list:
 			text += line_format % (p.bar_code, p.price, p.name, p.stock)
-                text += '-----------------------------------------------------------------------\n' 
+                text += '-------------------------------------------------------------------------------\n' 
                 text += line_format % ('Total value',total_value,'','', )
 		less(text)
 
