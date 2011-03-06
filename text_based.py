@@ -888,7 +888,7 @@ class AdjustStockMenu(Menu):
                 
                 print 'The stock of this product is: %d ' % (product.stock)
                 print 'Write the number of products you have added to the stock'
-             
+                print 'Alternatively, correct the stock for any mistakes'
                 add_stock = self.input_int('Added stock> ', (-1000, 1000))
                 print 'You added %d to the stock of %s' % (add_stock,product)
                  
@@ -945,11 +945,16 @@ class ProductListMenu(Menu):
 		self.print_header()
 		text = ''
 		product_list = self.session.query(Product).all()
+                total_value = 0 
+                for p in product_list:
+                      total_value += p.price*p.stock
 		line_format = '%-15s | %5s | %-'+str(Product.name_length)+'s | %5s \n'
 		text += line_format % ('bar code', 'price', 'name', 'stock')
 		text += '-----------------------------------------------------------------------\n'
 		for p in product_list:
 			text += line_format % (p.bar_code, p.price, p.name, p.stock)
+                text += '-----------------------------------------------------------------------\n' 
+                text += line_format % ('Total value',total_value,'','', )
 		less(text)
 
 
