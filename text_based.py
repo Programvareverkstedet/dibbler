@@ -884,24 +884,28 @@ class AdjustStockMenu(Menu):
         def _execute(self):
                 self.print_header()
                 product = self.input_product('Product> ')
-
+                                            
+                
                 print 'The stock of this product is: %d ' % (product.stock)
-                #print 'Write the number of products you have added to the stock'
+                print 'Write the number of products you have added to the stock'
              
                 add_stock = self.input_int('Added stock> ', (-1000, 1000))
                 print 'You added %d to the stock of %s' % (add_stock,product)
-                
+                 
                 product.stock += add_stock
-                print 'The stock is now %d' % (product.stock)
-
+                  
+                print 'The stock is now %d' % (product.stock) 
+                 
                 try:
                   self.session.commit()
                   print 'Stock is now stored'
+                  self.pause()
                 except sqlalchemy.exc.SQLAlchemyError, e:
                   print 'Could not store stock: %s' % (e)
                   self.pause()
                 return
-          
+                print 'The stock is now %d' % (product.stock) 
+               
 
 class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combined to one
 	def __init__(self):
