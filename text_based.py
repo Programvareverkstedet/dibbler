@@ -174,12 +174,14 @@ class Menu():
 			elif result == 'c':
 				os.system('echo -e "\033['+str(random.randint(40,49))+';'+str(random.randint(30,37))+';5m"') 
                         	os.system('clear')
-				return None	
+				self.show_context()
+	
                         # 'cs' i hovedmenyen for å sette standardfarger 
 			elif result == 'cs':
                                 os.system('echo -e "\033[0m"')
 				os.system('clear')
-				return None
+				self.show_context()
+
 			else:
                           try:
 				  choice = int(result)
@@ -400,13 +402,11 @@ it by putting money in the box and using the "Adjust credit" menu.
 				return None
 			for i in range(len(self.items)):
 				self.printc(line_format % (i+1, self.item_name(i)))
-			item_i = self.input_choice(len(self.items), prompt=self.prompt)
-			if item_i==None:
-				return self.execute()
-			if self.item_is_submenu(item_i-1):
-				self.items[item_i-1].execute()
+			item_i = self.input_choice(len(self.items), prompt=self.prompt) -1
+			if self.item_is_submenu(item_i):
+				self.items[item_i].execute()
 			else:
-				return self.item_value(item_i-1)
+				return self.item_value(item_i)
 
 
 class Selector(Menu):
