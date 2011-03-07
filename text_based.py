@@ -39,6 +39,7 @@ class Menu():
 		self.context = None
 		self.header_format = '[%s]'
 		self.uses_db = uses_db
+		self.session = None
 
 	def exit_menu(self):
 		if self.exit_disallowed_msg != None:
@@ -152,16 +153,15 @@ class Menu():
 				return None
 			return result
 
-	def thing_in_menu_choice(self, result):
-		self.session = Session()
-		thing = self.search_for_thing(result)
-		if thing:
-			BuyMenu(initThing = thing).execute(self.session)
-			print ""
-			self.show_context()
-			self.session.close()
-		else:
-			print "Please enter an integer"
+	def special_input_choice(self, str):
+		'''
+		Handle choices which are not simply menu items.
+
+		Override this in subclasses to implement magic menu
+		choices.  Return True if str was some valid magic menu
+		choice, False otherwise.
+		'''
+		return False
 
 	def input_choice(self, number_of_choices, prompt=None):
 		if prompt == None:
@@ -169,7 +169,7 @@ class Menu():
 		while True:
 			result = self.input_str(prompt)
                         if result == '':
-                            print 'Please enter something'
+				print 'Please enter something'
 			# 'c' i hovedmenyen for å endre farger
 			elif result == 'c':
 				os.system('echo -e "\033['+str(random.randint(40,49))+';'+str(random.randint(30,37))+';5m"') 
@@ -183,13 +183,12 @@ class Menu():
 				self.show_context()
 
 			else:
-                          try:
-				  choice = int(result)
-				  if (choice > 0 and choice <= number_of_choices):
-			      		  return choice
-			  except ValueError:
-                                  pass
-			  self.thing_in_menu_choice(result)
+				if result.isdigit():
+					choice = int(result)
+					if (choice > 0 and choice <= number_of_choices):
+						return choice
+				if not self.special_input_choice(result):
+					print 'Please enter a valid choice.'
 			
 
 	def input_int(self, prompt=None, allowed_range=(None,None)):
@@ -376,13 +375,12 @@ it by putting money in the box and using the "Adjust credit" menu.
 			print 'Help for %s:' % (self.header_format%self.name)
 			print self.help_text
 
-	def execute(self, session=None):
+	def execute(self, **kwargs):
 		self.set_context(None)
-		self.session = session
 		try:
-			if self.uses_db and not session:
+			if self.uses_db and not self.session:
 				self.session = Session()
-			return self._execute()
+			return self._execute(**kwargs)
 		except ExitMenu:
 			self.at_exit()
 			return None
@@ -799,9 +797,10 @@ class UserListMenu(Menu):
 
 
 class BuyMenu(Menu):
-	def __init__(self, initThing=None):
+	def __init__(self, session=None):
 		Menu.__init__(self, 'Buy', uses_db=True)
-		self.initThing = initThing
+		if session:
+			self.session = session
 		self.help_text = '''
 Each purchase may contain one or more products and one or more buyers.
 
@@ -812,10 +811,26 @@ addition, and you can type 'what' at any time to redisplay it.
 When finished, write an empty line to confirm the purchase.
 '''
 
-	def _execute(self):
+	def add_thing_to_purchase(self, thing):
+		if isinstance(thing, User):
+			if thing.is_anonymous():
+                                print '--------------------------------------------'
+                                print 'You are now purchasing as the user anonym.'
+                                print 'You have to put money in the anonym-jar.'
+                                print '--------------------------------------------'
+			Transaction(thing, purchase=self.purchase)
+		elif isinstance(thing, Product):
+			PurchaseEntry(self.purchase, thing, 1)
+		
+
+	def _execute(self, initialContents=[]):
 		self.print_header()
 		self.purchase = Purchase()
 		self.exit_confirm_msg=None
+
+		for thing in initialContents:
+			self.add_thing_to_purchase(thing)
+
 		while True:
 			self.print_purchase()
 			self.printc({(False,False): 'Enter user or product identification',
@@ -824,11 +839,12 @@ When finished, write an empty line to confirm the purchase.
 				     (True,True): 'Enter more products or users, or an empty line to confirm'
 				     }[(len(self.purchase.transactions) > 0,
 					len(self.purchase.entries) > 0)])
-			if self.initThing:
-				thing = self.initThing
-			else:
-				thing = self.input_thing(add_nonexisting=('user',),
-							 empty_input_permitted=True)
+
+			# Read in a 'thing' (product or user):
+			thing = self.input_thing(add_nonexisting=('user',),
+						 empty_input_permitted=True)
+
+			# Possibly exit from the menu:
 			if thing == None:
 				if not self.complete_input():
 					if self.confirm('Not enough information entered.  Abort purchase?',
@@ -841,20 +857,9 @@ When finished, write an empty line to confirm the purchase.
 				# purchase, we want to protect the
 				# user from accidentally killing it
 				self.exit_confirm_msg='Abort purchase?'
-			if isinstance(thing, User):
-                          if thing.card=='11122233':
-                                print '--------------------------------------------'
-                                print 'You are now purchasing as the user anonym.'
-                                print 'All you purchases must be done as this user,'
-                                print 'and you have to put money in the anonym-jar.'
-                                print 'Ignore the credit of this user.'
-                                print '--------------------------------------------'
-                                Transaction(thing, purchase=self.purchase)
-                          else: 
-                                Transaction(thing, purchase=self.purchase)
-			elif isinstance(thing, Product):
-				PurchaseEntry(self.purchase, thing, 1)
-			self.initThing = None
+
+			# Add the thing to our purchase object:
+			self.add_thing_to_purchase(thing)
 
 		self.purchase.perform_purchase()
 		self.session.add(self.purchase)
@@ -866,10 +871,11 @@ When finished, write an empty line to confirm the purchase.
 			print 'Purchase stored.'
 			self.print_purchase()
 			for t in self.purchase.transactions:
-				print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
-				if (t.user.credit < low_credit_warning_limit and t.user.card != '11122233'):
-					print ('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.'
-					       % (t.user.name, low_credit_warning_limit))
+				if not t.user.is_anonymous():
+					print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
+					if t.user.credit < low_credit_warning_limit:
+						print ('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.'
+						       % (t.user.name, low_credit_warning_limit))
 		self.pause()	
 		#skriver til log
 		#print Product.price
@@ -1086,28 +1092,40 @@ if not conf.stop_allowed:
 
 
  				
-main = Menu('Dibbler main menu',
-	    items=[BuyMenu(),
-		   ProductListMenu(),
-		   ShowUserMenu(),
-		   UserListMenu(),
-		   AdjustCreditMenu(),
-		   TransferMenu(),
-		   Menu('Add/edit',
-			items=[AddUserMenu(),
-			       EditUserMenu(),
-			       AddProductMenu(),
-			       EditProductMenu(),
-                               AdjustStockMenu(),]),
-		   ProductSearchMenu(),
-		   Menu('Statistics',
-			items=[ProductPopularityMenu(),
-			       ProductRevenueMenu(),
-                               BalanceMenu()]),
-		   FAQMenu()
-		   ],
-	    exit_msg='happy happy joy joy',
-	    exit_confirm_msg='Really quit Dibbler?')
+class MainMenu(Menu):
+	def special_input_choice(self, str):
+		buy_menu = BuyMenu(Session())
+		thing = buy_menu.search_for_thing(str)
+		if thing:
+			buy_menu.execute(initialContents=[thing])
+			print
+			self.show_context()
+			return True
+		return False
+
+
+main = MainMenu('Dibbler main menu',
+		items=[BuyMenu(),
+		       ProductListMenu(),
+		       ShowUserMenu(),
+		       UserListMenu(),
+		       AdjustCreditMenu(),
+		       TransferMenu(),
+		       Menu('Add/edit',
+			    items=[AddUserMenu(),
+				   EditUserMenu(),
+				   AddProductMenu(),
+				   EditProductMenu(),
+				   AdjustStockMenu(),]),
+		       ProductSearchMenu(),
+		       Menu('Statistics',
+			    items=[ProductPopularityMenu(),
+				   ProductRevenueMenu(),
+				   BalanceMenu()]),
+		       FAQMenu()
+		       ],
+		exit_msg='happy happy joy joy',
+		exit_confirm_msg='Really quit Dibbler?')
 if not conf.quit_allowed:
 	main.exit_disallowed_msg = 'You can check out any time you like, but you can never leave.'
 while True:

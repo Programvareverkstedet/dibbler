@@ -30,6 +30,9 @@ class User(Base):
 	def __str__(self):
 		return self.name
 
+	def is_anonymous(self):
+		return self.card == '11122233'
+
 class Product(Base):
 	__tablename__ = 'products'
 
