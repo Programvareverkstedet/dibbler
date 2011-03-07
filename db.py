@@ -71,7 +71,6 @@ class PurchaseEntry(Base):
 		self.product_bar_code = product.bar_code
 		self.purchase = purchase
 		self.amount = amount
-                self.product.stock -= 1
 	def __repr__(self):
 		return "<PurchaseEntry('%s', '%s')>" % (self.product.name, self.amount )
 		
@@ -97,6 +96,9 @@ class Transaction(Base):
 	def perform_transaction(self):
 		self.time = datetime.datetime.now()
 		self.user.credit -= self.amount
+		if self.purchase:
+			for entry in self.purchase.entries:
+				entry.product.stock -= entry.amount
 
 
 class Purchase(Base):
