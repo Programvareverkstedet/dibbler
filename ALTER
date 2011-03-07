@@ -1,0 +1,30 @@
+torjehoa_dibblerdummy=> ALTER TABLE products ADD stock integer;
+
+    Table "torjehoa_dibblerdummy.products"
+  Column  |         Type          | Modifiers 
+----------+-----------------------+-----------
+ bar_code | character varying(13) | not null
+ name     | character varying(45) | 
+ price    | integer               | 
+Indexes:
+    "products_pkey" PRIMARY KEY, btree (bar_code)
+
+torjehoa_dibblerdummy=> ALTER TABLE products ADD stock integer;
+ALTER TABLE
+torjehoa_dibblerdummy=> UPDATE products SET stock = 0;
+UPDATE 102
+torjehoa_dibblerdummy=> ALTER TABLE products ALTER stock SET NOT NULL;
+ALTER TABLE
+torjehoa_dibblerdummy=> \d products
+    Table "torjehoa_dibblerdummy.products"
+  Column  |         Type          | Modifiers 
+----------+-----------------------+-----------
+ bar_code | character varying(13) | not null
+ name     | character varying(45) | 
+ price    | integer               | 
+ stock    | integer               | not null
+Indexes:
+    "products_pkey" PRIMARY KEY, btree (bar_code)
+
+torjehoa_dibblerdummy=> 
+
