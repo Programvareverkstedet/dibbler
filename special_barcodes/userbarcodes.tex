@@ -1,0 +1,38 @@
+\documentclass[a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{fullpage}
+\usepackage{pstricks}
+\usepackage{pst-barcode}
+\usepackage{graphicx}
+
+\title{User Barcodes}
+\date{}
+\begin{document}
+%
+
+\maketitle
+\setlength\tabcolsep{40pt}
+
+
+%
+\begin{tabular}{ccc}
+\includegraphics[width=0.20\textwidth]{userimages/alfkjempestor}
+& 
+\includegraphics[width=0.20\textwidth]{userimages/tirilane}
+\\
+\begin{pspicture}(3,1.0in) 
+\psbarcode[scalex=0.8,scaley=0.8]{NTNU457343}{includetext guardwhitespace}{code39}
+\end{pspicture} 
+&
+\begin{pspicture}(3,1.0in) 
+\psbarcode[scalex=0.8,scaley=0.8]{NTNU318657}{includetext guardwhitespace}{code39}
+\end{pspicture} 
+\\
+\includegraphics[width=0.20\textwidth]{userimages/oysteini}
+\\
+\begin{pspicture}(3,1.0in) 
+\psbarcode[scalex=0.8,scaley=0.8]{NTNU458221}{includetext guardwhitespace}{code39}
+\end{pspicture} 
+\end{tabular}
+%
+\end{document}
