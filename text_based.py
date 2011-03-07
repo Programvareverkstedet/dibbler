@@ -6,8 +6,10 @@ from sqlalchemy.sql import func
 from sqlalchemy import desc
 import re, sys, os, traceback, signal, readline
 from helpers import *
+import random
 
 
+random.seed()
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death', 'q']
 help_commands = ['help', '?']
 context_commands = ['what', '??']
@@ -168,8 +170,17 @@ class Menu():
 			result = self.input_str(prompt)
                         if result == '':
                             print 'Please enter something'
-                             
-                        else:
+			# 'c' i hovedmenyen for å endre farger
+			elif result == 'c':
+				os.system('echo -e "\033['+str(random.randint(40,49))+';'+str(random.randint(30,37))+';5m"') 
+                        	os.system('clear')
+				return None	
+                        # 'cs' i hovedmenyen for å sette standardfarger 
+			elif result == 'cs':
+                                os.system('echo -e "\033[0m"')
+				os.system('clear')
+				return None
+			else:
                           try:
 				  choice = int(result)
 				  if (choice > 0 and choice <= number_of_choices):
@@ -389,11 +400,13 @@ it by putting money in the box and using the "Adjust credit" menu.
 				return None
 			for i in range(len(self.items)):
 				self.printc(line_format % (i+1, self.item_name(i)))
-			item_i = self.input_choice(len(self.items), prompt=self.prompt)-1
-			if self.item_is_submenu(item_i):
-				self.items[item_i].execute()
+			item_i = self.input_choice(len(self.items), prompt=self.prompt)
+			if item_i==None:
+				return self.execute()
+			if self.item_is_submenu(item_i-1):
+				self.items[item_i-1].execute()
 			else:
-				return self.item_value(item_i)
+				return self.item_value(item_i-1)
 
 
 class Selector(Menu):
