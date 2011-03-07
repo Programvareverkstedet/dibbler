@@ -876,7 +876,6 @@ When finished, write an empty line to confirm the purchase.
 					if t.user.credit < low_credit_warning_limit:
 						print ('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.'
 						       % (t.user.name, low_credit_warning_limit))
-		self.pause()	
 		#skriver til log
 		#print Product.price
 		#with open("dibbler-out.txt", "a") as f:
