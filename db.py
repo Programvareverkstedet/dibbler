@@ -45,7 +45,7 @@ class Product(Base):
 	name_re = r".+"
 	name_length = 45
 
-	def __init__(self, bar_code, name, price, stock):
+	def __init__(self, bar_code, name, price, stock=0):
 		self.name = name
 		self.bar_code = bar_code
 		self.price = price
