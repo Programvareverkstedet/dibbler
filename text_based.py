@@ -188,8 +188,10 @@ class Menu():
 					if (choice > 0 and choice <= number_of_choices):
 						return choice
 				if not self.special_input_choice(result):
-					print 'Please enter a valid choice.'
-			
+					self.invalid_menu_choice(result)
+
+	def invalid_menu_choice(self, str):
+		print 'Please enter a valid choice.'
 
 	def input_int(self, prompt=None, allowed_range=(None,None)):
 		if prompt == None:
@@ -1116,6 +1118,10 @@ class MainMenu(Menu):
 			self.show_context()
 			return True
 		return False
+
+	def invalid_menu_choice(self, str):
+		print
+		self.show_context()
 
 
 main = MainMenu('Dibbler main menu',
