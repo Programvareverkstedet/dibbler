@@ -801,6 +801,7 @@ class BuyMenu(Menu):
 		Menu.__init__(self, 'Buy', uses_db=True)
 		if session:
 			self.session = session
+		self.superfast_mode = False
 		self.help_text = '''
 Each purchase may contain one or more products and one or more buyers.
 
@@ -827,9 +828,19 @@ When finished, write an empty line to confirm the purchase.
 		self.print_header()
 		self.purchase = Purchase()
 		self.exit_confirm_msg=None
+		self.superfast_mode = False
 
 		for thing in initialContents:
 			self.add_thing_to_purchase(thing)
+
+		isproduct = lambda t: isinstance(t, Product)
+		if len(initialContents) > 0 and all(map(isproduct, initialContents)):
+			self.superfast_mode = True
+			print '***********************************************'
+			print '****** Buy menu is in SUPERFASTmode[tm]! ******'
+			print '*** The purchase will be stored immediately ***'
+			print '*** when you enter a user.                  ***'
+			print '***********************************************'
 
 		while True:
 			self.print_purchase()
@@ -860,6 +871,10 @@ When finished, write an empty line to confirm the purchase.
 
 			# Add the thing to our purchase object:
 			self.add_thing_to_purchase(thing)
+
+			# In superfast mode, we complete the purchase once we get a user:
+			if self.superfast_mode and isinstance(thing, User):
+				break
 
 		self.purchase.perform_purchase()
 		self.session.add(self.purchase)
