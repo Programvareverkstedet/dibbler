@@ -1104,6 +1104,9 @@ def restart():
 
 
 if not conf.stop_allowed:
+	signal.signal(signal.SIGQUIT, signal.SIG_IGN)
+
+if not conf.stop_allowed:
 	signal.signal(signal.SIGTSTP, signal.SIG_IGN)
 
 
