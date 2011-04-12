@@ -7,11 +7,12 @@ import signal
 
 def search_user(string, session):
 	string = string.lower()
-	exact_match = session.query(User).filter(or_(User.name==string, User.card==string)).first()
+	exact_match = session.query(User).filter(or_(User.name==string, User.card==string, User.rfid==string)).first()
 	if exact_match:
 		return exact_match
 	user_list = session.query(User).filter(or_(User.name.ilike('%'+string+'%'),
-						   User.card.ilike('%'+string+'%'))).all()
+						   User.card.ilike('%'+string+'%'),
+						   User.rfid.ilike('%'+string+'%'))).all()
 	return user_list
 
 def search_product(string, session):
@@ -39,6 +40,8 @@ def system_user_exists(username):
 def guess_data_type(string):
 	if string.startswith('ntnu') and string[4:].isdigit():
 		return 'card'
+	if string.isdigit() and len(string) == 10:
+		return 'rfid'
 	if string.isdigit() and len(string) in [8,13]:
 		return 'bar_code'
 # 	if string.isdigit() and len(string) > 5:

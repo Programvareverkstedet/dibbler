@@ -12,16 +12,21 @@ class User(Base):
 	__tablename__ = 'users'
 	name = Column(String(10), primary_key=True)
 	card = Column(String(10))
+	rfid = Column(String(10))
 	credit = Column(Integer)
 
 	name_re = r"[a-z]+"
 	card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
+	rfid_re = r"[0-9]+"
 
-	def __init__(self, name, card, credit=0):
+	def __init__(self, name, card, rfid, credit=0):
 		self.name = name
 		if card == '':
 			card = None
 		self.card = card
+		if rfid == '':
+			rfid = None
+		self.rfid = rfid
 		self.credit = credit
 
 	def __repr__(self):

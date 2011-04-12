@@ -253,7 +253,7 @@ class Menu():
 		selected_thing = argmax(result_values)
 		if results[selected_thing] == []:
 			thing_for_type = {'card': 'user', 'username': 'user',
-					  'bar_code': 'product'}
+					'bar_code': 'product', 'rfid': 'rfid'}
 			type_guess = guess_data_type(search_str)
 			if type_guess != None and thing_for_type[type_guess] in add_nonexisting:
 				return self.search_add(search_str)
@@ -602,7 +602,8 @@ class AddUserMenu(Menu):
 		username = self.input_str('Username (should be same as PVV username)> ', User.name_re, (1,10))
 		cardnum = self.input_str('Card number (optional)> ', User.card_re, (0,10))
                 cardnum = cardnum.lower()
-		user = User(username, cardnum)
+		rfid = self.input_str('RFID (optional)> ', User.rfid_re, (0,10))
+		user = User(username, cardnum, rfid)
 		self.session.add(user)
 		try:
 			self.session.commit()
@@ -616,10 +617,10 @@ class EditUserMenu(Menu):
 	def __init__(self):
 		Menu.__init__(self, 'Edit user', uses_db=True)
 		self.help_text = '''
-The only editable part of a user is its card number.
+The only editable part of a user is its card number and rfid.
 
 First select an existing user, then enter a new card number for that
-user (write an empty line to remove the card number).
+user, then rfid (write an empty line to remove the card number or rfid).
 '''
 
 	def _execute(self):
@@ -632,7 +633,15 @@ user (write an empty line to remove the card number).
 		user.card = self.input_str('Card number (currently %s)> ' % card_str,
 					   User.card_re, (0,10),
 					   empty_string_is_none=True)
-		user.card = user.card.lower()
+		if user.card:
+			user.card = user.card.lower()
+		
+		rfid_str = '"%s"' % user.rfid
+		if user.rfid == None:
+			rfid_str = 'empty'
+		user.rfid = self.input_str('RFID (currently %s)> ' % rfid_str,
+					   User.rfid_re, (0,10),
+					   empty_string_is_none=True)
 		try:
 			self.session.commit()
 			print 'User %s stored' % user.name
@@ -699,9 +708,10 @@ class ShowUserMenu(Menu):
 
 	def _execute(self):
 		self.print_header()
-		user = self.input_user('User name or card number> ')
+		user = self.input_user('User name, card number or RFID> ')
 		print 'User name: %s' % user.name
 		print 'Card number: %s' % user.card
+		print 'RFID: %s' % user.rfid
 		print 'Credit: %s kr' % user.credit
 		selector = Selector('What do you want to know about %s?' % user.name,
 				    items=[('transactions', 'Everything (list of all transactions)'),

@@ -125,13 +125,13 @@ class ChargeMenu(SubMenu):
 		self.textwindow.border()
 		self.amountwindow.border()
 		if self.marked == 0:
-			self.textwindow.addstr(0,1, "[Username or card number]",curses.A_REVERSE)
+			self.textwindow.addstr(0,1, "[Username, card number or RFID]",curses.A_REVERSE)
 			self.amountwindow.addstr(0,1,"[Amount to be transferred]")
 		elif self.marked == 1:
-			self.textwindow.addstr(0,1, "[Username or card number]")
+			self.textwindow.addstr(0,1, "[Username, card number or RFID]")
 			self.amountwindow.addstr(0,1,"[Amount to be transferred]",curses.A_REVERSE)
 		else:
-			self.textwindow.addstr(0,1, "[Username or card number]")
+			self.textwindow.addstr(0,1, "[Username, card number or RFID]")
 			self.amountwindow.addstr(0,1,"[Amount to be transferred]")
 		self.resultview.draw()
 		self.textwindow.addstr(1,1,self.search_text)
