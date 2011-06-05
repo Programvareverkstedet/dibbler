@@ -124,7 +124,7 @@ class Menu():
 		while True:
 			try:
 				result = unicode(raw_input(safe_str(prompt)),
-						 conf.input_encoding)
+						 conf.input_encoding).strip()
 			except EOFError:
 				print 'quit'
 				self.exit_menu()
@@ -193,11 +193,13 @@ class Menu():
 	def invalid_menu_choice(self, str):
 		print 'Please enter a valid choice.'
 
-	def input_int(self, prompt=None, allowed_range=(None,None)):
+	def input_int(self, prompt=None, allowed_range=(None,None), null_allowed=False):
 		if prompt == None:
 			prompt = self.prompt
 		while True:
 			result = self.input_str(prompt)
+			if null_allowed and result == '':
+				return False
 			try:
 				value = int(result)
 				if ((allowed_range[0] and value < allowed_range[0]) or
@@ -1015,10 +1017,10 @@ class ProductListMenu(Menu):
                       total_value += p.price*p.stock
 		line_format = '%-15s | %5s | %-'+str(Product.name_length)+'s | %5s \n'
 		text += line_format % ('bar code', 'price', 'name', 'stock')
-		text += '-------------------------------------------------------------------------------\n'
+		text += 78*'-'+'\n'
 		for p in product_list:
 			text += line_format % (p.bar_code, p.price, p.name, p.stock)
-                text += '-------------------------------------------------------------------------------\n' 
+                text += 78*'-'+'\n'
                 text += line_format % ('Total value',total_value,'','', )
 		less(text)
 
@@ -1080,7 +1082,7 @@ class ProductRevenueMenu(Menu):
 		    .all()
 		line_format = '%7s | %10s | %5s | %-'+str(Product.name_length)+'s\n'
 		text += line_format % ('revenue', 'items sold', 'price', 'product')
-		text += '-'*76 + '\n'
+		text += '-'*(31+Product.name_length) + '\n'
 		for product, number in product_list:
 			text += line_format % (number*product.price, number, product.price, product.name)
 		less(text)
@@ -1102,9 +1104,9 @@ class BalanceMenu(Menu):
                 
                 line_format = '%15s | %5d \n'
                 text += line_format % ('Total value', total_value)
-                text += '-------------------------\n'
+                text += 24*'-'+'\n'
                 text += line_format % ('Total credit', total_credit)
-                text += '-------------------------\n'
+                text += 24*'-'+'\n'
                 text += line_format % ('Total balance', total_balance)
                 less(text) 
 def restart():
@@ -1136,6 +1138,103 @@ class MainMenu(Menu):
 		print
 		self.show_context()
 
+class AddStockMenu(Menu):
+	def __init__(self):
+		Menu.__init__(self, 'Add stock and adjust credit', uses_db=True)
+		self.help_text='''
+Enter what you have bought for PVVVV here, along with your user name and how
+much money you're due in credits for the purchase when prompted.
+		'''
+		self.price = False
+
+	def _execute(self):
+		self.user=False
+		self.products = {}
+		self.price = self.input_int('Total amount to be credited for purchase> ', (1,100000))
+		while True:
+			self.print_info()
+			self.printc({(False,False): 'Enter user or product identification',
+				     (False,True): 'Enter user identification or more products',
+				     (True,False): 'Enter product identification',
+				     (True,True): 'Enter more products, or an empty line to confirm'
+				     }[not not self.user,len(self.products) > 0])
+
+			# Read in a 'thing' (product or user):
+			thing = self.input_thing(add_nonexisting=('user',),
+						 empty_input_permitted=True)
+
+			# Possibly exit from the menu:
+			if thing == None:
+				if not self.complete_input():
+					if self.confirm('Not enough information entered.  Abort transaction?',
+							default=True):
+						return False
+					continue
+				break
+			else:
+				# once we get something in the
+				# purchase, we want to protect the
+				# user from accidentally killing it
+				self.exit_confirm_msg='Abort transaction?'
+
+
+			# Add the thing to the pending adjustments:
+			self.add_thing_to_pending(thing)
+		self.perform_transaction()
+        
+	def complete_input(self):
+		return ((not not self.user) and len(self.products) and self.price)
+
+	def print_info(self):
+		print (6+Product.name_length)*'-'
+		print ("Amount to be credited: %"+str(Product.name_length-17)+"i") % (self.price)
+		if self.user:
+			print ("User to credit: %"+str(Product.name_length-10)+"s") % (self.user.name)
+		print (6+Product.name_length)*'-'
+		if len(self.products):
+#			print "Products added:"
+#			print (6+Product.name_length)*'-'
+			for product in self.products.keys():
+				print ('%'+str(-Product.name_length)+'s %5i') % (product.name, self.products[product])
+				print (6+Product.name_length)*'-'
+
+
+	def add_thing_to_pending(self,thing):
+		if isinstance(thing,User):
+			if self.user:
+				print "Only one user may be credited for a purchase, transfer credit manually afterwards"
+				return
+			else:
+				self.user = thing
+		elif thing in self.products.keys():
+			print 'Already added this product, enter new amount or an empty line to keep current stock'
+			amount = self.input_int("New amount?> ", (0,100000),True)
+			if amount:
+				self.products[thing] = amount
+		else:
+			amount = self.input_int('How many items were purchased?> ', (0,100000))
+			self.products[thing] = amount
+
+	def perform_transaction(self):
+#		self.user.credit += self.price
+		description = self.input_str('Log message> ', length_range=(0,50))
+		if description == '':
+			description = 'Purchased products for PVVVV, adjusted credit '+str(self.price)
+		transaction = Transaction(self.user, -self.price, description)
+		transaction.perform_transaction()
+		self.session.add(transaction)
+		for product in self.products:
+			product.stock += self.products[product]
+		try:
+			self.session.commit()
+			print "Success! Transaction performed:"
+#			self.print_info()
+			print "User %s's credit is now %i" % (self.user.name, self.user.credit)
+		except sqlalchemy.exc.SQLAlchemyError, e:	
+			print 'Could not perform transaction: %s' % e
+
+           
+
 
 main = MainMenu('Dibbler main menu',
 		items=[BuyMenu(),
@@ -1144,6 +1243,7 @@ main = MainMenu('Dibbler main menu',
 		       UserListMenu(),
 		       AdjustCreditMenu(),
 		       TransferMenu(),
+		       AddStockMenu(),
 		       Menu('Add/edit',
 			    items=[AddUserMenu(),
 				   EditUserMenu(),
