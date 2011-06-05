@@ -1212,8 +1212,11 @@ much money you're due in credits for the purchase when prompted.
 			if amount:
 				self.products[thing] = amount
 		else:
-			amount = self.input_int('How many items were purchased?> ', (0,100000))
-			self.products[thing] = amount
+			amount = self.input_int('How many items were purchased?> ', (0,100000),True)
+			if amount:
+				self.products[thing] = amount
+			else:
+				self.products[thing] = 1
 
 	def perform_transaction(self):
 #		self.user.credit += self.price
