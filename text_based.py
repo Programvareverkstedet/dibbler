@@ -243,6 +243,32 @@ class Menu():
 			result = self.search_for_thing(search_str, permitted_things, add_nonexisting)
 		return result
 
+	def input_multiple(self, prompt=None, permitted_things=('user','product'), 
+			   add_nonexisting=(), empty_input_permitted=False):
+		result=None
+		while result == None:
+			search_str = self.input_str(prompt)
+			search_lst = search_str.split(" ")
+			print search_lst
+			if search_str == '' and empty_input_permitted:
+				return None
+			else:
+				result = self.search_for_thing(search_str, permitted_things, add_nonexisting)
+				num = 1
+
+				if (result == None) and (len(search_lst) > 1):
+					print 'Interpreting input as "<number> <product>"'
+					try:
+						num = int(search_lst[0])
+						result = self.search_for_thing(" ".join(search_lst[1:]), permitted_things,add_nonexisting)
+						# Her kan det legges inn en except ValueError, 
+						# men da blir det fort mye plaging av brukeren
+					except:
+						pass
+		return (result,num)
+
+
+
 	def search_for_thing(self, search_str, permitted_things=('user','product'),
 			     add_nonexisting=()):
 		search_fun = {'user': search_user,
@@ -1160,9 +1186,12 @@ much money you're due in credits for the purchase when prompted.
 				     }[not not self.user,len(self.products) > 0])
 
 			# Read in a 'thing' (product or user):
-			thing = self.input_thing(add_nonexisting=('user',),
-						 empty_input_permitted=True)
-
+			tres = self.input_multiple(add_nonexisting=('user',),
+						   empty_input_permitted=True)
+			if tres:
+				(thing, amount) = tres
+			else:
+				thing = None
 			# Possibly exit from the menu:
 			if thing == None:
 				if not self.complete_input():
@@ -1179,7 +1208,7 @@ much money you're due in credits for the purchase when prompted.
 
 
 			# Add the thing to the pending adjustments:
-			self.add_thing_to_pending(thing)
+			self.add_thing_to_pending(thing,amount)
 		self.perform_transaction()
         
 	def complete_input(self):
@@ -1199,7 +1228,7 @@ much money you're due in credits for the purchase when prompted.
 				print (6+Product.name_length)*'-'
 
 
-	def add_thing_to_pending(self,thing):
+	def add_thing_to_pending(self,thing,amount):
 		if isinstance(thing,User):
 			if self.user:
 				print "Only one user may be credited for a purchase, transfer credit manually afterwards"
@@ -1207,16 +1236,10 @@ much money you're due in credits for the purchase when prompted.
 			else:
 				self.user = thing
 		elif thing in self.products.keys():
-			print 'Already added this product, enter new amount or an empty line to keep current stock'
-			amount = self.input_int("New amount?> ", (0,100000),True)
-			if amount:
-				self.products[thing] = amount
+			print 'Already added this product, rewriting amount'
+			self.products[thing] = amount
 		else:
-			amount = self.input_int('How many items were purchased?> ', (0,100000),True)
-			if amount:
-				self.products[thing] = amount
-			else:
-				self.products[thing] = 1
+			self.products[thing] = amount
 
 	def perform_transaction(self):
 #		self.user.credit += self.price
