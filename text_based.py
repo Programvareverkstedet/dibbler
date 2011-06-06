@@ -249,7 +249,6 @@ class Menu():
 		while result == None:
 			search_str = self.input_str(prompt)
 			search_lst = search_str.split(" ")
-			print search_lst
 			if search_str == '' and empty_input_permitted:
 				return None
 			else:
@@ -1179,10 +1178,10 @@ much money you're due in credits for the purchase when prompted.
 		self.price = self.input_int('Total amount to be credited for purchase> ', (1,100000))
 		while True:
 			self.print_info()
-			self.printc({(False,False): 'Enter user or product identification',
-				     (False,True): 'Enter user identification or more products',
-				     (True,False): 'Enter product identification',
-				     (True,True): 'Enter more products, or an empty line to confirm'
+			self.printc({(False,False): 'Enter user id or a string of the form "<number> <product>"',
+				     (False,True): 'Enter user id or more strings of the form "<number> <product>"',
+				     (True,False): 'Enter a string of the form "<number> <product>"',
+				     (True,True): 'Enter more strings of the form "<number> <product>", or an empty line to confirm'
 				     }[not not self.user,len(self.products) > 0])
 
 			# Read in a 'thing' (product or user):
