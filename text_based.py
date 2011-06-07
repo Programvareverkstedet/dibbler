@@ -1185,7 +1185,7 @@ much money you're due in credits for the purchase when prompted.
 				     }[not not self.user,len(self.products) > 0])
 
 			# Read in a 'thing' (product or user):
-			tres = self.input_multiple(add_nonexisting=('user',),
+			tres = self.input_multiple(add_nonexisting=('user','product'),
 						   empty_input_permitted=True)
 			if tres:
 				(thing, amount) = tres
@@ -1235,8 +1235,8 @@ much money you're due in credits for the purchase when prompted.
 			else:
 				self.user = thing
 		elif thing in self.products.keys():
-			print 'Already added this product, rewriting amount'
-			self.products[thing] = amount
+			print 'Already added this product, adding amounts'
+			self.products[thing] += amount
 		else:
 			self.products[thing] = amount
 
