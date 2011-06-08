@@ -1218,6 +1218,7 @@ much money you're due in credits for the purchase when prompted.
 		print ("Amount to be credited: %"+str(Product.name_length-17)+"i") % (self.price)
 		if self.user:
 			print ("User to credit: %"+str(Product.name_length-10)+"s") % (self.user.name)
+		print ('\n%-'+str(Product.name_length-1)+'s Amount') % ("Product")
 		print (6+Product.name_length)*'-'
 		if len(self.products):
 #			print "Products added:"
