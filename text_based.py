@@ -7,7 +7,7 @@ from sqlalchemy import desc
 import re, sys, os, traceback, signal, readline
 from helpers import *
 import random
-
+from statistikkHelpers import statisticsTextOnly
 
 random.seed()
 exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death', 'q']
@@ -185,6 +185,8 @@ class Menu():
 			else:
 				if result.isdigit():
 					choice = int(result)
+					if (choice == 0 and 10 <= number_of_choices):
+						return 10
 					if (choice > 0 and choice <= number_of_choices):
 						return choice
 				if not self.special_input_choice(result):
@@ -1134,6 +1136,12 @@ class BalanceMenu(Menu):
                 text += 24*'-'+'\n'
                 text += line_format % ('Total balance', total_balance)
                 less(text) 
+class LoggedStatisticsMenu(Menu):
+        def __init__(self):
+                Menu.__init__(self, 'Statistics from log', uses_db=True)
+
+        def _execute(self):
+                statisticsTextOnly()
 def restart():
 	# Does not work if the script is not executable, or if it was
 	# started by searching $PATH.
@@ -1280,7 +1288,8 @@ main = MainMenu('Dibbler main menu',
 		       Menu('Statistics',
 			    items=[ProductPopularityMenu(),
 				   ProductRevenueMenu(),
-				   BalanceMenu()]),
+				   BalanceMenu(),
+				   LoggedStatisticsMenu()]),
 		       FAQMenu()
 		       ],
 		exit_msg='happy happy joy joy',
