@@ -1208,7 +1208,7 @@ much money you're due in credits for the purchase when prompted.
 				
 				if isinstance(thing, Product):
 					self.printc("%d of %s registered" % (amount, thing.name))
-					self.price += self.input_int('Price a piece? ', (1,100000), default=thing.price) * amount
+					self.price += self.input_int('What did you pay a piece? ', (1,100000), default=thing.price) * amount
 
 				# once we get something in the
 				# purchase, we want to protect the
