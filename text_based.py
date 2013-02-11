@@ -202,7 +202,7 @@ class Menu():
 			prompt += ("[%s] " % default)
 		while True:
 			result = self.input_str(prompt)
-			if result = '':
+			if result == '':
 				if default is not None:
 					return default
 				elif null_allowed
