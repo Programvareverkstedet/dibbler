@@ -182,11 +182,6 @@ class Menu():
 				os.system('clear')
 				self.show_context()
 			
-			# Reloader dibbler fullstending
-			elif result == 'crash':
-				print "Reloading ..."
-				os.execl(sys.argv[0])
-
 			else:
 				if result.isdigit():
 					choice = int(result)
