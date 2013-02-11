@@ -181,6 +181,11 @@ class Menu():
                                 os.system('echo -e "\033[0m"')
 				os.system('clear')
 				self.show_context()
+			
+			# Reloader dibbler fullstending
+			elif result == 'crash':
+				print "Reloading ..."
+				os.execl(sys.argv[0])
 
 			else:
 				if result.isdigit():
@@ -198,11 +203,11 @@ class Menu():
 	def input_int(self, prompt=None, allowed_range=(None,None), null_allowed=False, default=None):
 		if prompt == None:
 			prompt = self.prompt
-		if default:
+		if default is not None:
 			prompt += ("[%s] " % default)
 		while True:
 			result = self.input_str(prompt)
-			if default:
+			if default is not None:
 				return default
 			elif null_allowed and result == '':
 				return False
