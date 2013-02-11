@@ -17,7 +17,7 @@ class User(Base):
 
 	name_re = r"[a-z]+"
 	card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
-	rfid_re = r"[0-9]+"
+	rfid_re = r"[0-9]*"
 
 	def __init__(self, name, card, rfid, credit=0):
 		self.name = name
