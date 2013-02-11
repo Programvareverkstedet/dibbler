@@ -205,7 +205,7 @@ class Menu():
 			if result == '':
 				if default is not None:
 					return default
-				elif null_allowed
+				elif null_allowed:
 					return False
 			try:
 				value = int(result)
