@@ -1227,6 +1227,9 @@ much money you're due in credits for the purchase when prompted.
 			# Add the thing to the pending adjustments:
 			self.add_thing_to_pending(thing,amount)
 
+		if self.confirm('Do you want to change the total amount?', default=False):
+			self.price = self.input_int('Total amount> ', (1,100000), default=self.price)
+
 		self.perform_transaction()
         
 	def complete_input(self):
