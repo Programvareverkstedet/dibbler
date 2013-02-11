@@ -202,10 +202,11 @@ class Menu():
 			prompt += ("[%s] " % default)
 		while True:
 			result = self.input_str(prompt)
-			if default is not None:
-				return default
-			elif null_allowed and result == '':
-				return False
+			if result = '':
+				if default is not None:
+					return default
+				elif null_allowed
+					return False
 			try:
 				value = int(result)
 				if ((allowed_range[0] and value < allowed_range[0]) or
@@ -1182,7 +1183,7 @@ class AddStockMenu(Menu):
 Enter what you have bought for PVVVV here, along with your user name and how
 much money you're due in credits for the purchase when prompted.
 		'''
-		self.price = None
+		self.price = 0
 
 	def _execute(self):
 		questions = {
@@ -1208,7 +1209,7 @@ much money you're due in credits for the purchase when prompted.
 				
 				if isinstance(thing, Product):
 					self.printc("%d of %s registered" % (amount, thing.name))
-					self.price = self.input_int('Price a piece? ', (1,100000), default=thing.price) * amount
+					self.price += self.input_int('Price a piece? ', (1,100000), default=thing.price) * amount
 
 				# once we get something in the
 				# purchase, we want to protect the
