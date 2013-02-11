@@ -195,12 +195,16 @@ class Menu():
 	def invalid_menu_choice(self, str):
 		print 'Please enter a valid choice.'
 
-	def input_int(self, prompt=None, allowed_range=(None,None), null_allowed=False):
+	def input_int(self, prompt=None, allowed_range=(None,None), null_allowed=False, default=None):
 		if prompt == None:
 			prompt = self.prompt
+		if default:
+			prompt += ("[%s] " % default)
 		while True:
 			result = self.input_str(prompt)
-			if null_allowed and result == '':
+			if default:
+				return default
+			elif null_allowed and result == '':
 				return False
 			try:
 				value = int(result)
@@ -286,7 +290,7 @@ class Menu():
 			type_guess = guess_data_type(search_str)
 			if type_guess != None and thing_for_type[type_guess] in add_nonexisting:
 				return self.search_add(search_str)
-			print 'No match found for "%s".' % search_str
+			#print 'No match found for "%s".' % search_str
 			return None
 		return self.search_ui2(search_str, results[selected_thing], selected_thing)
 
@@ -1178,52 +1182,60 @@ class AddStockMenu(Menu):
 Enter what you have bought for PVVVV here, along with your user name and how
 much money you're due in credits for the purchase when prompted.
 		'''
-		self.price = False
+		self.price = None
 
 	def _execute(self):
-		self.user=False
+		questions = {
+				(False,False): 'Enter user id or a string of the form "<number> <product>"',
+				(False,True): 'Enter user id or more strings of the form "<number> <product>"',
+				(True,False): 'Enter a string of the form "<number> <product>"',
+				(True,True): 'Enter more strings of the form "<number> <product>", or an empty line to confirm'
+		}
+
+		self.user = None
 		self.products = {}
-		self.price = self.input_int('Total amount to be credited for purchase> ', (1,100000))
+        #self.price = self.input_int('Total amount to be credited for purchase> ', (1,100000)) # TODO: calculate this and remove
+
 		while True:
 			self.print_info()
-			self.printc({(False,False): 'Enter user id or a string of the form "<number> <product>"',
-				     (False,True): 'Enter user id or more strings of the form "<number> <product>"',
-				     (True,False): 'Enter a string of the form "<number> <product>"',
-				     (True,True): 'Enter more strings of the form "<number> <product>", or an empty line to confirm'
-				     }[not not self.user,len(self.products) > 0])
+			self.printc(questions[bool(self.user), bool(len(self.products))])
 
 			# Read in a 'thing' (product or user):
-			tres = self.input_multiple(add_nonexisting=('user','product'),
-						   empty_input_permitted=True)
-			if tres:
-				(thing, amount) = tres
-			else:
-				thing = None
-			# Possibly exit from the menu:
-			if thing == None:
-				if not self.complete_input():
-					if self.confirm('Not enough information entered.  Abort transaction?',
-							default=True):
-						return False
-					continue
-				break
-			else:
+			line = self.input_multiple(add_nonexisting=('user','product'), empty_input_permitted=True)
+
+			if line:
+				(thing, amount) = line
+				
+				if isinstance(thing, Product):
+					self.printc("%d of %s registered" % (amount, thing.name, thing.price))
+					self.price = self.input_int('Price a piece? ', (1,100000), default=thing.price) * amount
+
 				# once we get something in the
 				# purchase, we want to protect the
 				# user from accidentally killing it
 				self.exit_confirm_msg='Abort transaction?'
+			else:
+				thing = None
 
+				if not self.complete_input():
+					if self.confirm('Not enough information entered. Abort transaction?', default=True):
+						return False
+					continue
+
+				break
 
 			# Add the thing to the pending adjustments:
 			self.add_thing_to_pending(thing,amount)
+
 		self.perform_transaction()
         
 	def complete_input(self):
-		return ((not not self.user) and len(self.products) and self.price)
+		return (bool(self.user) and len(self.products) and self.price)
 
 	def print_info(self):
 		print (6+Product.name_length)*'-'
-		print ("Amount to be credited: %"+str(Product.name_length-17)+"i") % (self.price)
+		if self.price:
+			print ("Amount to be credited: %"+str(Product.name_length-17)+"i") % (self.price)
 		if self.user:
 			print ("User to credit: %"+str(Product.name_length-10)+"s") % (self.user.name)
 		print ('\n%-'+str(Product.name_length-1)+'s Amount') % ("Product")
