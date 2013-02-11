@@ -1183,7 +1183,6 @@ class AddStockMenu(Menu):
 Enter what you have bought for PVVVV here, along with your user name and how
 much money you're due in credits for the purchase when prompted.
 		'''
-		self.price = 0
 
 	def _execute(self):
 		questions = {
@@ -1195,7 +1194,7 @@ much money you're due in credits for the purchase when prompted.
 
 		self.user = None
 		self.products = {}
-        #self.price = self.input_int('Total amount to be credited for purchase> ', (1,100000)) # TODO: calculate this and remove
+		self.price = 0
 
 		while True:
 			self.print_info()
