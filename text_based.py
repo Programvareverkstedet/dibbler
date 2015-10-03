@@ -279,8 +279,8 @@ class Menu():
                         result = self.search_for_thing(" ".join(search_lst[1:]), permitted_things,add_nonexisting)
                     # Her kan det legges inn en except ValueError,
                     # men da blir det fort mye plaging av brukeren
-                    except:
-                        pass
+                    except Exception as e:
+                        print(e)
         return (result,num)
 
 
@@ -478,7 +478,7 @@ class ConfirmMenu(Menu):
         Menu.__init__(self, 'question', prompt=prompt,
                       exit_disallowed_msg='Please answer yes or no')
         self.default=default
-        self.timeout=0
+        self.timeout=timeout
 
     def _execute(self):
         options = {True: '[y]/n', False: 'y/[n]', None: 'y/n'}[self.default]
@@ -918,7 +918,7 @@ When finished, write an empty line to confirm the purchase.
                 print '--------------------------------------------'
 
             if not self.credit_check(thing):
-                if self.low_credit_warning(thing, self.superfast_mode ):
+                if self.low_credit_warning(user=thing, timeout=self.superfast_mode ):
                     Transaction(thing, purchase=self.purchase, penalty_ratio=2)
                 else:
                     return False
@@ -1297,6 +1297,7 @@ much money you're due in credits for the purchase when prompted.
         while True:
             self.print_info()
             self.printc(questions[bool(self.user), bool(len(self.products))])
+            thing_price = 0
 
             # Read in a 'thing' (product or user):
             line = self.input_multiple(add_nonexisting=('user','product'), empty_input_permitted=True)
@@ -1306,7 +1307,8 @@ much money you're due in credits for the purchase when prompted.
 
                 if isinstance(thing, Product):
                     self.printc("%d of %s registered" % (amount, thing.name))
-                    self.price += self.input_int('What did you pay a piece? ', (1,100000), default=thing.price) * amount
+                    thing_price = self.input_int('What did you pay a piece? ', (1,100000), default=thing.price) * amount
+                    self.price += thing_price
 
                 # once we get something in the
                 # purchase, we want to protect the
@@ -1323,7 +1325,7 @@ much money you're due in credits for the purchase when prompted.
                 break
 
             # Add the thing to the pending adjustments:
-            self.add_thing_to_pending(thing,amount)
+            self.add_thing_to_pending(thing, amount, thing_price)
 
         if self.confirm('Do you want to change the total amount?', default=False):
             self.price = self.input_int('Total amount> ', (1,100000), default=self.price)
@@ -1345,11 +1347,11 @@ much money you're due in credits for the purchase when prompted.
             #			print "Products added:"
             #			print (6+Product.name_length)*'-'
             for product in self.products.keys():
-                print ('%'+str(-Product.name_length)+'s %5i') % (product.name, self.products[product])
+                print ('%'+str(-Product.name_length)+'s %5i') % (product.name, self.products[product][0])
                 print (6+Product.name_length)*'-'
 
 
-    def add_thing_to_pending(self,thing,amount):
+    def add_thing_to_pending(self, thing, amount, price):
         if isinstance(thing,User):
             if self.user:
                 print "Only one user may be credited for a purchase, transfer credit manually afterwards"
@@ -1358,9 +1360,10 @@ much money you're due in credits for the purchase when prompted.
                 self.user = thing
         elif thing in self.products.keys():
             print 'Already added this product, adding amounts'
-            self.products[thing] += amount
+            self.products[thing][0] += amount
+            self.products[thing][1] += price
         else:
-            self.products[thing] = amount
+            self.products[thing] = [amount, price]
 
     def perform_transaction(self):
         #		self.user.credit += self.price
@@ -1371,7 +1374,10 @@ much money you're due in credits for the purchase when prompted.
         transaction.perform_transaction()
         self.session.add(transaction)
         for product in self.products:
-            product.stock += self.products[product]
+            value = max(product.stock, 0)*product.price + self.products[product][1]
+            product.price = int(ceil(float(value)/(max(product.stock, 0) + self.products[product][0])))
+            product.stock += self.products[product][0]
+            print "New stock for", product.name, "- New price:", product.price
         try:
             self.session.commit()
             print "Success! Transaction performed:"
