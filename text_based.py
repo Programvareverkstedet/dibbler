@@ -123,7 +123,7 @@ class Menu():
                         print 'Value must have length at most %d' % length_range[1]
                 else:
                     return result
-        if timeout != 0:
+        if timeout:
             print prompt,
             rlist, _, _ = select([sys.stdin], [], [], timeout)
             if rlist:
@@ -484,14 +484,15 @@ class ConfirmMenu(Menu):
         options = {True: '[y]/n', False: 'y/[n]', None: 'y/n'}[self.default]
         while True:
             result = self.input_str('%s (%s) ' % (self.prompt, options), timeout=self.timeout)
-            result = result.lower()
+            result = result.lower().strip()
             if result in ['y','yes']:
                 return True
-            if result in ['n','no']:
+            elif result in ['n','no']:
                 return False
-            if self.default != None and result == '':
+            elif self.default != None and result == '':
                 return self.default
-            print 'Please answer yes or no'
+            else:
+                print 'Please answer yes or no'
 
 
 class MessageMenu(Menu):
@@ -906,7 +907,7 @@ When finished, write an empty line to confirm the purchase.
             print "THIS PURCHASE WILL AUTOMATICALLY BE PERFORMED IN 3 MINUTES!"
             return self.confirm(prompt=">", default=True, timeout=180)
         else:
-            return self.confirm(prompt=">")
+            return self.confirm(prompt=">", default=True)
 
 
     def add_thing_to_purchase(self, thing):
@@ -926,6 +927,7 @@ When finished, write an empty line to confirm the purchase.
                 Transaction(thing, purchase=self.purchase)
         elif isinstance(thing, Product):
             PurchaseEntry(self.purchase, thing, 1)
+        return True
 
 
     def _execute(self, initialContents=[]):
@@ -974,7 +976,8 @@ When finished, write an empty line to confirm the purchase.
                 self.exit_confirm_msg='Abort purchase?'
 
             # Add the thing to our purchase object:
-            self.add_thing_to_purchase(thing)
+            if not self.add_thing_to_purchase(thing):
+                continue
 
             # In superfast mode, we complete the purchase once we get a user:
             if self.superfast_mode and isinstance(thing, User):
