@@ -6,6 +6,7 @@ from sqlalchemy.sql import func
 from sqlalchemy import desc
 import re, sys, os, traceback, signal, readline
 from select import select
+import os
 from helpers import *
 import random
 from statistikkHelpers import statisticsTextOnly
@@ -95,7 +96,7 @@ class Menu():
         return self.items[i]
 
     def input_str(self, prompt=None, regex=None, length_range=(None,None),
-                  empty_string_is_none=False, timeout=0):
+                  empty_string_is_none=False, timeout=None):
         if prompt == None:
             prompt = self.prompt
         if regex != None:
@@ -123,18 +124,21 @@ class Menu():
                         print 'Value must have length at most %d' % length_range[1]
                 else:
                     return result
-        if timeout:
-            print prompt,
-            rlist, _, _ = select([sys.stdin], [], [], timeout)
-            if rlist:
-                s = sys.stdin.readline()
-                return s
-            else:
-                return ''
         while True:
             try:
-                result = unicode(raw_input(safe_str(prompt)),
-                                 conf.input_encoding).strip()
+                result = None
+                if timeout:
+                    # assuming line buffering
+                    sys.stdout.write(safe_str(prompt))
+                    sys.stdout.flush()
+                    rlist, _, _ = select([sys.stdin], [], [], timeout)
+                    if not rlist:
+                        # timeout occurred, simulate empty line
+                        result = ''
+                    else:
+                        result = unicode(raw_input(), conf.input_encoding).strip()
+                else:
+                    result = unicode(raw_input(safe_str(prompt)), conf.input_encoding).strip()
             except EOFError:
                 print 'quit'
                 self.exit_menu()
@@ -378,7 +382,7 @@ class Menu():
 
 
 
-    def confirm(self, prompt, default=None, timeout=0):
+    def confirm(self, prompt, default=None, timeout=None):
         return ConfirmMenu(prompt, default, timeout).execute()
 
     def print_header(self):
