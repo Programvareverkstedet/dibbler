@@ -1,54 +1,60 @@
 from db import *
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 import pwd
 import subprocess
 import os
 import signal
 
-def search_user(string, session):
-	string = string.lower()
-	exact_match = session.query(User).filter(or_(User.name==string, User.card==string, User.rfid==string)).first()
-	if exact_match:
-		return exact_match
-	user_list = session.query(User).filter(or_(User.name.ilike('%'+string+'%'),
-						   User.card.ilike('%'+string+'%'),
-						   User.rfid.ilike('%'+string+'%'))).all()
-	return user_list
+def search_user(string, session, ignorethisflag=None):
+    string = string.lower()
+    exact_match = session.query(User).filter(or_(User.name==string, User.card==string, User.rfid==string)).first()
+    if exact_match:
+        return exact_match
+    user_list = session.query(User).filter(or_(User.name.ilike('%'+string+'%'),
+                           User.card.ilike('%'+string+'%'),
+                           User.rfid.ilike('%'+string+'%'))).all()
+    return user_list
 
-def search_product(string, session):
-	exact_match = session.query(Product)\
-		      .filter(or_(Product.bar_code==string,
-				  Product.name==string)).first()
-	if exact_match:
-		return exact_match
-	product_list = session.query(Product)\
-		       .filter(or_(Product.bar_code.ilike('%'+string+'%'),
-				   Product.name.ilike('%'+string+'%'))).all()
-	return product_list
+def search_product(string, session, find_hidden_products=True):
+    if find_hidden_products:
+        exact_match = session.query(Product).filter(or_(Product.bar_code==string, Product.name==string)).first()
+    else:
+        exact_match = session.query(Product).filter(or_(Product.bar_code==string,
+                                                        and_(Product.name==string, Product.hidden == False))).first()
+    if exact_match:
+        return exact_match
+    if find_hidden_products:
+        product_list = session.query(Product).filter(or_(Product.bar_code.ilike('%'+string+'%'),
+                                                         Product.name.ilike('%'+string+'%'))).all()
+    else:
+        product_list = session.query(Product).filter(or_(Product.bar_code.ilike('%' + string + '%'),
+                                                         and_(Product.name.ilike('%' + string + '%'),
+                                                              Product.hidden == False))).all()
+    return product_list
 
 
 def system_user_exists(username):
-	try:
-		pwd.getpwnam(username)
-	except KeyError:
-		return False
-	except UnicodeEncodeError:
-		return False
-	else:
-		return True
+    try:
+        pwd.getpwnam(username)
+    except KeyError:
+        return False
+    except UnicodeEncodeError:
+        return False
+    else:
+        return True
 
 def guess_data_type(string):
-	if string.startswith('ntnu') and string[4:].isdigit():
-		return 'card'
-	if string.isdigit() and len(string) == 10:
-		return 'rfid'
-	if string.isdigit() and len(string) in [8,13]:
-		return 'bar_code'
+    if string.startswith('ntnu') and string[4:].isdigit():
+        return 'card'
+    if string.isdigit() and len(string) == 10:
+        return 'rfid'
+    if string.isdigit() and len(string) in [8,13]:
+        return 'bar_code'
 # 	if string.isdigit() and len(string) > 5:
 # 		return 'card'
-	if string.isalpha() and string.islower() and system_user_exists(string):
-		return 'username'
-	return None
+    if string.isalpha() and string.islower() and system_user_exists(string):
+        return 'username'
+    return None
 
 
 # def retrieve_user(string, session):
@@ -70,7 +76,7 @@ def guess_data_type(string):
 # 		else:
 # 			print "Found "+str(len(search))+" users:"
 # 			return select_from_list(search)
-			
+
 
 # def confirm(prompt='Confirm? (y/n) '):
 # 	while True:
@@ -93,43 +99,43 @@ def guess_data_type(string):
 # 			return None
 
 def argmax(d, all=False, value=None):
-	maxarg = None
-	maxargs = []
-	if value != None:
-		dd = d
-		d = {}
-		for key in dd.keys():
-			d[key] = value(dd[key])
-	for key in d.keys():
-		if maxarg == None or d[key] > d[maxarg]:
-			maxarg = key
-	if all:
-		return filter(lambda k: d[k] == d[maxarg], d.keys())
-	return maxarg
+    maxarg = None
+    maxargs = []
+    if value != None:
+        dd = d
+        d = {}
+        for key in dd.keys():
+            d[key] = value(dd[key])
+    for key in d.keys():
+        if maxarg == None or d[key] > d[maxarg]:
+            maxarg = key
+    if all:
+        return filter(lambda k: d[k] == d[maxarg], d.keys())
+    return maxarg
 
 def safe_str(obj):
-	'''
-	Ugly hack to avoid Python complaining about encodings.
+    '''
+    Ugly hack to avoid Python complaining about encodings.
 
-	Call this on any object to turn it into a string which is
-	(hopefully) safe for printing.
-	'''
-	if isinstance(obj, str):
-		return obj
-	if isinstance(obj, unicode):
-		return obj.encode('utf8')
-	else:
-		return safe_str(unicode(obj))
+    Call this on any object to turn it into a string which is
+    (hopefully) safe for printing.
+    '''
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, unicode):
+        return obj.encode('utf8')
+    else:
+        return safe_str(unicode(obj))
 
 def less(string):
-	'''
-	Run less with string as input; wait until it finishes.
-	'''
-	# If we don't ignore SIGINT while running the `less` process,
-	# it will become a zombie when someone presses C-c.
-	int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-	env = dict(os.environ)
-	env['LESSSECURE'] = '1'
-	proc = subprocess.Popen('less', env=env, stdin=subprocess.PIPE)
-	proc.communicate(safe_str(string))
-	signal.signal(signal.SIGINT, int_handler)
+    '''
+    Run less with string as input; wait until it finishes.
+    '''
+    # If we don't ignore SIGINT while running the `less` process,
+    # it will become a zombie when someone presses C-c.
+    int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    env = dict(os.environ)
+    env['LESSSECURE'] = '1'
+    proc = subprocess.Popen('less', env=env, stdin=subprocess.PIPE)
+    proc.communicate(safe_str(string))
+    signal.signal(signal.SIGINT, int_handler)

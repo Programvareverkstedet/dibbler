@@ -47,19 +47,21 @@ class Product(Base):
     name = Column(String(45))
     price = Column(Integer)
     stock = Column(Integer)
+    hidden = Column(Boolean, nullable=False, default=False)
 
     bar_code_re = r"[0-9]+"
     name_re = r".+"
     name_length = 45
 
-    def __init__(self, bar_code, name, price, stock=0):
+    def __init__(self, bar_code, name, price, stock=0, hidden = False):
         self.name = name
         self.bar_code = bar_code
         self.price = price
         self.stock = stock
+        self.hidden = hidden
 
     def __repr__(self):
-        return "<Product('%s', '%s', '%s', '%s')>" % (self.name, self.bar_code, self.price, self.stock)
+        return "<Product('%s', '%s', '%s', '%s', '%s')>" % (self.name, self.bar_code, self.price, self.stock, self.hidden)
 
     def __str__(self):
         return self.name
