@@ -20,8 +20,6 @@ local_help_commands = ['help!', '???']
 faq_commands = ['faq']
 restart_commands = ['restart']
 
-low_credit_warning_limit = -100
-
 
 class ExitMenu(Exception):
     pass
@@ -763,20 +761,23 @@ class ShowUserMenu(Menu):
         print 'RFID: %s' % user.rfid
         print 'Credit: %s kr' % user.credit
         selector = Selector('What do you want to know about %s?' % user.name,
-                            items=[('transactions', 'Everything (list of all transactions)'),
-                                   ('products', 'Which products %s has bought, and how many' % user.name)])
+                            items=[('transactions', 'Recent transactions (List of last ' + str(conf.user_recent_transaction_limit) + ')'),
+                                   ('products', 'Which products %s has bought, and how many' % user.name),
+                                   ('transactions-all', 'Everything (List of all transactions)')])
         what = selector.execute()
         if what == 'transactions':
-            self.print_all_transactions(user)
+            self.print_transactions(user, conf.user_recent_transaction_limit)
         elif what == 'products':
             self.print_purchased_products(user)
+        elif what == 'transactions-all':
+            self.print_all_transactions(user)
         else:
             print 'What what?'
 
     def print_all_transactions(self, user):
         num_trans = len(user.transactions)
         string = '%s\'s transactions (%d):\n' % (user.name, num_trans)
-        for t in user.transactions:
+        for t in user.transactions[::-1]:
             string += ' * %s: %s %d kr, ' % \
                       (t.time.strftime('%Y-%m-%d %H:%M'),
                        {True:'in', False:'out'}[t.amount<0],
@@ -793,15 +794,12 @@ class ShowUserMenu(Menu):
 
     def print_transactions(self, user, limit=10):
         num_trans = len(user.transactions)
-        if num_trans == 0:
-            print 'No transactions'
-            return
         if num_trans <= limit:
-            print 'Transactions (%d):' % num_trans
+            string = '%s\'s transactions (%d):\n' % (user.name, num_trans)
         else:
-            print 'Transactions (%d, showing only last %d):' % (num_trans,limit)
-        for t in user.transactions[-limit:]:
-            string = ' * %s: %s %d kr, ' % \
+            string = '%s\'s transactions (%d, showing only last %d):\n' % (user.name, num_trans, limit)
+        for t in user.transactions[-1:-limit-1:-1]:
+            string += ' * %s: %s %d kr, ' % \
                      (t.time.strftime('%Y-%m-%d %H:%M'),
                       {True:'in', False:'out'}[t.amount<0],
                       abs(t.amount))
@@ -812,7 +810,8 @@ class ShowUserMenu(Menu):
                 string += ')'
             else:
                 string += t.description
-            print string
+            string += '\n'
+        less(string)
 
     def print_purchased_products(self, user):
         products = {}
@@ -881,7 +880,7 @@ When finished, write an empty line to confirm the purchase.
         """
         assert isinstance(user, User)
 
-        return user.credit > low_credit_warning_limit
+        return user.credit > conf.low_credit_warning_limit
 
     def low_credit_warning(self, user, timeout=False):
         assert isinstance(user, User)
@@ -901,7 +900,7 @@ When finished, write an empty line to confirm the purchase.
         print "***********************************************************************"
         print "***********************************************************************"
         print
-        print "USER %s HAS LOWER CREDIT THAN %d." % (user.name, low_credit_warning_limit)
+        print "USER %s HAS LOWER CREDIT THAN %d." % (user.name, conf.low_credit_warning_limit)
         print "THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH."
         print "CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS."
         print
@@ -999,9 +998,9 @@ When finished, write an empty line to confirm the purchase.
             for t in self.purchase.transactions:
                 if not t.user.is_anonymous():
                     print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
-                    if t.user.credit < low_credit_warning_limit:
+                    if t.user.credit < conf.low_credit_warning_limit:
                         print ('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.'
-                               % (t.user.name, low_credit_warning_limit))
+                               % (t.user.name, conf.low_credit_warning_limit))
         #skriver til log
         #print Product.price
         #with open("dibbler-out.txt", "a") as f:
