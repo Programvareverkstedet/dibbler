@@ -1403,9 +1403,13 @@ much money you're due in credits for the purchase when prompted.
         for product in self.products:
             value = max(product.stock, 0)*product.price + self.products[product][1]
             old_price = product.price
+            old_hidden = product.hidden
             product.price = int(ceil(float(value)/(max(product.stock, 0) + self.products[product][0])))
             product.stock += self.products[product][0]
-            print "New stock for %s: %d" % (product.name, product.stock), ("- New price: " + str(product.price) if old_price != product.price else "")
+            product.hidden = False
+            print "New stock for %s: %d" % (product.name, product.stock), \
+                ("- New price: " + str(product.price) if old_price != product.price else ""),\
+                ("- Removed hidden status" if old_hidden != product.hidden else "")
         try:
             self.session.commit()
             print "Success! Transaction performed:"
