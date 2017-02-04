@@ -42,7 +42,8 @@ class User(Base):
 class Product(Base):
     __tablename__ = 'products'
 
-    bar_code = Column(String(13), primary_key=True)
+    product_id = Column(Integer, primary_key=True)
+    bar_code = Column(String(13))
     name = Column(String(45))
     price = Column(Integer)
     stock = Column(Integer)
@@ -67,7 +68,7 @@ class PurchaseEntry(Base):
     __tablename__ = 'purchase_entries'
     id = Column(Integer, primary_key=True)
     purchase_id = Column(Integer,ForeignKey("purchases.id"))
-    product_bar_code = Column(String(13),ForeignKey("products.bar_code"))
+    product_id = Column(Integer,ForeignKey("products.product_id"))
     amount = Column(Integer)
 
     product = relationship(Product,backref="purchases")
@@ -90,16 +91,16 @@ class Transaction(Base):
     amount = Column(Integer)
     description = Column(String(50))
     purchase_id = Column(Integer, ForeignKey('purchases.id'))
-    #penalty = Column(Integer)
+    penalty = Column(Integer)
 
     user = relationship(User, backref=backref('transactions', order_by=time))
 
-    def __init__(self, user, amount=0, description=None, purchase=None, penalty_ratio=1):
+    def __init__(self, user, amount=0, description=None, purchase=None, penalty=1):
         self.user = user
         self.amount = amount
         self.description = description
         self.purchase = purchase
-        self.penalty = penalty_ratio
+        self.penalty = penalty
 
     def perform_transaction(self):
         self.time = datetime.datetime.now()

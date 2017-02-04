@@ -787,8 +787,8 @@ class ShowUserMenu(Menu):
                 string += ', '.join(map(lambda e: e.product.name,
                                         t.purchase.entries))
                 string += ')'
-                #if t.penalty > 1:
-                #    string += ' * %dx penalty applied' % t.penalty
+                if t.penalty > 1:
+                    string += ' * %dx penalty applied' % t.penalty
             else:
                 string += t.description
             string += '\n'
@@ -810,8 +810,8 @@ class ShowUserMenu(Menu):
                 string += ', '.join(map(lambda e: e.product.name,
                                         t.purchase.entries))
                 string += ')'
-                #if t.penalty > 1:
-                #    string += ' * %dx penalty applied' % t.penalty
+                if t.penalty > 1:
+                    string += ' * %dx penalty applied' % t.penalty
             else:
                 string += t.description
             string += '\n'
@@ -927,7 +927,7 @@ When finished, write an empty line to confirm the purchase.
 
             if not self.credit_check(thing):
                 if self.low_credit_warning(user=thing, timeout=self.superfast_mode):
-                    Transaction(thing, purchase=self.purchase, penalty_ratio=2)
+                    Transaction(thing, purchase=self.purchase, penalty=2)
                 else:
                     return False
             else:
