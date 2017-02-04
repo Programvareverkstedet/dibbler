@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sqlalchemy
+from sqlalchemy import distinct
 from sqlalchemy.sql import func
 from sqlalchemy import desc
 import re, sys, os, traceback, signal, readline
@@ -253,17 +254,17 @@ class Menu():
         return self.search_ui(search_product, search_str, 'product')
 
     def input_thing(self, prompt=None, permitted_things=('user','product'),
-                    add_nonexisting=(), empty_input_permitted=False):
+                    add_nonexisting=(), empty_input_permitted=False, find_hidden_products=True):
         result = None
         while result == None:
             search_str = self.input_str(prompt)
             if search_str == '' and empty_input_permitted:
                 return None
-            result = self.search_for_thing(search_str, permitted_things, add_nonexisting)
+            result = self.search_for_thing(search_str, permitted_things, add_nonexisting, find_hidden_products)
         return result
 
     def input_multiple(self, prompt=None, permitted_things=('user','product'),
-                       add_nonexisting=(), empty_input_permitted=False):
+                       add_nonexisting=(), empty_input_permitted=False, find_hidden_products=True):
         result=None
         while result == None:
             search_str = self.input_str(prompt)
@@ -271,14 +272,14 @@ class Menu():
             if search_str == '' and empty_input_permitted:
                 return None
             else:
-                result = self.search_for_thing(search_str, permitted_things, add_nonexisting)
+                result = self.search_for_thing(search_str, permitted_things, add_nonexisting, find_hidden_products)
                 num = 1
 
                 if (result == None) and (len(search_lst) > 1):
                     print 'Interpreting input as "<number> <product>"'
                     try:
                         num = int(search_lst[0])
-                        result = self.search_for_thing(" ".join(search_lst[1:]), permitted_things,add_nonexisting)
+                        result = self.search_for_thing(" ".join(search_lst[1:]), permitted_things,add_nonexisting, find_hidden_products)
                     # Her kan det legges inn en except ValueError,
                     # men da blir det fort mye plaging av brukeren
                     except Exception as e:
@@ -287,13 +288,13 @@ class Menu():
 
 
     def search_for_thing(self, search_str, permitted_things=('user','product'),
-                         add_nonexisting=()):
+                         add_nonexisting=(), find_hidden_products = True):
         search_fun = {'user': search_user,
                       'product': search_product}
         results = {}
         result_values = {}
         for thing in permitted_things:
-            results[thing] = search_fun[thing](search_str, self.session)
+            results[thing] = search_fun[thing](search_str, self.session, find_hidden_products)
             result_values[thing] = self.search_result_value(results[thing])
         selected_thing = argmax(result_values)
         if results[selected_thing] == []:
@@ -637,7 +638,7 @@ class TransferMenu(Menu):
             print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
         except sqlalchemy.exc.SQLAlchemyError, e:
             print 'Could not perform transfer: %s' % e
-        self.pause()
+        #self.pause()
 
 
 class AddUserMenu(Menu):
@@ -727,13 +728,19 @@ class EditProductMenu(Menu):
         while True:
             selector = Selector('Do what with %s?' % product.name,
                                 items=[('name', 'Edit name'),
-                                       ('price', 'Edit price (currently %d)' % product.price),
+                                       ('price', 'Edit price'),
+                                       ('barcode', 'Edit barcode'),
+                                       ('hidden', 'Edit hidden status'),
                                        ('store', 'Store')])
             what = selector.execute()
             if what == 'name':
-                product.name = self.input_str('Name> ', Product.name_re, (1,product.name_length))
+                product.name = self.input_str('Name[%s]> ' % product.name, Product.name_re, (1,product.name_length))
             elif what == 'price':
-                product.price = self.input_int('Price> ', (1,100000))
+                product.price = self.input_int('Price[%s]> ' % product.price, (1,100000))
+            elif what == 'barcode':
+                product.bar_code = self.input_str('Bar code[%s]> ' % product.bar_code, Product.bar_code_re, (8,13))
+            elif what == 'hidden':
+                product.hidden = self.confirm('Hidden[%s]' % ("Y" if product.hidden else "N"), False)
             elif what == 'store':
                 try:
                     self.session.commit()
@@ -966,7 +973,8 @@ When finished, write an empty line to confirm the purchase.
 
             # Read in a 'thing' (product or user):
             thing = self.input_thing(add_nonexisting=('user',),
-                                     empty_input_permitted=True)
+                                     empty_input_permitted=True,
+                                     find_hidden_products=False)
 
             # Possibly exit from the menu:
             if thing == None:
@@ -1148,7 +1156,7 @@ class AdjustCreditMenu(Menu): # reimplements ChargeMenu; these should be combine
             print 'User %s\'s credit is now %d kr' % (user.name, user.credit)
         except sqlalchemy.exc.SQLAlchemyError, e:
             print 'Could not store transaction: %s' % e
-        self.pause()
+        #self.pause()
 
 
 class ProductListMenu(Menu):
@@ -1158,7 +1166,7 @@ class ProductListMenu(Menu):
     def _execute(self):
         self.print_header()
         text = ''
-        product_list = self.session.query(Product).all()
+        product_list = self.session.query(Product).filter(Product.hidden == False)
         total_value = 0
         for p in product_list:
             total_value += p.price*p.stock
@@ -1180,8 +1188,10 @@ class ProductSearchMenu(Menu):
         self.print_header()
         self.set_context('Enter (part of) product name or bar code')
         product = self.input_product()
-        print 'Result: %s, price: %d kr, bar code: %s, stock: %d' % (product.name, product.price, product.bar_code, product.stock)
-        self.pause()
+        print 'Result: %s, price: %d kr, bar code: %s, stock: %d, hidden: %s' % (product.name, product.price,
+                                                                                 product.bar_code, product.stock,
+                                                                                 ("Y" if product.hidden else "N"))
+        #self.pause()
 
 
 class ProductPopularityMenu(Menu):
@@ -1192,13 +1202,13 @@ class ProductPopularityMenu(Menu):
         self.print_header()
         text = ''
         sub = \
-            self.session.query(PurchaseEntry.product_bar_code,
+            self.session.query(PurchaseEntry.product_id,
                                func.count('*').label('purchase_count')) \
-                .group_by(PurchaseEntry.product_bar_code) \
+                .group_by(PurchaseEntry.product_id) \
                 .subquery()
         product_list = \
             self.session.query(Product, sub.c.purchase_count) \
-                .outerjoin((sub, Product.bar_code==sub.c.product_bar_code)) \
+                .outerjoin((sub, Product.product_id==sub.c.product_id)) \
                 .order_by(desc(sub.c.purchase_count)) \
                 .filter(sub.c.purchase_count != None) \
                 .all()
@@ -1217,13 +1227,13 @@ class ProductRevenueMenu(Menu):
         self.print_header()
         text = ''
         sub = \
-            self.session.query(PurchaseEntry.product_bar_code,
+            self.session.query(PurchaseEntry.product_id,
                                func.count('*').label('purchase_count')) \
-                .group_by(PurchaseEntry.product_bar_code) \
+                .group_by(PurchaseEntry.product_id) \
                 .subquery()
         product_list = \
             self.session.query(Product, sub.c.purchase_count) \
-                .outerjoin((sub, Product.bar_code==sub.c.product_bar_code)) \
+                .outerjoin((sub, Product.product_id==sub.c.product_id)) \
                 .order_by(desc(sub.c.purchase_count*Product.price)) \
                 .filter(sub.c.purchase_count != None) \
                 .all()
@@ -1317,7 +1327,7 @@ much money you're due in credits for the purchase when prompted.
             thing_price = 0
 
             # Read in a 'thing' (product or user):
-            line = self.input_multiple(add_nonexisting=('user','product'), empty_input_permitted=True)
+            line = self.input_multiple(add_nonexisting=('user','product'), empty_input_permitted=True, find_hidden_products=False)
 
             if line:
                 (thing, amount) = line
@@ -1344,7 +1354,7 @@ much money you're due in credits for the purchase when prompted.
             # Add the thing to the pending adjustments:
             self.add_thing_to_pending(thing, amount, thing_price)
 
-        if self.confirm('Do you want to change the total amount?', default=False):
+        if self.confirm('Do you want to change the credited amount?', default=False):
             self.price = self.input_int('Total amount> ', (1,100000), default=self.price)
 
         self.perform_transaction()
@@ -1392,9 +1402,10 @@ much money you're due in credits for the purchase when prompted.
         self.session.add(transaction)
         for product in self.products:
             value = max(product.stock, 0)*product.price + self.products[product][1]
+            old_price = product.price
             product.price = int(ceil(float(value)/(max(product.stock, 0) + self.products[product][0])))
             product.stock += self.products[product][0]
-            print "New stock for", product.name, "- New price:", product.price
+            print "New stock for %s: %d" % (product.name, product.stock), ("- New price: " + str(product.price) if old_price != product.price else "")
         try:
             self.session.commit()
             print "Success! Transaction performed:"
