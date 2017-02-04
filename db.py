@@ -1,6 +1,7 @@
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, create_engine, DateTime, Boolean, or_
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
+from math import ceil
 import datetime
 import conf
 
@@ -89,6 +90,7 @@ class Transaction(Base):
     amount = Column(Integer)
     description = Column(String(50))
     purchase_id = Column(Integer, ForeignKey('purchases.id'))
+    #penalty = Column(Integer)
 
     user = relationship(User, backref=backref('transactions', order_by=time))
 
@@ -97,11 +99,12 @@ class Transaction(Base):
         self.amount = amount
         self.description = description
         self.purchase = purchase
-        self.penalty_ratio = penalty_ratio
+        self.penalty = penalty_ratio
 
     def perform_transaction(self):
         self.time = datetime.datetime.now()
-        self.user.credit -= self.amount * self.penalty_ratio
+        self.amount *= self.penalty
+        self.user.credit -= self.amount
         if self.purchase:
             for entry in self.purchase.entries:
                 entry.product.stock -= entry.amount
@@ -131,7 +134,7 @@ class Purchase(Base):
         return len(self.transactions) > 0 and len(self.entries) > 0
 
     def price_per_transaction(self):
-        return self.price/len(self.transactions)
+        return int(ceil(float(self.price)/len(self.transactions)))
 
     def set_price(self):
         self.price = 0

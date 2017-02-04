@@ -787,6 +787,8 @@ class ShowUserMenu(Menu):
                 string += ', '.join(map(lambda e: e.product.name,
                                         t.purchase.entries))
                 string += ')'
+                #if t.penalty > 1:
+                #    string += ' * %dx penalty applied' % t.penalty
             else:
                 string += t.description
             string += '\n'
@@ -808,6 +810,8 @@ class ShowUserMenu(Menu):
                 string += ', '.join(map(lambda e: e.product.name,
                                         t.purchase.entries))
                 string += ')'
+                #if t.penalty > 1:
+                #    string += ' * %dx penalty applied' % t.penalty
             else:
                 string += t.description
             string += '\n'
@@ -922,7 +926,7 @@ When finished, write an empty line to confirm the purchase.
                 print '--------------------------------------------'
 
             if not self.credit_check(thing):
-                if self.low_credit_warning(user=thing, timeout=self.superfast_mode ):
+                if self.low_credit_warning(user=thing, timeout=self.superfast_mode):
                     Transaction(thing, purchase=self.purchase, penalty_ratio=2)
                 else:
                     return False
@@ -1022,7 +1026,7 @@ When finished, write an empty line to confirm the purchase.
         if len(transactions) == 0:
             string += '(empty)'
         else:
-            string += ', '.join(map(lambda t: t.user.name,
+            string += ', '.join(map(lambda t: t.user.name + ("*" if t.user.credit < conf.user_recent_transaction_limit else ""),
                                     transactions))
         string += '\n products: '
         if len(entries) == 0:
@@ -1032,7 +1036,14 @@ When finished, write an empty line to confirm the purchase.
                                     entries))
         if len(transactions) > 1:
             string += '\n price per person: %d kr' % self.purchase.price_per_transaction()
+            if any(t.penalty > 1 for t in transactions):
+                string += ' *(%d kr)' % (self.purchase.price_per_transaction() * 2)
+
         string += '\n total price: %d kr' % self.purchase.price
+
+        if any(t.penalty > 1 for t in transactions):
+            string += '\n *total with penalty: %d kr' % sum(self.purchase.price_per_transaction() * t.penalty for t in transactions)
+
         return string
 
     def print_purchase(self):
