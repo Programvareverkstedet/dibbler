@@ -1166,7 +1166,7 @@ class ProductListMenu(Menu):
     def _execute(self):
         self.print_header()
         text = ''
-        product_list = self.session.query(Product).filter(Product.hidden == False)
+        product_list = self.session.query(Product).filter(Product.hidden == False).order_by(Product.stock.desc())
         total_value = 0
         for p in product_list:
             total_value += p.price*p.stock
