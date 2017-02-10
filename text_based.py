@@ -837,7 +837,7 @@ class ShowUserMenu(Menu):
             text = ''
             text += 'Products purchased:\n'
             for product, count in products:
-                text += '{0:<47} {1:>3}\n'.format(product.name, count)
+                text += u'{0:<47} {1:>3}\n'.format(product.name, count)
             less(text)
 
 
