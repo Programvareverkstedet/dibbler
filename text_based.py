@@ -825,30 +825,19 @@ class ShowUserMenu(Menu):
         less(string)
 
     def print_purchased_products(self, user):
-        products = {}
+        products = []
         for ref in user.products:
             product = ref.product
-            if product in products:
-                products[product] += ref.count
-            else:
-                products[product] = ref.count
-        #for transaction in user.transactions:
-        #    if transaction.purchase:
-        #        for entry in transaction.purchase.entries:
-        #            n = entry.product.name
-        #            if n in products:
-        #                products[n]+=1
-        #            else:
-        #                products[n]=1
+            count = ref.count
+            products.append((product, count))
         num_products = len(products)
         if num_products == 0:
-            print 'No products purchased yet'
+            print('No products purchased yet')
         else:
             text = ''
             text += 'Products purchased:\n'
-            for product in products:
-                text += ('%-'+str(Product.name_length)+'s %3i\n') \
-                        % (product, products[product])
+            for product, count in products:
+                text += '{0:<47} {1:>3}\n'.format(product.name, count)
             less(text)
 
 
