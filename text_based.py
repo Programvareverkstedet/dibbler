@@ -826,14 +826,20 @@ class ShowUserMenu(Menu):
 
     def print_purchased_products(self, user):
         products = {}
-        for transaction in user.transactions:
-            if transaction.purchase:
-                for entry in transaction.purchase.entries:
-                    n = entry.product.name
-                    if n in products:
-                        products[n]+=1
-                    else:
-                        products[n]=1
+        for ref in user.products:
+            product = ref.product
+            if product in products:
+                products[product] += ref.count
+            else:
+                products[product] = ref.count
+        #for transaction in user.transactions:
+        #    if transaction.purchase:
+        #        for entry in transaction.purchase.entries:
+        #            n = entry.product.name
+        #            if n in products:
+        #                products[n]+=1
+        #            else:
+        #                products[n]=1
         num_products = len(products)
         if num_products == 0:
             print 'No products purchased yet'

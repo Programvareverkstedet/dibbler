@@ -66,6 +66,17 @@ class Product(Base):
     def __str__(self):
         return self.name
 
+
+class UserProducts(Base):
+    __tablename__ = 'user_products'
+    user_name = Column(String(10), ForeignKey('users.name'), primary_key=True)
+    product_id = Column(Integer, ForeignKey("products.product_id"), primary_key=True)
+    count = Column(Integer)
+
+    user = relationship(User, backref=backref('products', order_by=count.desc()), lazy='joined')
+    product = relationship(Product, backref="users", lazy='joined')
+
+
 class PurchaseEntry(Base):
     __tablename__ = 'purchase_entries'
     id = Column(Integer, primary_key=True)
