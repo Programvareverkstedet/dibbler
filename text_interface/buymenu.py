@@ -95,7 +95,7 @@ When finished, write an empty line to confirm the purchase.\n'''
         def is_product(candidate):
             return isinstance(candidate, Product)
 
-        if len(initial_contents) > 0 and all(map(is_product, initial_contents)):
+        if len(initial_contents) > 0 and all(map(is_product, initial_contents[0])):
             self.superfast_mode = True
             print '***********************************************'
             print '****** Buy menu is in SUPERFASTmode[tm]! ******'
@@ -175,7 +175,7 @@ When finished, write an empty line to confirm the purchase.\n'''
             string += '(empty)'
         else:
             string += ', '.join(
-                map(lambda t: t.user.name + ("*" if t.user.credit < conf.user_recent_transaction_limit else ""),
+                map(lambda t: t.user.name + ("*" if not self.credit_check(t.user) else ""),
                     transactions))
         string += '\n  products: '
         if len(entries) == 0:
