@@ -115,8 +115,10 @@ When finished, write an empty line to confirm the purchase.\n'''
             # Read in a 'thing' (product or user):
             line = self.input_multiple(add_nonexisting=('user', 'product'), empty_input_permitted=True,
                                        find_hidden_products=False)
-
-            thing, num = line
+            if line is not None:
+                thing, num = line
+            else:
+                thing, num = None, 0
 
             # Possibly exit from the menu:
             if thing is None:
