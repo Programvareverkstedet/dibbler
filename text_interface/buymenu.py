@@ -93,9 +93,9 @@ When finished, write an empty line to confirm the purchase.\n'''
             self.add_thing_to_purchase(thing, num)
 
         def is_product(candidate):
-            return isinstance(candidate, Product)
+            return isinstance(candidate[0], Product)
 
-        if len(initial_contents) > 0 and all(map(is_product, initial_contents[0])):
+        if len(initial_contents) > 0 and all(map(is_product, initial_contents)):
             self.superfast_mode = True
             print '***********************************************'
             print '****** Buy menu is in SUPERFASTmode[tm]! ******'
