@@ -1,7 +1,7 @@
 from math import ceil
 
 import sqlalchemy
-from db import Product, User, Transaction
+from db import Product, User, Transaction, PurchaseEntry, Purchase
 from text_interface.helpermenus import Menu
 
 
@@ -48,20 +48,14 @@ much money you're due in credits for the purchase when prompted.\n'''
                 # user from accidentally killing it
                 self.exit_confirm_msg = 'Abort transaction?'
             else:
-                # thing = None
-
                 if not self.complete_input():
                     if self.confirm('Not enough information entered. Abort transaction?', default=True):
                         return False
                     continue
-
                 break
 
             # Add the thing to the pending adjustments:
             self.add_thing_to_pending(thing, amount, thing_price)
-
-        if self.confirm('Do you want to change the credited amount?', default=False):
-            self.price = self.input_int('Total amount> ', (1, 100000), default=self.price)
 
         self.perform_transaction()
 
@@ -77,8 +71,6 @@ much money you're due in credits for the purchase when prompted.\n'''
         print('\n%-' + str(Product.name_length - 1) + 's Amount') % "Product"
         print(6 + Product.name_length) * '-'
         if len(self.products):
-            # print "Products added:"
-            # print (6+Product.name_length)*'-'
             for product in self.products.keys():
                 print('%' + str(-Product.name_length) + 's %5i') % (product.name, self.products[product][0])
                 print(6 + Product.name_length) * '-'
@@ -98,13 +90,9 @@ much money you're due in credits for the purchase when prompted.\n'''
             self.products[thing] = [amount, price]
 
     def perform_transaction(self):
-        # self.user.credit += self.price
         description = self.input_str('Log message> ', length_range=(0, 50))
         if description == '':
             description = 'Purchased products for PVVVV, adjusted credit ' + str(self.price)
-        transaction = Transaction(self.user, -self.price, description)
-        transaction.perform_transaction()
-        self.session.add(transaction)
         for product in self.products:
             value = max(product.stock, 0) * product.price + self.products[product][1]
             old_price = product.price
@@ -115,6 +103,15 @@ much money you're due in credits for the purchase when prompted.\n'''
             print "New stock for %s: %d" % (product.name, product.stock), \
                 ("- New price: " + str(product.price) if old_price != product.price else ""), \
                 ("- Removed hidden status" if old_hidden != product.hidden else "")
+
+        purchase = Purchase()
+        Transaction(self.user, purchase=purchase, amount=-self.price, description=description)
+        for product in self.products:
+            PurchaseEntry(purchase, product, -self.products[product][0])
+
+        purchase.perform_soft_purchase(-self.price, round_up=False)
+        self.session.add(purchase)
+
         try:
             self.session.commit()
             print "Success! Transaction performed:"
