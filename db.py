@@ -1,13 +1,14 @@
-from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, create_engine, DateTime, Boolean, or_
+from sqlalchemy import Column, Integer, String, ForeignKey, create_engine, DateTime, Boolean
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
-from math import ceil
+from math import ceil, floor
 import datetime
 import conf
 
 engine = create_engine(conf.db_url)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
+
 
 class User(Base):
     __tablename__ = 'users'
@@ -20,7 +21,7 @@ class User(Base):
     card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
     rfid_re = r"[0-9]*"
 
-    def __init__(self, name, card, rfid, credit=0):
+    def __init__(self, name, card, rfid=None, credit=0):
         self.name = name
         if card == '':
             card = None
@@ -38,6 +39,7 @@ class User(Base):
 
     def is_anonymous(self):
         return self.card == '11122233'
+
 
 class Product(Base):
     __tablename__ = 'products'
@@ -61,7 +63,8 @@ class Product(Base):
         self.hidden = hidden
 
     def __repr__(self):
-        return "<Product('%s', '%s', '%s', '%s', '%s')>" % (self.name, self.bar_code, self.price, self.stock, self.hidden)
+        return "<Product('%s', '%s', '%s', '%s', '%s')>" %\
+               (self.name, self.bar_code, self.price, self.stock, self.hidden)
 
     def __str__(self):
         return self.name
@@ -80,19 +83,20 @@ class UserProducts(Base):
 class PurchaseEntry(Base):
     __tablename__ = 'purchase_entries'
     id = Column(Integer, primary_key=True)
-    purchase_id = Column(Integer,ForeignKey("purchases.id"))
-    product_id = Column(Integer,ForeignKey("products.product_id"))
+    purchase_id = Column(Integer, ForeignKey("purchases.id"))
+    product_id = Column(Integer, ForeignKey("products.product_id"))
     amount = Column(Integer)
 
-    product = relationship(Product,backref="purchases")
+    product = relationship(Product, backref="purchases")
 
     def __init__(self, purchase, product, amount):
         self.product = product
         self.product_bar_code = product.bar_code
         self.purchase = purchase
         self.amount = amount
+
     def __repr__(self):
-        return "<PurchaseEntry('%s', '%s')>" % (self.product.name, self.amount )
+        return "<PurchaseEntry('%s', '%s')>" % (self.product.name, self.amount)
 
 
 class Transaction(Base):
@@ -115,13 +119,11 @@ class Transaction(Base):
         self.purchase = purchase
         self.penalty = penalty
 
-    def perform_transaction(self):
+    def perform_transaction(self, ignore_penalty=False):
         self.time = datetime.datetime.now()
-        self.amount *= self.penalty
+        if not ignore_penalty:
+            self.amount *= self.penalty
         self.user.credit -= self.amount
-        if self.purchase:
-            for entry in self.purchase.entries:
-                entry.product.stock -= entry.amount
 
 
 class Purchase(Base):
@@ -129,12 +131,8 @@ class Purchase(Base):
 
     id = Column(Integer, primary_key=True)
     time = Column(DateTime)
-    #	user_name = Column(Integer, ForeignKey('users.name'))
     price = Column(Integer)
-    #	performed = Column(Boolean)
 
-    #	user = relationship(User, backref=backref('purchases', order_by=id))
-    #	users = relationship(User, secondary=purchase_user, backref='purhcases'
     transactions = relationship(Transaction, order_by=Transaction.user_name, backref='purchase')
     entries = relationship(PurchaseEntry, backref=backref("purchase"))
 
@@ -142,26 +140,37 @@ class Purchase(Base):
         pass
 
     def __repr__(self):
-        return "<Purchase(%d, %d, '%s')>" % (self.id, self.price, self.time.strftime('%c'))
+        return "<Purchase(%d, %d, '%s')>" % (int(self.id), self.price, self.time.strftime('%c'))
 
     def is_complete(self):
         return len(self.transactions) > 0 and len(self.entries) > 0
 
-    def price_per_transaction(self):
-        return int(ceil(float(self.price)/len(self.transactions)))
+    def price_per_transaction(self, round_up=True):
+        if round_up:
+            return int(ceil(float(self.price)/len(self.transactions)))
+        else:
+            return int(floor(float(self.price)/len(self.transactions)))
 
-    def set_price(self):
+    def set_price(self, round_up=True):
         self.price = 0
         for entry in self.entries:
             self.price += entry.amount*entry.product.price
         if len(self.transactions) > 0:
             for t in self.transactions:
-                t.amount = self.price_per_transaction()
+                t.amount = self.price_per_transaction(round_up=round_up)
 
-    def perform_purchase(self):
+    def perform_purchase(self, ignore_penalty=False, round_up=True):
         self.time = datetime.datetime.now()
-        self.set_price()
+        self.set_price(round_up=round_up)
+        for t in self.transactions:
+            t.perform_transaction(ignore_penalty=ignore_penalty)
+        for entry in self.entries:
+            entry.product.stock -= entry.amount
+
+    def perform_soft_purchase(self, price, round_up=True):
+        self.time = datetime.datetime.now()
+        self.price = price
+        for t in self.transactions:
+            t.amount = self.price_per_transaction(round_up=round_up)
         for t in self.transactions:
             t.perform_transaction()
-#		self.user.credit -= self.price
-#		self.performed = True
