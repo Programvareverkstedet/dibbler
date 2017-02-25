@@ -11,7 +11,10 @@ class AddStockMenu(Menu):
         self.help_text = '''
 Enter what you have bought for PVVVV here, along with your user name and how
 much money you're due in credits for the purchase when prompted.\n'''
-        self.user = None
+        self.users = []
+        self.users = []
+        self.products = {}
+        self.price = 0
 
     def _execute(self):
         questions = {
@@ -21,13 +24,13 @@ much money you're due in credits for the purchase when prompted.\n'''
             (True, True): 'Enter more strings of the form "<number> <product>", or an empty line to confirm'
         }
 
-        self.user = None
+        self.users = []
         self.products = {}
         self.price = 0
 
         while True:
             self.print_info()
-            self.printc(questions[bool(self.user), bool(len(self.products))])
+            self.printc(questions[bool(self.users), bool(len(self.products))])
             thing_price = 0
 
             # Read in a 'thing' (product or user):
@@ -60,28 +63,26 @@ much money you're due in credits for the purchase when prompted.\n'''
         self.perform_transaction()
 
     def complete_input(self):
-        return bool(self.user) and len(self.products) and self.price
+        return bool(self.users) and len(self.products) and self.price
 
     def print_info(self):
-        print(6 + Product.name_length) * '-'
+        print (6 + Product.name_length) * '-'
         if self.price:
-            print("Amount to be credited: %" + str(Product.name_length - 17) + "i") % self.price
-        if self.user:
-            print("User to credit: %" + str(Product.name_length - 10) + "s") % self.user.name
-        print('\n%-' + str(Product.name_length - 1) + 's Amount') % "Product"
-        print(6 + Product.name_length) * '-'
+            print "Amount to be credited: {{0:>{0}d}}".format(Product.name_length-17).format(self.price)
+        if self.users:
+            print "Users to credit:"
+            for user in self.users:
+                print "  %s" % str(user.name)
+        print "\n{{0:s}}{{1:>{0}s}}".format(Product.name_length-1).format("Product", "Amount")
+        print (6 + Product.name_length) * '-'
         if len(self.products):
             for product in self.products.keys():
-                print('%' + str(-Product.name_length) + 's %5i') % (product.name, self.products[product][0])
-                print(6 + Product.name_length) * '-'
+                print '{{0:<{0}}}{{1:>6d}}'.format(Product.name_length).format(product.name, self.products[product][0])
+                print (6 + Product.name_length) * '-'
 
     def add_thing_to_pending(self, thing, amount, price):
         if isinstance(thing, User):
-            if self.user:
-                print "Only one user may be credited for a purchase, transfer credit manually afterwards"
-                return
-            else:
-                self.user = thing
+            self.users.append(thing)
         elif thing in self.products.keys():
             print 'Already added this product, adding amounts'
             self.products[thing][0] += amount
@@ -105,7 +106,8 @@ much money you're due in credits for the purchase when prompted.\n'''
                 ("- Removed hidden status" if old_hidden != product.hidden else "")
 
         purchase = Purchase()
-        Transaction(self.user, purchase=purchase, amount=-self.price, description=description)
+        for user in self.users:
+            Transaction(user, purchase=purchase, amount=-self.price, description=description)
         for product in self.products:
             PurchaseEntry(purchase, product, -self.products[product][0])
 
@@ -116,6 +118,7 @@ much money you're due in credits for the purchase when prompted.\n'''
             self.session.commit()
             print "Success! Transaction performed:"
             # self.print_info()
-            print "User %s's credit is now %i" % (self.user.name, self.user.credit)
+            for user in self.users:
+                print "User %s's credit is now %i" % (user.name, user.credit)
         except sqlalchemy.exc.SQLAlchemyError, e:
             print 'Could not perform transaction: %s' % e
