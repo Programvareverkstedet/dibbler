@@ -64,10 +64,10 @@ When finished, write an empty line to confirm the purchase.\n'''
     def add_thing_to_purchase(self, thing, amount=1):
         if isinstance(thing, User):
             if thing.is_anonymous():
-                print '--------------------------------------------'
-                print'You are now purchasing as the user anonym.'
-                print'You have to put money in the anonym-jar.'
-                print '--------------------------------------------'
+                print '---------------------------------------------'
+                print '| You are now purchasing as the user anonym.|'
+                print '| You have to put money in the anonym-jar.  |'
+                print '---------------------------------------------'
 
             if not self.credit_check(thing):
                 if self.low_credit_warning(user=thing, timeout=self.superfast_mode):
@@ -77,7 +77,10 @@ When finished, write an empty line to confirm the purchase.\n'''
             else:
                 Transaction(thing, purchase=self.purchase)
         elif isinstance(thing, Product):
-            PurchaseEntry(self.purchase, thing, amount)
+            if len(self.purchase.entries) and self.purchase.entries[-1].product == thing:
+                self.purchase.entries[-1].amount += amount
+            else:
+                PurchaseEntry(self.purchase, thing, amount)
         return True
 
     def _execute(self, initial_contents=None):
@@ -123,8 +126,7 @@ When finished, write an empty line to confirm the purchase.\n'''
             # Possibly exit from the menu:
             if thing is None:
                 if not self.complete_input():
-                    if self.confirm('Not enough information entered.  Abort purchase?',
-                                    default=True):
+                    if self.confirm('Not enough information entered. Abort purchase?', default=True):
                         return False
                     continue
                 break

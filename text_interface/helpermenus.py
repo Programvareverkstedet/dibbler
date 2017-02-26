@@ -378,7 +378,8 @@ class Menu(object):
                             return_index=False)
         return selector.execute()
 
-    def confirm(self, prompt, default=None, timeout=None):
+    @staticmethod
+    def confirm(prompt, default=None, timeout=None):
         return ConfirmMenu(prompt, default, timeout).execute()
 
     def print_header(self):
@@ -388,7 +389,8 @@ class Menu(object):
     def pause(self):
         self.input_str('.')
 
-    def general_help(self):
+    @staticmethod
+    def general_help():
         print '''
        DIBBLER HELP
 
