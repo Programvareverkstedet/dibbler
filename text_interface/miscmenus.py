@@ -114,7 +114,8 @@ class ShowUserMenu(Menu):
         for ref in user.products:
             product = ref.product
             count = ref.count
-            products.append((product, count))
+            if count > 0:
+                products.append((product, count))
         num_products = len(products)
         if num_products == 0:
             print 'No products purchased yet'
