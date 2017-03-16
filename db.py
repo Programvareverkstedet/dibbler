@@ -13,13 +13,13 @@ Session = sessionmaker(bind=engine)
 class User(Base):
     __tablename__ = 'users'
     name = Column(String(10), primary_key=True)
-    card = Column(String(10))
-    rfid = Column(String(10))
+    card = Column(String(20))
+    rfid = Column(String(20))
     credit = Column(Integer)
 
     name_re = r"[a-z]+"
     card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
-    rfid_re = r"[0-9]*"
+    rfid_re = r"[0-9a-fA-F]*"
 
     def __init__(self, name, card, rfid=None, credit=0):
         self.name = name
