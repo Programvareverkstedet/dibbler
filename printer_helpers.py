@@ -13,7 +13,7 @@ def print_bar_code(barcode_value, barcode_text, barcode_type="ean13", rotate=Fal
 
     test = bar_coder(barcode_value, writer=wr)
     fn = test.save(barcode_value)
-    print_image(fn, printer_type, label_type)
+    #print_image(fn, printer_type, label_type)
 
 
 def print_image(fn, printer_type="QL-700", label_type="62"):

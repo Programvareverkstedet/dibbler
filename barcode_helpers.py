@@ -11,6 +11,7 @@ class BrotherLabelWriter(ImageWriter):
     def __init__(self, typ='62', max_height=350, rot=False, text=None):
         super(BrotherLabelWriter, self).__init__()
         assert typ in label_type_specs
+        self.rot = rot
         if self.rot:
             self._h, self._w = label_type_specs[typ]['dots_printable']
             if self._w == 0 or self._w > max_height:
@@ -44,21 +45,19 @@ class BrotherLabelWriter(ImageWriter):
         super(BrotherLabelWriter, self)._paint_text(xpos+self._xo, ypos+self._yo)
 
     def _finish(self):
-        if self.rot:
-            self._image.rotate(90)
         if self._title:
             width = self._w+1
             height = 0
             max_h = self._h - mm2px(self._yo, self.dpi)
             fs = int(max_h / 1.2)
-            font = ImageFont.truetype("arial.ttf", 10)
+            font = ImageFont.truetype("./arial.ttf", 10)
             while width > self._w or height > max_h:
-                font = ImageFont.truetype("Stranger back in the Night.ttf", fs)
+                font = ImageFont.truetype("./Stranger back in the Night.ttf", fs)
                 width, height = font.getsize(self._title)
                 fs -= 1
             pos = (
                 (self._w-width)//2,
-                mm2px(0, self.dpi)
+                0 - (height // 8)
             )
             self._draw.text(pos, self._title, font=font, fill=self.foreground)
         return self._image
