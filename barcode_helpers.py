@@ -8,14 +8,14 @@ def px2mm(px, dpi=300):
 
 
 class BrotherLabelWriter(ImageWriter):
-    def __init__(self, typ='62', max_height=350, rot=0, text=None):
+    def __init__(self, typ='62', max_height=350, rot=False, text=None):
         super(BrotherLabelWriter, self).__init__()
         assert typ in label_type_specs
-        if (rot//90) % 2 == 1:
+        if self.rot:
             self._h, self._w = label_type_specs[typ]['dots_printable']
             if self._w == 0 or self._w > max_height:
                 self._w = max_height
-        if (rot//90) % 2 == 0:
+        else:
             self._w, self._h = label_type_specs[typ]['dots_printable']
             if self._h == 0 or self._h > max_height:
                 self._h = max_height
@@ -28,7 +28,7 @@ class BrotherLabelWriter(ImageWriter):
         super(BrotherLabelWriter, self)._init(code)
 
     def calculate_size(self, modules_per_line, number_of_lines, dpi=300):
-        x, y = super(self).calculate_size(modules_per_line, number_of_lines, dpi)
+        x, y = super(BrotherLabelWriter, self).calculate_size(modules_per_line, number_of_lines, dpi)
 
         self._xo = (px2mm(self._w)-px2mm(x))/2
         self._yo = (px2mm(self._h)-px2mm(y))
@@ -44,6 +44,8 @@ class BrotherLabelWriter(ImageWriter):
         super(BrotherLabelWriter, self)._paint_text(xpos+self._xo, ypos+self._yo)
 
     def _finish(self):
+        if self.rot:
+            self._image.rotate(90)
         if self._title:
             width = self._w+1
             height = 0
