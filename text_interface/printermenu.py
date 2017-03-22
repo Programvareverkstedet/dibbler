@@ -5,7 +5,7 @@ import conf
 
 class PrintLabelMenu(Menu):
     def __init__(self):
-        Menu.__init__(self, 'Edit user', uses_db=True)
+        Menu.__init__(self, 'Print bar code', uses_db=True)
         self.help_text = '''
 Prints out a product bar code on the printer
 
@@ -16,5 +16,5 @@ Put it up somewhere in the vicinity.
         self.print_header()
         product = self.input_product('Prodct> ')
 
-        print_bar_code(product.bar_code, product.name, barcode_type="ean13", rotate=False, printer_type="QL-700",
-                       label_type=conf.label_type)
+        print_bar_code(product.bar_code, product.name, barcode_type="ean13", rotate=conf.label_rotate,
+                       printer_type="QL-700", label_type=conf.label_type)
