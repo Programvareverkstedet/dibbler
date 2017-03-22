@@ -1,3 +1,5 @@
+import os
+
 from PIL import ImageFont
 from barcode.writer import ImageWriter, mm2px
 from brother_ql.devicedependent import label_type_specs
@@ -50,9 +52,10 @@ class BrotherLabelWriter(ImageWriter):
             height = 0
             max_h = self._h - mm2px(self._yo, self.dpi)
             fs = int(max_h / 1.2)
-            font = ImageFont.truetype("./arial.ttf", 10)
+            font_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Stranger back in the Night.ttf")
+            font = ImageFont.truetype(font_path, 10)
             while width > self._w or height > max_h:
-                font = ImageFont.truetype("./Stranger back in the Night.ttf", fs)
+                font = ImageFont.truetype(font_path, fs)
                 width, height = font.getsize(self._title)
                 fs -= 1
             pos = (
