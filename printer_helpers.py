@@ -1,3 +1,5 @@
+import os
+
 import barcode
 from brother_ql import BrotherQLRaster
 from brother_ql import create_label
@@ -12,8 +14,9 @@ def print_bar_code(barcode_value, barcode_text, barcode_type="ean13", rotate=Fal
     wr = BrotherLabelWriter(typ=label_type, rot=rotate, text=barcode_text, max_height=1000)
 
     test = bar_coder(barcode_value, writer=wr)
-    fn = test.save(barcode_value)
-    #print_image(fn, printer_type, label_type)
+    base_path = os.path.dirname(os.path.realpath(__file__))
+    fn = test.save(os.path.join(base_path, "bar_codes", barcode_value))
+    print_image(fn, printer_type, label_type)
 
 
 def print_image(fn, printer_type="QL-700", label_type="62"):
