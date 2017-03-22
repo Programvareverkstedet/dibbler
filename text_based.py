@@ -14,6 +14,7 @@ from text_interface.helpermenus import Menu
 from text_interface.mainmenu import MainMenu
 from text_interface.miscmenus import ProductSearchMenu, TransferMenu, AdjustCreditMenu, UserListMenu, ShowUserMenu, \
     ProductListMenu
+from text_interface.printermenu import PrintLabelMenu
 from text_interface.stats import *
 
 random.seed()
@@ -47,7 +48,8 @@ if __name__ == '__main__':
                                        ProductRevenueMenu(),
                                        BalanceMenu(),
                                        LoggedStatisticsMenu()]),
-                           FAQMenu()
+                           FAQMenu(),
+                           PrintLabelMenu()
                            ],
                     exit_msg='happy happy joy joy',
                     exit_confirm_msg='Really quit Dibbler?')
