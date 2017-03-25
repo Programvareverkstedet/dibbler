@@ -6,7 +6,7 @@ import conf
 
 class PrintLabelMenu(Menu):
     def __init__(self):
-        Menu.__init__(self, 'Print bar code', uses_db=True)
+        Menu.__init__(self, 'Print a label', uses_db=True)
         self.help_text = '''
 Prints out a product bar code on the printer
 
