@@ -36,7 +36,6 @@ def print_name_label(text, margin=10, rotate=False, label_type="62", printer_typ
         height = th+2*margin
     else:
         while tw + 2*margin > width or th + 2*margin > height:
-            print(fs)
             font = ImageFont.truetype(font_path, fs)
             tw, th = font.getsize(text)
             fs -= 1
