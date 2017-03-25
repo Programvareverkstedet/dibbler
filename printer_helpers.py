@@ -19,7 +19,7 @@ def print_name_label(text, margin=10, rotate=False, label_type="62", printer_typ
     else:
         height, width = label_type_specs[label_type]['dots_printable']
 
-    font_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "Stranger back in the Night.ttf")
+    font_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ChopinScript.ttf")
     fs = 2000
     tw, th = width, height
     if width == 0:
