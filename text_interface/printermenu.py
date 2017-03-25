@@ -1,4 +1,5 @@
-from printer_helpers import print_bar_code
+from db import Product, User
+from printer_helpers import print_bar_code, print_name_label
 from text_interface.helpermenus import Menu
 import conf
 
@@ -14,7 +15,12 @@ Put it up somewhere in the vicinity.
 
     def _execute(self):
         self.print_header()
-        product = self.input_product('Prodct> ')
 
-        print_bar_code(product.bar_code, product.name, barcode_type="ean13", rotate=conf.label_rotate,
-                       printer_type="QL-700", label_type=conf.label_type)
+        thing = self.input_thing('Prodct/User> ')
+
+        if isinstance(thing, Product):
+            print_bar_code(thing.bar_code, thing.name, barcode_type="ean13", rotate=conf.label_rotate,
+                           printer_type="QL-700", label_type=conf.label_type)
+        elif isinstance(thing, User):
+            print_name_label(text=thing.name, label_type=conf.label_type, rotate=conf.label_rotate,
+                             printer_type="QL-700")
