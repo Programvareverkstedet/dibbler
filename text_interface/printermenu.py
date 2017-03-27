@@ -19,7 +19,13 @@ Put it up somewhere in the vicinity.
         thing = self.input_thing('Prodct/User> ')
 
         if isinstance(thing, Product):
-            print_bar_code(thing.bar_code, thing.name, barcode_type="ean13", rotate=conf.label_rotate,
+            if len(thing.bar_code) == 13:
+                bar_type = "ean13"
+            elif len(thing.bar_code) == 8:
+                bar_type = "ean8"
+            else:
+                bar_type = "code39"
+            print_bar_code(thing.bar_code, thing.name, barcode_type=bar_type, rotate=conf.label_rotate,
                            printer_type="QL-700", label_type=conf.label_type)
         elif isinstance(thing, User):
             print_name_label(text=thing.name, label_type=conf.label_type, rotate=conf.label_rotate,
