@@ -1,5 +1,12 @@
+# connectors/mxodbc.py
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
+# <see AUTHORS file>
+#
+# This module is part of SQLAlchemy and is released under
+# the MIT License: http://www.opensource.org/licenses/mit-license.php
+
 """
-Provide an SQLALchemy connector for the eGenix mxODBC commercial
+Provide a SQLALchemy connector for the eGenix mxODBC commercial
 Python adapter for ODBC. This is not a free product, but eGenix
 provides SQLAlchemy with a license for use in continuous integration
 testing.
@@ -15,21 +22,19 @@ For more info on mxODBC, see http://www.egenix.com/
 import sys
 import re
 import warnings
-from decimal import Decimal
 
-from sqlalchemy.connectors import Connector
-from sqlalchemy import types as sqltypes
-import sqlalchemy.processors as processors
+from . import Connector
+
 
 class MxODBCConnector(Connector):
-    driver='mxodbc'
-    
+    driver = 'mxodbc'
+
     supports_sane_multi_rowcount = False
-    supports_unicode_statements = False
-    supports_unicode_binds = False
-    
+    supports_unicode_statements = True
+    supports_unicode_binds = True
+
     supports_native_decimal = True
-    
+
     @classmethod
     def dbapi(cls):
         # this classmethod will normally be replaced by an instance
@@ -44,7 +49,7 @@ class MxODBCConnector(Connector):
         elif platform == 'darwin':
             from mx.ODBC import iODBC as module
         else:
-            raise ImportError, "Unrecognized platform for mxODBC import"
+            raise ImportError("Unrecognized platform for mxODBC import")
         return module
 
     @classmethod
@@ -64,21 +69,21 @@ class MxODBCConnector(Connector):
             conn.decimalformat = self.dbapi.DECIMAL_DECIMALFORMAT
             conn.errorhandler = self._error_handler()
         return connect
-    
+
     def _error_handler(self):
         """ Return a handler that adjusts mxODBC's raised Warnings to
         emit Python standard warnings.
         """
         from mx.ODBC.Error import Warning as MxOdbcWarning
-        def error_handler(connection, cursor, errorclass, errorvalue):
 
+        def error_handler(connection, cursor, errorclass, errorvalue):
             if issubclass(errorclass, MxOdbcWarning):
                 errorclass.__bases__ = (Warning,)
                 warnings.warn(message=str(errorvalue),
-                          category=errorclass,
-                          stacklevel=2)
+                              category=errorclass,
+                              stacklevel=2)
             else:
-                raise errorclass, errorvalue
+                raise errorclass(errorvalue)
         return error_handler
 
     def create_connect_args(self, url):
@@ -94,7 +99,7 @@ class MxODBCConnector(Connector):
 
         The arg 'errorhandler' is not used by SQLAlchemy and will
         not be populated.
-        
+
         """
         opts = url.translate_connect_args(username='user')
         opts.update(url.query)
@@ -103,9 +108,9 @@ class MxODBCConnector(Connector):
         opts.pop('database', None)
         return (args,), opts
 
-    def is_disconnect(self, e):
-        # eGenix recommends checking connection.closed here,
-        # but how can we get a handle on the current connection?
+    def is_disconnect(self, e, connection, cursor):
+        # TODO: eGenix recommends checking connection.closed here
+        # Does that detect dropped connections ?
         if isinstance(e, self.dbapi.ProgrammingError):
             return "connection already closed" in str(e)
         elif isinstance(e, self.dbapi.Error):
@@ -114,10 +119,11 @@ class MxODBCConnector(Connector):
             return False
 
     def _get_server_version_info(self, connection):
-        # eGenix suggests using conn.dbms_version instead of what we're doing here
+        # eGenix suggests using conn.dbms_version instead
+        # of what we're doing here
         dbapi_con = connection.connection
         version = []
-        r = re.compile('[.\-]')
+        r = re.compile(r'[.\-]')
         # 18 == pyodbc.SQL_DBMS_VER
         for n in r.split(dbapi_con.getinfo(18)[1]):
             try:
@@ -126,21 +132,19 @@ class MxODBCConnector(Connector):
                 version.append(n)
         return tuple(version)
 
-    def do_execute(self, cursor, statement, parameters, context=None):
+    def _get_direct(self, context):
         if context:
             native_odbc_execute = context.execution_options.\
-                                        get('native_odbc_execute', 'auto')
-            if native_odbc_execute is True:
-                # user specified native_odbc_execute=True
-                cursor.execute(statement, parameters)
-            elif native_odbc_execute is False:
-                # user specified native_odbc_execute=False
-                cursor.executedirect(statement, parameters)
-            elif context.is_crud:
-                # statement is UPDATE, DELETE, INSERT
-                cursor.execute(statement, parameters)
-            else:
-                # all other statements
-                cursor.executedirect(statement, parameters)
+                get('native_odbc_execute', 'auto')
+            # default to direct=True in all cases, is more generally
+            # compatible especially with SQL Server
+            return False if native_odbc_execute is True else True
         else:
-            cursor.executedirect(statement, parameters)
+            return True
+
+    def do_executemany(self, cursor, statement, parameters, context=None):
+        cursor.executemany(
+            statement, parameters, direct=self._get_direct(context))
+
+    def do_execute(self, cursor, statement, parameters, context=None):
+        cursor.execute(statement, parameters, direct=self._get_direct(context))

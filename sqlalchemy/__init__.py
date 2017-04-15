@@ -1,24 +1,23 @@
-# __init__.py
-# Copyright (C) 2005, 2006, 2007, 2008, 2009, 2010 Michael Bayer mike_mp@zzzcomputing.com
+# sqlalchemy/__init__.py
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
+# <see AUTHORS file>
 #
 # This module is part of SQLAlchemy and is released under
 # the MIT License: http://www.opensource.org/licenses/mit-license.php
 
-import inspect
-import sys
 
-import sqlalchemy.exc as exceptions
-sys.modules['sqlalchemy.exceptions'] = exceptions
-
-from sqlalchemy.sql import (
+from .sql import (
     alias,
+    all_,
     and_,
+    any_,
     asc,
     between,
     bindparam,
     case,
     cast,
     collate,
+    column,
     delete,
     desc,
     distinct,
@@ -26,11 +25,14 @@ from sqlalchemy.sql import (
     except_all,
     exists,
     extract,
+    false,
     func,
+    funcfilter,
     insert,
     intersect,
     intersect_all,
     join,
+    lateral,
     literal,
     literal_column,
     modifier,
@@ -39,16 +41,25 @@ from sqlalchemy.sql import (
     or_,
     outerjoin,
     outparam,
+    over,
     select,
     subquery,
+    table,
+    tablesample,
     text,
+    true,
     tuple_,
+    type_coerce,
     union,
     union_all,
     update,
+    within_group,
     )
 
-from sqlalchemy.types import (
+from .types import (
+    ARRAY,
+    BIGINT,
+    BINARY,
     BLOB,
     BOOLEAN,
     BigInteger,
@@ -68,12 +79,14 @@ from sqlalchemy.types import (
     INTEGER,
     Integer,
     Interval,
+    JSON,
     LargeBinary,
     NCHAR,
     NVARCHAR,
     NUMERIC,
     Numeric,
     PickleType,
+    REAL,
     SMALLINT,
     SmallInteger,
     String,
@@ -82,18 +95,19 @@ from sqlalchemy.types import (
     TIMESTAMP,
     Text,
     Time,
+    TypeDecorator,
     Unicode,
     UnicodeText,
+    VARBINARY,
     VARCHAR,
     )
 
 
-from sqlalchemy.schema import (
+from .schema import (
     CheckConstraint,
     Column,
     ColumnDefault,
     Constraint,
-    DDL,
     DefaultClause,
     FetchedValue,
     ForeignKey,
@@ -106,14 +120,27 @@ from sqlalchemy.schema import (
     Table,
     ThreadLocalMetaData,
     UniqueConstraint,
-    )
+    DDL,
+    BLANK_SCHEMA
+)
 
-from sqlalchemy.engine import create_engine, engine_from_config
+
+from .inspection import inspect
+from .engine import create_engine, engine_from_config
+
+__version__ = '1.1.9'
 
 
-__all__ = sorted(name for name, obj in locals().items()
-                 if not (name.startswith('_') or inspect.ismodule(obj)))
-                 
-__version__ = '0.6beta3'
+def __go(lcls):
+    global __all__
 
-del inspect, sys
+    from . import events
+    from . import util as _sa_util
+
+    import inspect as _inspect
+
+    __all__ = sorted(name for name, obj in lcls.items()
+                     if not (name.startswith('_') or _inspect.ismodule(obj)))
+
+    _sa_util.dependencies.resolve_all("sqlalchemy")
+__go(locals())
