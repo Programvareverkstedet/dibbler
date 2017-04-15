@@ -1,3 +1,5 @@
+import re
+
 from db import Product, User
 from printer_helpers import print_bar_code, print_name_label
 from text_interface.helpermenus import Menu
@@ -19,9 +21,9 @@ Put it up somewhere in the vicinity.
         thing = self.input_thing('Prodct/User> ')
 
         if isinstance(thing, Product):
-            if len(thing.bar_code) == 13:
+            if re.match(r"^[0-9]{13}$", thing.bar_code):
                 bar_type = "ean13"
-            elif len(thing.bar_code) == 8:
+            elif re.match(r"^[0-9]{8}$", thing.bar_code):
                 bar_type = "ean8"
             else:
                 bar_type = "code39"
