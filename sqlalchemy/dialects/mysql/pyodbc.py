@@ -1,31 +1,32 @@
-"""Support for the MySQL database via the pyodbc adapter.
-
-pyodbc is available at:
-
-    http://pypi.python.org/pypi/pyodbc/
-
-Connecting
-----------
-
-Connect string::
-
-    mysql+pyodbc://<username>:<password>@<dsnname>
-
-Limitations
------------
-
-The mysql-pyodbc dialect is subject to unresolved character encoding issues 
-which exist within the current ODBC drivers available.
-(see http://code.google.com/p/pyodbc/issues/detail?id=25).   Consider usage
-of OurSQL, MySQLdb, or MySQL-connector/Python.
+# mysql/pyodbc.py
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
+# <see AUTHORS file>
+#
+# This module is part of SQLAlchemy and is released under
+# the MIT License: http://www.opensource.org/licenses/mit-license.php
 
 """
 
-from sqlalchemy.dialects.mysql.base import MySQLDialect, MySQLExecutionContext
-from sqlalchemy.connectors.pyodbc import PyODBCConnector
-from sqlalchemy.engine import base as engine_base
-from sqlalchemy import util
+
+.. dialect:: mysql+pyodbc
+    :name: PyODBC
+    :dbapi: pyodbc
+    :connectstring: mysql+pyodbc://<username>:<password>@<dsnname>
+    :url: http://pypi.python.org/pypi/pyodbc/
+
+    .. note:: The PyODBC for MySQL dialect is not well supported, and
+       is subject to unresolved character encoding issues
+       which exist within the current ODBC drivers available.
+       (see http://code.google.com/p/pyodbc/issues/detail?id=25).
+       Other dialects for MySQL are recommended.
+
+"""
+
+from .base import MySQLDialect, MySQLExecutionContext
+from ...connectors.pyodbc import PyODBCConnector
+from ... import util
 import re
+
 
 class MySQLExecutionContext_pyodbc(MySQLExecutionContext):
 
@@ -36,12 +37,13 @@ class MySQLExecutionContext_pyodbc(MySQLExecutionContext):
         cursor.close()
         return lastrowid
 
+
 class MySQLDialect_pyodbc(PyODBCConnector, MySQLDialect):
     supports_unicode_statements = False
     execution_ctx_cls = MySQLExecutionContext_pyodbc
 
     pyodbc_driver_name = "MySQL"
-    
+
     def __init__(self, **kw):
         # deal with http://code.google.com/p/pyodbc/issues/detail?id=25
         kw.setdefault('convert_unicode', True)
@@ -62,11 +64,12 @@ class MySQLDialect_pyodbc(PyODBCConnector, MySQLDialect):
             if opts.get(key, None):
                 return opts[key]
 
-        util.warn("Could not detect the connection character set.  Assuming latin1.")
+        util.warn("Could not detect the connection character set.  "
+                  "Assuming latin1.")
         return 'latin1'
-    
+
     def _extract_error_code(self, exception):
-        m = re.compile(r"\((\d+)\)").search(str(exception.orig.args))
+        m = re.compile(r"\((\d+)\)").search(str(exception.args))
         c = m.group(1)
         if c:
             return int(c)
