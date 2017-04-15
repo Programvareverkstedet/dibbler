@@ -1,17 +1,21 @@
-"""Support for the MySQL database via Jython's zxjdbc JDBC connector.
+# mysql/zxjdbc.py
+# Copyright (C) 2005-2017 the SQLAlchemy authors and contributors
+# <see AUTHORS file>
+#
+# This module is part of SQLAlchemy and is released under
+# the MIT License: http://www.opensource.org/licenses/mit-license.php
 
-JDBC Driver
------------
+"""
 
-The official MySQL JDBC driver is at
-http://dev.mysql.com/downloads/connector/j/.
+.. dialect:: mysql+zxjdbc
+    :name: zxjdbc for Jython
+    :dbapi: zxjdbc
+    :connectstring: mysql+zxjdbc://<user>:<password>@<hostname>[:<port>]/\
+<database>
+    :driverurl: http://dev.mysql.com/downloads/connector/j/
 
-Connecting
-----------
-
-Connect string format:
-
-    mysql+zxjdbc://<user>:<password>@<hostname>[:<port>]/<database>
+    .. note:: Jython is not supported by current versions of SQLAlchemy.  The
+       zxjdbc dialect should be considered as experimental.
 
 Character Sets
 --------------
@@ -20,14 +24,15 @@ SQLAlchemy zxjdbc dialects pass unicode straight through to the
 zxjdbc/JDBC layer. To allow multiple character sets to be sent from the
 MySQL Connector/J JDBC driver, by default SQLAlchemy sets its
 ``characterEncoding`` connection property to ``UTF-8``. It may be
-overriden via a ``create_engine`` URL parameter.
+overridden via a ``create_engine`` URL parameter.
 
 """
 import re
 
-from sqlalchemy import types as sqltypes, util
-from sqlalchemy.connectors.zxJDBC import ZxJDBCConnector
-from sqlalchemy.dialects.mysql.base import BIT, MySQLDialect, MySQLExecutionContext
+from ... import types as sqltypes, util
+from ...connectors.zxJDBC import ZxJDBCConnector
+from .base import BIT, MySQLDialect, MySQLExecutionContext
+
 
 class _ZxJDBCBit(BIT):
     def result_processor(self, dialect, coltype):
@@ -37,7 +42,7 @@ class _ZxJDBCBit(BIT):
                 return value
             if isinstance(value, bool):
                 return int(value)
-            v = 0L
+            v = 0
             for i in value:
                 v = v << 8 | (i & 0xff)
             value = v
@@ -82,7 +87,8 @@ class MySQLDialect_zxjdbc(ZxJDBCConnector, MySQLDialect):
             if opts.get(key, None):
                 return opts[key]
 
-        util.warn("Could not detect the connection character set.  Assuming latin1.")
+        util.warn("Could not detect the connection character set.  "
+                  "Assuming latin1.")
         return 'latin1'
 
     def _driver_kwargs(self):
@@ -92,15 +98,15 @@ class MySQLDialect_zxjdbc(ZxJDBCConnector, MySQLDialect):
     def _extract_error_code(self, exception):
         # e.g.: DBAPIError: (Error) Table 'test.u2' doesn't exist
         # [SQLCode: 1146], [SQLState: 42S02] 'DESCRIBE `u2`' ()
-        m = re.compile(r"\[SQLCode\: (\d+)\]").search(str(exception.orig.args))
+        m = re.compile(r"\[SQLCode\: (\d+)\]").search(str(exception.args))
         c = m.group(1)
         if c:
             return int(c)
 
-    def _get_server_version_info(self,connection):
+    def _get_server_version_info(self, connection):
         dbapi_con = connection.connection
         version = []
-        r = re.compile('[.\-]')
+        r = re.compile(r'[.\-]')
         for n in r.split(dbapi_con.dbversion):
             try:
                 version.append(int(n))
