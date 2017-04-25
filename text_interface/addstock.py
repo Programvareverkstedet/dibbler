@@ -73,11 +73,11 @@ much money you're due in credits for the purchase when prompted.\n'''
             print "Users to credit:"
             for user in self.users:
                 print "  %s" % str(user.name)
-        print "\n{{0:s}}{{1:>{0}s}}".format(Product.name_length-1).format("Product", "Amount")
+        print u"\n{{0:s}}{{1:>{0}s}}".format(Product.name_length-1).format("Product", "Amount")
         print (6 + Product.name_length) * '-'
         if len(self.products):
             for product in self.products.keys():
-                print '{{0:<{0}}}{{1:>6d}}'.format(Product.name_length).format(product.name, self.products[product][0])
+                print u'{{0:<{0}}}{{1:>6d}}'.format(Product.name_length).format(product.name, self.products[product][0])
                 print (6 + Product.name_length) * '-'
 
     def add_thing_to_pending(self, thing, amount, price):
