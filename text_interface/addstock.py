@@ -91,6 +91,14 @@ much money you're due in credits for the purchase when prompted.\n'''
             self.products[thing] = [amount, price]
 
     def perform_transaction(self):
+        print 'Did you pay a different price?'
+        if not self.confirm('>', default=True):
+            price = self.input_int()
+            if price > self.price:
+                print 'Illegal action, total can not be higher than your total.'
+            else:
+                self.price = price
+
         description = self.input_str('Log message> ', length_range=(0, 50))
         if description == '':
             description = 'Purchased products for PVVVV, adjusted credit ' + str(self.price)
