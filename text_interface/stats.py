@@ -18,8 +18,8 @@ class ProductPopularityMenu(Menu):
         text = ''
         sub = \
             self.session.query(PurchaseEntry.product_id,
-                               func.count('*').label('purchase_count')) \
-                .group_by(PurchaseEntry.product_id) \
+                               func.sum(PurchaseEntry.amount).label('purchase_count')) \
+                .filter(PurchaseEntry.amount > 0).group_by(PurchaseEntry.product_id) \
                 .subquery()
         product_list = \
             self.session.query(Product, sub.c.purchase_count) \
@@ -27,11 +27,14 @@ class ProductPopularityMenu(Menu):
                 .order_by(desc(sub.c.purchase_count)) \
                 .filter(sub.c.purchase_count is not None) \
                 .all()
-        line_format = '%10s | %-' + str(Product.name_length) + 's\n'
-        text += line_format % ('items sold', 'product')
-        text += '-' * 58 + '\n'
+        line_format = u'{0:10s} | {1:>45s}\n'
+        text += line_format.format('items sold', 'product')
+        text += '-' * (31 + Product.name_length) + '\n'
         for product, number in product_list:
-            text += line_format % (number, product.name)
+            print(product.name)
+            if number is None:
+                continue
+            text += line_format.format(str(number), product.name)
         less(text)
 
 
