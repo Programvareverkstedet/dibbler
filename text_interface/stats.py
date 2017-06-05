@@ -69,7 +69,7 @@ class BalanceMenu(Menu):
         self.print_header()
         text = ''
         total_value = 0
-        product_list = self.session.query(Product).all()
+        product_list = self.session.query(Product).filter(Product.stock > 0).all()
         for p in product_list:
             total_value += p.stock * p.price
 
