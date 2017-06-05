@@ -31,7 +31,6 @@ class ProductPopularityMenu(Menu):
         text += line_format.format('items sold', 'product')
         text += '-' * (31 + Product.name_length) + '\n'
         for product, number in product_list:
-            print(product.name)
             if number is None:
                 continue
             text += line_format.format(str(number), product.name)
@@ -60,7 +59,6 @@ class ProductRevenueMenu(Menu):
         text += line_format.format('revenue', 'items sold', 'price', 'product')
         text += '-' * (31 + Product.name_length) + '\n'
         for product, number in product_list:
-            print(product.name)
             if number is None:
                 continue
             text += line_format.format(str(number * product.price), str(number), str(product.price), product.name)
