@@ -44,8 +44,8 @@ class ProductRevenueMenu(Menu):
         text = ''
         sub = \
             self.session.query(PurchaseEntry.product_id,
-                               func.count('*').label('purchase_count')) \
-                .group_by(PurchaseEntry.product_id) \
+                               func.sum(PurchaseEntry.amount).label('purchase_count')) \
+                .filter(PurchaseEntry.amount > 0).group_by(PurchaseEntry.product_id) \
                 .subquery()
         product_list = \
             self.session.query(Product, sub.c.purchase_count) \
@@ -53,11 +53,14 @@ class ProductRevenueMenu(Menu):
                 .order_by(desc(sub.c.purchase_count * Product.price)) \
                 .filter(sub.c.purchase_count is not None) \
                 .all()
-        line_format = '%7s | %10s | %5s | %-' + str(Product.name_length) + 's\n'
-        text += line_format % ('revenue', 'items sold', 'price', 'product')
+        line_format = u'{0:7s} | {1:10s} | {2:6s} | {3:>45s}\n'
+        text += line_format.format('revenue', 'items sold', 'price', 'product')
         text += '-' * (31 + Product.name_length) + '\n'
         for product, number in product_list:
-            text += line_format % (number * product.price, number, product.price, product.name)
+            print(product.name)
+            if number is None:
+                continue
+            text += line_format.format(str(number * product.price), str(number), str(product.price), product.name)
         less(text)
 
 
@@ -73,12 +76,17 @@ class BalanceMenu(Menu):
         for p in product_list:
             total_value += p.stock * p.price
 
-        total_credit = self.session.query(sqlalchemy.func.sum(User.credit)).first()[0]
+        total_positive_credit = self.session.query(sqlalchemy.func.sum(User.credit)).filter(User.credit > 0).first()[0]
+        total_negative_credit = self.session.query(sqlalchemy.func.sum(User.credit)).filter(User.credit < 0).first()[0]
+
+        total_credit = total_positive_credit + total_negative_credit
         total_balance = total_value - total_credit
 
         line_format = '%15s | %5d \n'
         text += line_format % ('Total value', total_value)
         text += 24 * '-' + '\n'
+        text += line_format % ('Positive credit', total_positive_credit)
+        text += line_format % ('Negative credit', total_negative_credit)
         text += line_format % ('Total credit', total_credit)
         text += 24 * '-' + '\n'
         text += line_format % ('Total balance', total_balance)
@@ -91,5 +99,3 @@ class LoggedStatisticsMenu(Menu):
 
     def _execute(self):
         statisticsTextOnly()
-
-
