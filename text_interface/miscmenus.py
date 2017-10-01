@@ -18,11 +18,13 @@ class TransferMenu(Menu):
         self.add_to_context(' from ' + user1.name)
         user2 = self.input_user('To user> ')
         self.add_to_context(' to ' + user2.name)
+        comment = self.input_str('Comment> ')
+        self.add_to_context(' (comment) ' + user2.name)
 
         t1 = Transaction(user1, amount,
-                         'transfer to ' + user2.name)
+                         'transfer to ' + user2.name + ' "' + comment + '"')
         t2 = Transaction(user2, -amount,
-                         'transfer from ' + user1.name)
+                         'transfer from ' + user1.name + ' "' + comment + '"')
         t1.perform_transaction()
         t2.perform_transaction()
         self.session.add(t1)
@@ -32,6 +34,7 @@ class TransferMenu(Menu):
             print 'Transfered %d kr from %s to %s' % (amount, user1, user2)
             print 'User %s\'s credit is now %d kr' % (user1, user1.credit)
             print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
+            print 'Comment: $s' % comment
         except sqlalchemy.exc.SQLAlchemyError, e:
             print 'Could not perform transfer: %s' % e
             # self.pause()
