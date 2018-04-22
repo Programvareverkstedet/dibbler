@@ -92,8 +92,8 @@ much money you're due in credits for the purchase when prompted.\n'''
 
     def perform_transaction(self):
         print 'Did you pay a different price?'
-        if self.confirm('>', default=True):
-            price = self.input_int()
+        if self.confirm('>', default=False):
+            price = self.input_int('How much did you pay?', default=self.price)
             if price > self.price:
                 print 'Illegal action, total can not be higher than your total.'
             else:

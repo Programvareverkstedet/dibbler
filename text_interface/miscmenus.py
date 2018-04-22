@@ -34,7 +34,7 @@ class TransferMenu(Menu):
             print 'Transfered %d kr from %s to %s' % (amount, user1, user2)
             print 'User %s\'s credit is now %d kr' % (user1, user1.credit)
             print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
-            print 'Comment: $s' % comment
+            print 'Comment: %s' % comment
         except sqlalchemy.exc.SQLAlchemyError, e:
             print 'Could not perform transfer: %s' % e
             # self.pause()
