@@ -17,11 +17,11 @@ class BrotherLabelWriter(ImageWriter):
         if self.rot:
             self._h, self._w = label_type_specs[typ]['dots_printable']
             if self._w == 0 or self._w > max_height:
-                self._w = max_height
+                self._w = min(max_height, self._h / 2)
         else:
             self._w, self._h = label_type_specs[typ]['dots_printable']
             if self._h == 0 or self._h > max_height:
-                self._h = max_height
+                self._h = min(max_height, self._w / 2)
         self._xo = 0.0
         self._yo = 0.0
         self._title = text
