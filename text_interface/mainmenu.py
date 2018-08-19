@@ -46,4 +46,4 @@ class MainMenu(Menu):
         return False
 
     def invalid_menu_choice(self, in_str):
-        print self.show_context()
+        print(self.show_context())

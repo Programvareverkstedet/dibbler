@@ -19,9 +19,9 @@ class AddUserMenu(Menu):
         self.session.add(user)
         try:
             self.session.commit()
-            print 'User %s stored' % username
-        except sqlalchemy.exc.IntegrityError, e:
-            print 'Could not store user %s: %s' % (username, e)
+            print('User %s stored' % username)
+        except sqlalchemy.exc.IntegrityError as e:
+            print('Could not store user %s: %s' % (username, e))
         self.pause()
 
 
@@ -56,9 +56,9 @@ user, then rfid (write an empty line to remove the card number or rfid).
                                    empty_string_is_none=True)
         try:
             self.session.commit()
-            print 'User %s stored' % user.name
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not store user %s: %s' % (user.name, e)
+            print('User %s stored' % user.name)
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not store user %s: %s' % (user.name, e))
         self.pause()
 
 
@@ -75,9 +75,9 @@ class AddProductMenu(Menu):
         self.session.add(product)
         try:
             self.session.commit()
-            print 'Product %s stored' % name
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not store product %s: %s' % (name, e)
+            print('Product %s stored' % name)
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not store product %s: %s' % (name, e))
         self.pause()
 
 
@@ -108,16 +108,16 @@ class EditProductMenu(Menu):
             elif what == 'store':
                 try:
                     self.session.commit()
-                    print 'Product %s stored' % product.name
-                except sqlalchemy.exc.SQLAlchemyError, e:
-                    print 'Could not store product %s: %s' % (product.name, e)
+                    print('Product %s stored' % product.name)
+                except sqlalchemy.exc.SQLAlchemyError as e:
+                    print('Could not store product %s: %s' % (product.name, e))
                 self.pause()
                 return
             elif what is None:
-                print 'Edit aborted'
+                print('Edit aborted')
                 return
             else:
-                print 'What what?'
+                print('What what?')
 
 
 class AdjustStockMenu(Menu):
@@ -128,25 +128,25 @@ class AdjustStockMenu(Menu):
         self.print_header()
         product = self.input_product('Product> ')
 
-        print 'The stock of this product is: %d ' % product.stock
-        print 'Write the number of products you have added to the stock'
-        print 'Alternatively, correct the stock for any mistakes'
+        print('The stock of this product is: %d ' % product.stock)
+        print('Write the number of products you have added to the stock')
+        print('Alternatively, correct the stock for any mistakes')
         add_stock = self.input_int('Added stock> ', (-1000, 1000))
-        print 'You added %d to the stock of %s' % (add_stock, product)
+        print('You added %d to the stock of %s' % (add_stock, product))
 
         product.stock += add_stock
 
-        print 'The stock is now %d' % product.stock
+        print('The stock is now %d' % product.stock)
 
         try:
             self.session.commit()
-            print 'Stock is now stored'
+            print('Stock is now stored')
             self.pause()
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not store stock: %s' % e
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not store stock: %s' % e)
             self.pause()
             return
-        print 'The stock is now %d' % product.stock
+        print('The stock is now %d' % product.stock)
 
 
 class CleanupStockMenu(Menu):
@@ -158,10 +158,10 @@ class CleanupStockMenu(Menu):
 
         products = self.session.query(Product).filter(Product.stock != 0).all()
 
-        print "Every product in stock will be printed."
-        print "Entering no value will keep current stock or set it to 0 if it is negative."
-        print "Entering a value will set current stock to that value."
-        print "Press enter to begin."
+        print("Every product in stock will be printed.")
+        print("Entering no value will keep current stock or set it to 0 if it is negative.")
+        print("Entering a value will set current stock to that value.")
+        print("Press enter to begin.")
 
         self.pause()
 
@@ -176,12 +176,12 @@ class CleanupStockMenu(Menu):
 
         try:
             self.session.commit()
-            print 'New stocks are now stored.'
+            print('New stocks are now stored.')
             self.pause()
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not store stock: %s' % e
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not store stock: %s' % e)
             self.pause()
             return
 
         for p in changed_products:
-            print p[0].name, ".", p[1], "->", p[0].stock
+            print(p[0].name, ".", p[1], "->", p[0].stock)

@@ -34,29 +34,29 @@ When finished, write an empty line to confirm the purchase.\n'''
     def low_credit_warning(self, user, timeout=False):
         assert isinstance(user, User)
 
-        print "***********************************************************************"
-        print "***********************************************************************"
-        print ""
-        print "$$\      $$\  $$$$$$\  $$$$$$$\  $$\   $$\ $$$$$$\ $$\   $$\  $$$$$$\\"
-        print "$$ | $\  $$ |$$  __$$\ $$  __$$\ $$$\  $$ |\_$$  _|$$$\  $$ |$$  __$$\\"
-        print "$$ |$$$\ $$ |$$ /  $$ |$$ |  $$ |$$$$\ $$ |  $$ |  $$$$\ $$ |$$ /  \__|"
-        print "$$ $$ $$\$$ |$$$$$$$$ |$$$$$$$  |$$ $$\$$ |  $$ |  $$ $$\$$ |$$ |$$$$\\"
-        print "$$$$  _$$$$ |$$  __$$ |$$  __$$< $$ \$$$$ |  $$ |  $$ \$$$$ |$$ |\_$$ |"
-        print "$$$  / \$$$ |$$ |  $$ |$$ |  $$ |$$ |\$$$ |  $$ |  $$ |\$$$ |$$ |  $$ |"
-        print "$$  /   \$$ |$$ |  $$ |$$ |  $$ |$$ | \$$ |$$$$$$\ $$ | \$$ |\$$$$$$  |"
-        print "\__/     \__|\__|  \__|\__|  \__|\__|  \__|\______|\__|  \__| \______/"
-        print ""
-        print "***********************************************************************"
-        print "***********************************************************************"
-        print ""
-        print "USER %s HAS LOWER CREDIT THAN %d." % (user.name, conf.low_credit_warning_limit)
-        print "THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH."
-        print "CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS."
-        print ""
-        print "Do you want to continue with this purchase?"
+        print("***********************************************************************")
+        print("***********************************************************************")
+        print("")
+        print("$$\      $$\  $$$$$$\  $$$$$$$\  $$\   $$\ $$$$$$\ $$\   $$\  $$$$$$\\")
+        print("$$ | $\  $$ |$$  __$$\ $$  __$$\ $$$\  $$ |\_$$  _|$$$\  $$ |$$  __$$\\")
+        print("$$ |$$$\ $$ |$$ /  $$ |$$ |  $$ |$$$$\ $$ |  $$ |  $$$$\ $$ |$$ /  \__|")
+        print("$$ $$ $$\$$ |$$$$$$$$ |$$$$$$$  |$$ $$\$$ |  $$ |  $$ $$\$$ |$$ |$$$$\\")
+        print("$$$$  _$$$$ |$$  __$$ |$$  __$$< $$ \$$$$ |  $$ |  $$ \$$$$ |$$ |\_$$ |")
+        print("$$$  / \$$$ |$$ |  $$ |$$ |  $$ |$$ |\$$$ |  $$ |  $$ |\$$$ |$$ |  $$ |")
+        print("$$  /   \$$ |$$ |  $$ |$$ |  $$ |$$ | \$$ |$$$$$$\ $$ | \$$ |\$$$$$$  |")
+        print("\__/     \__|\__|  \__|\__|  \__|\__|  \__|\______|\__|  \__| \______/")
+        print("")
+        print("***********************************************************************")
+        print("***********************************************************************")
+        print("")
+        print("USER %s HAS LOWER CREDIT THAN %d." % (user.name, conf.low_credit_warning_limit))
+        print("THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH.")
+        print("CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS.")
+        print("")
+        print("Do you want to continue with this purchase?")
 
         if timeout:
-            print"THIS PURCHASE WILL AUTOMATICALLY BE PERFORMED IN 3 MINUTES!"
+            print("THIS PURCHASE WILL AUTOMATICALLY BE PERFORMED IN 3 MINUTES!")
             return self.confirm(prompt=">", default=True, timeout=180)
         else:
             return self.confirm(prompt=">", default=True)
@@ -64,10 +64,10 @@ When finished, write an empty line to confirm the purchase.\n'''
     def add_thing_to_purchase(self, thing, amount=1):
         if isinstance(thing, User):
             if thing.is_anonymous():
-                print '---------------------------------------------'
-                print '| You are now purchasing as the user anonym.|'
-                print '| You have to put money in the anonym-jar.  |'
-                print '---------------------------------------------'
+                print('---------------------------------------------')
+                print('| You are now purchasing as the user anonym.|')
+                print('| You have to put money in the anonym-jar.  |')
+                print('---------------------------------------------')
 
             if not self.credit_check(thing):
                 if self.low_credit_warning(user=thing, timeout=self.superfast_mode):
@@ -100,11 +100,11 @@ When finished, write an empty line to confirm the purchase.\n'''
 
         if len(initial_contents) > 0 and all(map(is_product, initial_contents)):
             self.superfast_mode = True
-            print '***********************************************'
-            print '****** Buy menu is in SUPERFASTmode[tm]! ******'
-            print '*** The purchase will be stored immediately ***'
-            print '*** when you enter a user.                  ***'
-            print '***********************************************'
+            print('***********************************************')
+            print('****** Buy menu is in SUPERFASTmode[tm]! ******')
+            print('*** The purchase will be stored immediately ***')
+            print('*** when you enter a user.                  ***')
+            print('***********************************************')
 
         while True:
             self.print_purchase()
@@ -148,17 +148,17 @@ When finished, write an empty line to confirm the purchase.\n'''
         self.session.add(self.purchase)
         try:
             self.session.commit()
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not store purchase: %s' % e
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not store purchase: %s' % e)
         else:
-            print 'Purchase stored.'
+            print('Purchase stored.')
             self.print_purchase()
             for t in self.purchase.transactions:
                 if not t.user.is_anonymous():
-                    print 'User %s\'s credit is now %d kr' % (t.user.name, t.user.credit)
+                    print('User %s\'s credit is now %d kr' % (t.user.name, t.user.credit))
                     if t.user.credit < conf.low_credit_warning_limit:
-                        print 'USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.' \
-                              % (t.user.name, conf.low_credit_warning_limit)
+                        print('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.' \
+                              % (t.user.name, conf.low_credit_warning_limit))
 
         return True
 
@@ -177,15 +177,13 @@ When finished, write an empty line to confirm the purchase.\n'''
             string += '(empty)'
         else:
             string += ', '.join(
-                map(lambda t: t.user.name + ("*" if not self.credit_check(t.user) else ""),
-                    transactions))
+                [t.user.name + ("*" if not self.credit_check(t.user) else "") for t in transactions])
         string += '\n  products: '
         if len(entries) == 0:
             string += '(empty)'
         else:
             string += "\n    "
-            string += '\n    '.join(map(lambda e: '%dx %s (%d kr)' % (e.amount, e.product.name, e.product.price),
-                                        entries))
+            string += '\n    '.join(['%dx %s (%d kr)' % (e.amount, e.product.name, e.product.price) for e in entries])
         if len(transactions) > 1:
             string += '\n  price per person: %d kr' % self.purchase.price_per_transaction()
             if any(t.penalty > 1 for t in transactions):

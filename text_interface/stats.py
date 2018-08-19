@@ -27,7 +27,7 @@ class ProductPopularityMenu(Menu):
                 .order_by(desc(sub.c.purchase_count)) \
                 .filter(sub.c.purchase_count is not None) \
                 .all()
-        line_format = u'{0:10s} | {1:>45s}\n'
+        line_format = '{0:10s} | {1:>45s}\n'
         text += line_format.format('items sold', 'product')
         text += '-' * (31 + Product.name_length) + '\n'
         for product, number in product_list:
@@ -55,7 +55,7 @@ class ProductRevenueMenu(Menu):
                 .order_by(desc(sub.c.purchase_count * Product.price)) \
                 .filter(sub.c.purchase_count is not None) \
                 .all()
-        line_format = u'{0:7s} | {1:10s} | {2:6s} | {3:>45s}\n'
+        line_format = '{0:7s} | {1:10s} | {2:6s} | {3:>45s}\n'
         text += line_format.format('revenue', 'items sold', 'price', 'product')
         text += '-' * (31 + Product.name_length) + '\n'
         for product, number in product_list:

@@ -178,7 +178,7 @@ class ChargeMenu(SubMenu):
 	def textpad_edit(self, ch):
 		self.textpad.do_command(ch)
 		self.search_text = self.textpad.gather().strip()
-		self.resultview.set_list(self.session.query(User).filter(or_(User.user.like(unicode('%'+self.search_text+'%')),User.id.like('%'+self.search_text+'%'))).all())
+		self.resultview.set_list(self.session.query(User).filter(or_(User.user.like(str('%'+self.search_text+'%')),User.id.like('%'+self.search_text+'%'))).all())
 #		self.resultview.draw()
 #		self.resultwindow.refresh()
 

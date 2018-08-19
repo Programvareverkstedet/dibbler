@@ -18,8 +18,7 @@ def write_log(f):
     transaction_list = session.query(Transaction).all()
     for transaction in transaction_list:
         if transaction.purchase:
-            products = ', '.join(map(lambda ent: ent.product.name,
-                                     transaction.purchase.entries))
+            products = ', '.join([ent.product.name for ent in transaction.purchase.entries])
             description = ''
         else:
             products = ''
@@ -33,6 +32,6 @@ if len(sys.argv) < 2:
     write_log(sys.stdout)
 else:
     filename = sys.argv[1]
-    print 'Writing log to ' + filename
+    print('Writing log to ' + filename)
     with open(filename, 'w') as f:
         write_log(f)

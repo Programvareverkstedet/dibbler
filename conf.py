@@ -1,4 +1,4 @@
-db_url = 'postgres://CVi@127.0.0.1/pvv_vv'
+db_url = 'postgres://robertem@127.0.0.1/pvvvv'
 quit_allowed = True
 stop_allowed = False
 show_tracebacks = True

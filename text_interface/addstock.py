@@ -66,36 +66,36 @@ much money you're due in credits for the purchase when prompted.\n'''
         return bool(self.users) and len(self.products) and self.price
 
     def print_info(self):
-        print (6 + Product.name_length) * '-'
+        print((6 + Product.name_length) * '-')
         if self.price:
-            print "Amount to be credited: {{0:>{0}d}}".format(Product.name_length-17).format(self.price)
+            print("Amount to be credited: {{0:>{0}d}}".format(Product.name_length-17).format(self.price))
         if self.users:
-            print "Users to credit:"
+            print("Users to credit:")
             for user in self.users:
-                print "  %s" % str(user.name)
-        print u"\n{{0:s}}{{1:>{0}s}}".format(Product.name_length-1).format("Product", "Amount")
-        print (6 + Product.name_length) * '-'
+                print("  %s" % str(user.name))
+        print("\n{{0:s}}{{1:>{0}s}}".format(Product.name_length-1).format("Product", "Amount"))
+        print((6 + Product.name_length) * '-')
         if len(self.products):
-            for product in self.products.keys():
-                print u'{{0:<{0}}}{{1:>6d}}'.format(Product.name_length).format(product.name, self.products[product][0])
-                print (6 + Product.name_length) * '-'
+            for product in list(self.products.keys()):
+                print('{{0:<{0}}}{{1:>6d}}'.format(Product.name_length).format(product.name, self.products[product][0]))
+                print((6 + Product.name_length) * '-')
 
     def add_thing_to_pending(self, thing, amount, price):
         if isinstance(thing, User):
             self.users.append(thing)
-        elif thing in self.products.keys():
-            print 'Already added this product, adding amounts'
+        elif thing in list(self.products.keys()):
+            print('Already added this product, adding amounts')
             self.products[thing][0] += amount
             self.products[thing][1] += price
         else:
             self.products[thing] = [amount, price]
 
     def perform_transaction(self):
-        print 'Did you pay a different price?'
+        print('Did you pay a different price?')
         if self.confirm('>', default=False):
             price = self.input_int('How much did you pay?', default=self.price)
             if price > self.price:
-                print 'Illegal action, total can not be higher than your total.'
+                print('Illegal action, total can not be higher than your total.')
             else:
                 self.price = price
 
@@ -109,9 +109,9 @@ much money you're due in credits for the purchase when prompted.\n'''
             product.price = int(ceil(float(value) / (max(product.stock, 0) + self.products[product][0])))
             product.stock = max(self.products[product][0], product.stock + self.products[product][0])
             product.hidden = False
-            print "New stock for %s: %d" % (product.name, product.stock), \
+            print("New stock for %s: %d" % (product.name, product.stock), \
                 ("- New price: " + str(product.price) if old_price != product.price else ""), \
-                ("- Removed hidden status" if old_hidden != product.hidden else "")
+                ("- Removed hidden status" if old_hidden != product.hidden else ""))
 
         purchase = Purchase()
         for user in self.users:
@@ -124,9 +124,9 @@ much money you're due in credits for the purchase when prompted.\n'''
 
         try:
             self.session.commit()
-            print "Success! Transaction performed:"
+            print("Success! Transaction performed:")
             # self.print_info()
             for user in self.users:
-                print "User %s's credit is now %i" % (user.name, user.credit)
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not perform transaction: %s' % e
+                print("User %s's credit is now %i" % (user.name, user.credit))
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not perform transaction: %s' % e)

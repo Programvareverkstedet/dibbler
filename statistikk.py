@@ -7,29 +7,29 @@ import matplotlib.dates as mdates
 def getInputType():
 	inp = 0
 	while not (inp == '1' or inp == '2' or inp == '3' or inp == '4'):
-		print 'type 1 for user-statistics'
-		print 'type 2 for product-statistics'
-		print 'type 3 for global-statistics'
-		print 'type 4 to enter loop-mode'
-		inp = raw_input('')
+		print('type 1 for user-statistics')
+		print('type 2 for product-statistics')
+		print('type 3 for global-statistics')
+		print('type 4 to enter loop-mode')
+		inp = input('')
 	return int(inp)
 
 def getDateFile(date, n):
 	try:
 		if n==0:
-			inp = raw_input('start date? (yyyy-mm-dd) ')
+			inp = input('start date? (yyyy-mm-dd) ')
 		elif n==-1:
-			inp = raw_input('end date? (yyyy-mm-dd) ')	
+			inp = input('end date? (yyyy-mm-dd) ')	
 		year = inp.partition('-')
 		month = year[2].partition('-')
 		return datetime.date(int(year[0]), int(month[0]), int(month[2]))	
 	except:
-		print 'invalid date, setting start start date'
+		print('invalid date, setting start start date')
 		if n==0:
-			print 'to date found on first line'
+			print('to date found on first line')
 		elif n==-1:
-			print 'to date found on last line'
-		print date
+			print('to date found on last line')
+		print(date)
 		return datetime.date(int(date.partition('-')[0]), int(date.partition('-')[2].partition('-')[0]), int(date.partition('-')[2].partition('-')[2]))
 
 def dateToDateNumFile(date, startDate):
@@ -72,8 +72,8 @@ def dayPlot(array, days):
 	if (not array == []):
 		for i in range(7):
 			array[i]=array[i]*7.0/days
-		plt.bar(range(7), array)
-		plt.xticks(range(7),['      mon','      tue','      wed','      thu','      fri','      sat','      sun'])
+		plt.bar(list(range(7)), array)
+		plt.xticks(list(range(7)),['      mon','      tue','      wed','      thu','      fri','      sat','      sun'])
 
 def graphPlot(array, dateLine):
 	if (not array == []):
@@ -135,22 +135,22 @@ def plotGlobal(database, dateLine, n):
 def alt4menu(database, dateLine, useDatabase):
 	n=10
 	while 1:
-		print '\n1: user-statistics, 2: product-statistics, 3:global-statistics, n: adjust amount of data shown q:quit'
+		print('\n1: user-statistics, 2: product-statistics, 3:global-statistics, n: adjust amount of data shown q:quit')
 		try:
-			inp = raw_input('')
+			inp = input('')
 		except:
 			continue	
 		if inp == 'q':
 			break
 		elif inp == '1':
 			if i=='0':
-				user = raw_input('input full username: ')
+				user = input('input full username: ')
 			else:
 				user = getUser()
 			plotUser(database, dateLine, user, n)
 		elif inp == '2':
 			if i=='0':
-				product = raw_input('input full product name: ')
+				product = input('input full product name: ')
 			else:
 				product = getProduct()
 			plotProduct(database, dateLine, product, n)
@@ -158,21 +158,21 @@ def alt4menu(database, dateLine, useDatabase):
 			plotGlobal(database, dateLine, n)
 		elif inp == 'n':
 			try:			
-				n=int(raw_input('set number to show '));
+				n=int(input('set number to show '));
 			except:
 				pass
 #---------------------------------------MAIN-------------------------------------
 inputType=getInputType()
-i = raw_input('0:fil, 1:database \n? ')
+i = input('0:fil, 1:database \n? ')
 if (inputType == 1):
 	if i=='0':
-		user = raw_input('input full username: ')
+		user = input('input full username: ')
 	else:
 		user = getUser()
 	product = ''
 elif (inputType == 2):
 	if i=='0':
-		product = raw_input('input full product name: ')
+		product = input('input full product name: ')
 	else:
 		product = getProduct()
 	user = ''
@@ -180,7 +180,7 @@ else :
 	product = ''
 	user = ''
 if i=='0':
-	inputFile=raw_input('logfil? ')
+	inputFile=input('logfil? ')
 	if inputFile=='':
 		inputFile='default.dibblerlog'
 	database, dateLine = buildDatabaseFromFile(inputFile, inputType, product, user)

@@ -31,12 +31,12 @@ class TransferMenu(Menu):
         self.session.add(t2)
         try:
             self.session.commit()
-            print 'Transfered %d kr from %s to %s' % (amount, user1, user2)
-            print 'User %s\'s credit is now %d kr' % (user1, user1.credit)
-            print 'User %s\'s credit is now %d kr' % (user2, user2.credit)
-            print 'Comment: %s' % comment
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not perform transfer: %s' % e
+            print('Transfered %d kr from %s to %s' % (amount, user1, user2))
+            print('User %s\'s credit is now %d kr' % (user1, user1.credit))
+            print('User %s\'s credit is now %d kr' % (user2, user2.credit))
+            print('Comment: %s' % comment)
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not perform transfer: %s' % e)
             # self.pause()
 
 
@@ -47,10 +47,10 @@ class ShowUserMenu(Menu):
     def _execute(self):
         self.print_header()
         user = self.input_user('User name, card number or RFID> ')
-        print 'User name: %s' % user.name
-        print 'Card number: %s' % user.card
-        print 'RFID: %s' % user.rfid
-        print 'Credit: %s kr' % user.credit
+        print('User name: %s' % user.name)
+        print('Card number: %s' % user.card)
+        print('RFID: %s' % user.rfid)
+        print('Credit: %s kr' % user.credit)
         selector = Selector('What do you want to know about %s?' % user.name,
                             items=[('transactions', 'Recent transactions (List of last ' + str(
                                 conf.user_recent_transaction_limit) + ')'),
@@ -64,7 +64,7 @@ class ShowUserMenu(Menu):
         elif what == 'transactions-all':
             self.print_all_transactions(user)
         else:
-            print 'What what?'
+            print('What what?')
 
     @staticmethod
     def print_all_transactions(user):
@@ -77,8 +77,7 @@ class ShowUserMenu(Menu):
                        abs(t.amount))
             if t.purchase:
                 string += 'purchase ('
-                string += ', '.join(map(lambda e: e.product.name,
-                                        t.purchase.entries))
+                string += ', '.join([e.product.name for e in t.purchase.entries])
                 string += ')'
                 if t.penalty > 1:
                     string += ' * %dx penalty applied' % t.penalty
@@ -101,8 +100,7 @@ class ShowUserMenu(Menu):
                        abs(t.amount))
             if t.purchase:
                 string += 'purchase ('
-                string += ', '.join(map(lambda e: e.product.name,
-                                        t.purchase.entries))
+                string += ', '.join([e.product.name for e in t.purchase.entries])
                 string += ')'
                 if t.penalty > 1:
                     string += ' * %dx penalty applied' % t.penalty
@@ -121,12 +119,12 @@ class ShowUserMenu(Menu):
                 products.append((product, count))
         num_products = len(products)
         if num_products == 0:
-            print 'No products purchased yet'
+            print('No products purchased yet')
         else:
             text = ''
             text += 'Products purchased:\n'
             for product, count in products:
-                text += u'{0:<47} {1:>3}\n'.format(product.name, count)
+                text += '{0:<47} {1:>3}\n'.format(product.name, count)
             less(text)
 
 
@@ -158,15 +156,15 @@ class AdjustCreditMenu(Menu):  # reimplements ChargeMenu; these should be combin
     def _execute(self):
         self.print_header()
         user = self.input_user('User> ')
-        print 'User %s\'s credit is %d kr' % (user.name, user.credit)
+        print('User %s\'s credit is %d kr' % (user.name, user.credit))
         self.set_context('Adjusting credit for user %s' % user.name, display=False)
-        print '(Note on sign convention: Enter a positive amount here if you have'
-        print 'added money to the PVVVV money box, a negative amount if you have'
-        print 'taken money from it)'
+        print('(Note on sign convention: Enter a positive amount here if you have')
+        print('added money to the PVVVV money box, a negative amount if you have')
+        print('taken money from it)')
         amount = self.input_int('Add amount> ', (-100000, 100000))
-        print '(The "log message" will show up in the transaction history in the'
-        print '"Show user" menu.  It is not necessary to enter a message, but it'
-        print 'might be useful to help you remember why you adjusted the credit)'
+        print('(The "log message" will show up in the transaction history in the')
+        print('"Show user" menu.  It is not necessary to enter a message, but it')
+        print('might be useful to help you remember why you adjusted the credit)')
         description = self.input_str('Log message> ', length_range=(0, 50))
         if description == '':
             description = 'manually adjusted credit'
@@ -175,9 +173,9 @@ class AdjustCreditMenu(Menu):  # reimplements ChargeMenu; these should be combin
         self.session.add(transaction)
         try:
             self.session.commit()
-            print 'User %s\'s credit is now %d kr' % (user.name, user.credit)
-        except sqlalchemy.exc.SQLAlchemyError, e:
-            print 'Could not store transaction: %s' % e
+            print('User %s\'s credit is now %d kr' % (user.name, user.credit))
+        except sqlalchemy.exc.SQLAlchemyError as e:
+            print('Could not store transaction: %s' % e)
             # self.pause()
 
 
@@ -210,7 +208,7 @@ class ProductSearchMenu(Menu):
         self.print_header()
         self.set_context('Enter (part of) product name or bar code')
         product = self.input_product()
-        print 'Result: %s, price: %d kr, bar code: %s, stock: %d, hidden: %s' % (product.name, product.price,
+        print('Result: %s, price: %d kr, bar code: %s, stock: %d, hidden: %s' % (product.name, product.price,
                                                                                  product.bar_code, product.stock,
-                                                                                 ("Y" if product.hidden else "N"))
+                                                                                 ("Y" if product.hidden else "N")))
         # self.pause()

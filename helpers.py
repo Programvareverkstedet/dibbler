@@ -104,13 +104,13 @@ def argmax(d, all=False, value=None):
     if value != None:
         dd = d
         d = {}
-        for key in dd.keys():
+        for key in list(dd.keys()):
             d[key] = value(dd[key])
-    for key in d.keys():
+    for key in list(d.keys()):
         if maxarg == None or d[key] > d[maxarg]:
             maxarg = key
     if all:
-        return filter(lambda k: d[k] == d[maxarg], d.keys())
+        return [k for k in list(d.keys()) if d[k] == d[maxarg]]
     return maxarg
 
 def safe_str(obj):
@@ -122,10 +122,10 @@ def safe_str(obj):
     '''
     if isinstance(obj, str):
         return obj
-    if isinstance(obj, unicode):
+    if isinstance(obj, str):
         return obj.encode('utf8')
     else:
-        return safe_str(unicode(obj))
+        return safe_str(str(obj))
 
 def less(string):
     '''

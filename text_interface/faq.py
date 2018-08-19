@@ -46,7 +46,7 @@ class FAQMenu(Menu):
                       MessageMenu('Where are the easter eggs?  I tried saying "moo", but nothing happened.',
                                   'Don\'t say "moo".'),
                       MessageMenu('Why does the program speak English when all the users are Norwegians?',
-                                  u'Godt spørsmål.  Det virket sikkert som en god idé der og da.'),
+                                  'Godt spørsmål.  Det virket sikkert som en god idé der og da.'),
                       MessageMenu('I found a bug; is there a reward?',
                                   '''
             No.

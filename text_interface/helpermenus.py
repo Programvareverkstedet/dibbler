@@ -38,7 +38,7 @@ class Menu(object):
 
     def exit_menu(self):
         if self.exit_disallowed_msg is not None:
-            print self.exit_disallowed_msg
+            print(self.exit_disallowed_msg)
             return
         if self.exit_confirm_msg is not None:
             if not self.confirm(self.exit_confirm_msg, default=True):
@@ -47,27 +47,27 @@ class Menu(object):
 
     def at_exit(self):
         if self.exit_msg:
-            print self.exit_msg
+            print(self.exit_msg)
 
     def set_context(self, string, display=True):
         self.context = string
         if self.context is not None and display:
-            print self.context
+            print(self.context)
 
     def add_to_context(self, string):
         self.context += string
 
     def printc(self, string):
-        print string
+        print(string)
         if self.context is None:
             self.context = string
         else:
             self.context += '\n' + string
 
     def show_context(self):
-        print self.header_format % self.name
+        print(self.header_format % self.name)
         if self.context is not None:
-            print self.context
+            print(self.context)
 
     def item_is_submenu(self, i):
         return isinstance(self.items[i], Menu)
@@ -98,7 +98,7 @@ class Menu(object):
                 if result is None or re.match(regex + '$', result):
                     return result
                 else:
-                    print 'Value must match regular expression "%s"' % regex
+                    print('Value must match regular expression "%s"' % regex)
         if length_range != (None, None):
             while True:
                 result = self.input_str(prompt, empty_string_is_none=empty_string_is_none)
@@ -109,11 +109,11 @@ class Menu(object):
                 if ((length_range[0] and length < length_range[0]) or
                         (length_range[1] and length > length_range[1])):
                     if length_range[0] and length_range[1]:
-                        print 'Value must have length in range [%d,%d]' % length_range
+                        print('Value must have length in range [%d,%d]' % length_range)
                     elif length_range[0]:
-                        print 'Value must have length at least %d' % length_range[0]
+                        print('Value must have length at least %d' % length_range[0])
                     else:
-                        print 'Value must have length at most %d' % length_range[1]
+                        print('Value must have length at most %d' % length_range[1])
                 else:
                     return result
         while True:
@@ -129,11 +129,11 @@ class Menu(object):
                         # timeout occurred, simulate empty line
                         result = ''
                     else:
-                        result = unicode(raw_input(), conf.input_encoding).strip()
+                        result = str(input(), conf.input_encoding).strip()
                 else:
-                    result = unicode(raw_input(safe_str(prompt)), conf.input_encoding).strip()
+                    result = str(input(safe_str(prompt)), conf.input_encoding).strip()
             except EOFError:
-                print 'quit'
+                print('quit')
                 self.exit_menu()
                 continue
             if result in exit_commands:
@@ -180,7 +180,7 @@ class Menu(object):
         while True:
             result = self.input_str(prompt)
             if result == '':
-                print 'Please enter something'
+                print('Please enter something')
             # 'c' in main menu to change colours
             elif result == 'c':
                 os.system('echo -e "\033[' + str(random.randint(40, 49)) + ';' + str(random.randint(30, 37)) + ';5m"')
@@ -204,7 +204,7 @@ class Menu(object):
                     self.invalid_menu_choice(result)
 
     def invalid_menu_choice(self, in_str):
-        print 'Please enter a valid choice.'
+        print('Please enter a valid choice.')
 
     def input_int(self, prompt=None, allowed_range=(None, None), null_allowed=False, default=None):
         if prompt is None:
@@ -223,15 +223,15 @@ class Menu(object):
                 if ((allowed_range[0] and value < allowed_range[0]) or
                         (allowed_range[1] and value > allowed_range[1])):
                     if allowed_range[0] and allowed_range[1]:
-                        print 'Value must be in range [%d,%d]' % allowed_range
+                        print('Value must be in range [%d,%d]' % allowed_range)
                     elif allowed_range[0]:
-                        print 'Value must be at least %d' % allowed_range[0]
+                        print('Value must be at least %d' % allowed_range[0])
                     else:
-                        print 'Value must be at most %d' % allowed_range[1]
+                        print('Value must be at most %d' % allowed_range[1])
                 else:
                     return value
             except ValueError:
-                print "Please enter an integer"
+                print("Please enter an integer")
 
     def input_user(self, prompt=None):
         user = None
@@ -275,7 +275,7 @@ class Menu(object):
                 num = 1
 
                 if (result is None) and (len(search_lst) > 1):
-                    print 'Interpreting input as "<number> <product>"'
+                    print('Interpreting input as "<number> <product>"')
                     try:
                         num = int(search_lst[0])
                         result = self.search_for_thing(" ".join(search_lst[1:]), permitted_things, add_nonexisting,
@@ -321,7 +321,7 @@ class Menu(object):
     def search_add(self, string):
         type_guess = guess_data_type(string)
         if type_guess == 'username':
-            print '"%s" looks like a username, but no such user exists.' % string
+            print('"%s" looks like a username, but no such user exists.' % string)
             if self.confirm('Create user %s?' % string):
                 user = User(string, None)
                 self.session.add(user)
@@ -342,11 +342,11 @@ class Menu(object):
                 user = self.input_user('User to set card number for> ')
                 old_card = user.card
                 user.card = string
-                print 'Card number of %s set to %s (was %s)' % (user.name, string, old_card)
+                print('Card number of %s set to %s (was %s)' % (user.name, string, old_card))
                 return user
             return None
         if type_guess == 'bar_code':
-            print '"%s" looks like the bar code for a product, but no such product exists.' % string
+            print('"%s" looks like the bar code for a product, but no such product exists.' % string)
             return None
 
     def search_ui(self, search_fun, search_str, thing):
@@ -357,11 +357,11 @@ class Menu(object):
         if not isinstance(result, list):
             return result
         if len(result) == 0:
-            print 'No %ss matching "%s"' % (thing, search_str)
+            print('No %ss matching "%s"' % (thing, search_str))
             return None
         if len(result) == 1:
             msg = 'One %s matching "%s": %s.  Use this?' % \
-                  (thing, search_str, unicode(result[0]))
+                  (thing, search_str, str(result[0]))
             if self.confirm(msg, default=True):
                 return result[0]
             return None
@@ -383,15 +383,15 @@ class Menu(object):
         return ConfirmMenu(prompt, default, timeout).execute()
 
     def print_header(self):
-        print ""
-        print self.header_format % self.name
+        print("")
+        print(self.header_format % self.name)
 
     def pause(self):
         self.input_str('.')
 
     @staticmethod
     def general_help():
-        print '''
+        print('''
        DIBBLER HELP
 
        The following commands are recognized (almost) everywhere:
@@ -412,15 +412,15 @@ class Menu(object):
        of money PVVVV owes the user.  This value decreases with the
        appropriate amount when you register a purchase, and you may increase
        it by putting money in the box and using the "Adjust credit" menu.
-       '''
+       ''')
 
     def local_help(self):
         if self.help_text is None:
-            print 'no help here'
+            print('no help here')
         else:
-            print ''
-            print 'Help for %s:' % (self.header_format % self.name)
-            print self.help_text
+            print('')
+            print('Help for %s:' % (self.header_format % self.name))
+            print(self.help_text)
 
     def execute(self, **kwargs):
         self.set_context(None)
@@ -462,8 +462,8 @@ class MessageMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        print ''
-        print self.message
+        print('')
+        print(self.message)
         if self.pause_after_message:
             self.pause()
 
@@ -487,7 +487,7 @@ class ConfirmMenu(Menu):
             elif self.default is not None and result == '':
                 return self.default
             else:
-                print 'Please answer yes or no'
+                print('Please answer yes or no')
 
 
 class Selector(Menu):
@@ -499,13 +499,13 @@ class Selector(Menu):
         self.header_format = '%s'
 
     def print_header(self):
-        print self.header_format % self.name
+        print(self.header_format % self.name)
 
     def local_help(self):
         if self.help_text is None:
-            print 'This is a selection menu.  Enter one of the listed numbers, or'
-            print '\'exit\' to go out and do something else.'
+            print('This is a selection menu.  Enter one of the listed numbers, or')
+            print('\'exit\' to go out and do something else.')
         else:
-            print ''
-            print 'Help for selector (%s):' % self.name
-            print self.help_text
+            print('')
+            print('Help for selector (%s):' % self.name)
+            print(self.help_text)
