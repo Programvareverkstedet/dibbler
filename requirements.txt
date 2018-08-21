@@ -1,0 +1,4 @@
+brother_ql >= 0.9.1, <1
+SQLAlchemy >= 1.2.10, <1.3
+psycopg2 >= 2.7.5, <2.8
+python-barcode >= 0.9, <1
