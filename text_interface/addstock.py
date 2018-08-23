@@ -41,7 +41,7 @@ much money you're due in credits for the purchase when prompted.\n'''
                 (thing, amount) = line
 
                 if isinstance(thing, Product):
-                    self.printc("%d of %s registered" % (amount, thing.name))
+                    self.printc(f"{amount:d} of {thing.name} registered")
                     thing_price = self.input_int('What did you pay a piece? ', (1, 100000),
                                                  default=thing.price) * amount
                     self.price += thing_price
@@ -65,6 +65,7 @@ much money you're due in credits for the purchase when prompted.\n'''
     def complete_input(self):
         return bool(self.users) and len(self.products) and self.price
 
+    # TODO: Rewrite this madness
     def print_info(self):
         print((6 + Product.name_length) * '-')
         if self.price:
@@ -72,7 +73,7 @@ much money you're due in credits for the purchase when prompted.\n'''
         if self.users:
             print("Users to credit:")
             for user in self.users:
-                print("  %s" % str(user.name))
+                print(f"  {str(user.name)}")
         print("\n{{0:s}}{{1:>{0}s}}".format(Product.name_length-1).format("Product", "Amount"))
         print((6 + Product.name_length) * '-')
         if len(self.products):
@@ -94,6 +95,7 @@ much money you're due in credits for the purchase when prompted.\n'''
         print('Did you pay a different price?')
         if self.confirm('>', default=False):
             price = self.input_int('How much did you pay?', default=self.price)
+            # TODO: Loop until we get a valid answer instead of assuming default
             if price > self.price:
                 print('Illegal action, total can not be higher than your total.')
             else:
@@ -109,9 +111,9 @@ much money you're due in credits for the purchase when prompted.\n'''
             product.price = int(ceil(float(value) / (max(product.stock, 0) + self.products[product][0])))
             product.stock = max(self.products[product][0], product.stock + self.products[product][0])
             product.hidden = False
-            print("New stock for %s: %d" % (product.name, product.stock), \
-                ("- New price: " + str(product.price) if old_price != product.price else ""), \
-                ("- Removed hidden status" if old_hidden != product.hidden else ""))
+            print(f"New stock for {product.name}: {product.stock:d}",
+                  f"- New price: {product.price}" if old_price != product.price else "",
+                  "- Removed hidden status" if old_hidden != product.hidden else "")
 
         purchase = Purchase()
         for user in self.users:
@@ -127,6 +129,6 @@ much money you're due in credits for the purchase when prompted.\n'''
             print("Success! Transaction performed:")
             # self.print_info()
             for user in self.users:
-                print("User %s's credit is now %i" % (user.name, user.credit))
+                print(f"User {user.name}'s credit is now {user.credit:d}")
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not perform transaction: %s' % e)
+            print(f'Could not perform transaction: {e}')

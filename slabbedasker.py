@@ -6,4 +6,4 @@ session=Session()
 slabbedasker=session.query(User).filter(User.credit<0).all()
 
 for slubbert in slabbedasker:
-	print("%s, %s" % (slubbert.name, slubbert.credit))
+	print(f"{slubbert.name}, {slubbert.credit}")

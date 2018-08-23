@@ -19,9 +19,9 @@ class AddUserMenu(Menu):
         self.session.add(user)
         try:
             self.session.commit()
-            print('User %s stored' % username)
+            print(f'User {username} stored')
         except sqlalchemy.exc.IntegrityError as e:
-            print('Could not store user %s: %s' % (username, e))
+            print(f'Could not store user {username}: {e}')
         self.pause()
 
 
@@ -38,27 +38,29 @@ user, then rfid (write an empty line to remove the card number or rfid).
     def _execute(self):
         self.print_header()
         user = self.input_user('User> ')
-        self.printc('Editing user %s' % user.name)
-        card_str = '"%s"' % user.card
+        self.printc(f'Editing user {user.name}')
+        card_str = f'"{user.card}"'
         if user.card is None:
             card_str = 'empty'
+        # TODO: Inconsistent with other defaulted strings. Redo.
         user.card = self.input_str('Card number (currently %s)> ' % card_str,
                                    User.card_re, (0, 10),
                                    empty_string_is_none=True)
         if user.card:
             user.card = user.card.lower()
 
-        rfid_str = '"%s"' % user.rfid
+        rfid_str = f'"{user.rfid}"'
         if user.rfid is None:
             rfid_str = 'empty'
-        user.rfid = self.input_str('RFID (currently %s)> ' % rfid_str,
+        # TODO: Inconsistent with other defaulted strings. Redo.
+        user.rfid = self.input_str(f'RFID (currently {rfid_str})> ',
                                    User.rfid_re, (0, 10),
                                    empty_string_is_none=True)
         try:
             self.session.commit()
-            print('User %s stored' % user.name)
+            print(f'User {user.name} stored')
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not store user %s: %s' % (user.name, e))
+            print(f'Could not store user {user.name}: {e}')
         self.pause()
 
 
@@ -75,9 +77,9 @@ class AddProductMenu(Menu):
         self.session.add(product)
         try:
             self.session.commit()
-            print('Product %s stored' % name)
+            print(f'Product {name} stored')
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not store product %s: %s' % (name, e))
+            print(f'Could not store product {name}: {e}')
         self.pause()
 
 
@@ -88,9 +90,9 @@ class EditProductMenu(Menu):
     def _execute(self):
         self.print_header()
         product = self.input_product('Product> ')
-        self.printc('Editing product %s' % product.name)
+        self.printc(f'Editing product {product.name}')
         while True:
-            selector = Selector('Do what with %s?' % product.name,
+            selector = Selector(f'Do what with {product.name}?',
                                 items=[('name', 'Edit name'),
                                        ('price', 'Edit price'),
                                        ('barcode', 'Edit barcode'),
@@ -98,19 +100,19 @@ class EditProductMenu(Menu):
                                        ('store', 'Store')])
             what = selector.execute()
             if what == 'name':
-                product.name = self.input_str('Name[%s]> ' % product.name, Product.name_re, (1, product.name_length))
+                product.name = self.input_str(f'Name[{product.name}]> ', Product.name_re, (1, product.name_length))
             elif what == 'price':
-                product.price = self.input_int('Price[%s]> ' % product.price, (1, 100000))
+                product.price = self.input_int(f'Price[{product.price}]> ', (1, 100000))
             elif what == 'barcode':
-                product.bar_code = self.input_str('Bar code[%s]> ' % product.bar_code, Product.bar_code_re, (8, 13))
+                product.bar_code = self.input_str(f'Bar code[{product.bar_code}]> ', Product.bar_code_re, (8, 13))
             elif what == 'hidden':
                 product.hidden = self.confirm('Hidden[%s]' % ("Y" if product.hidden else "N"), False)
             elif what == 'store':
                 try:
                     self.session.commit()
-                    print('Product %s stored' % product.name)
+                    print(f'Product {product.name} stored')
                 except sqlalchemy.exc.SQLAlchemyError as e:
-                    print('Could not store product %s: %s' % (product.name, e))
+                    print(f'Could not store product {product.name}: {e}')
                 self.pause()
                 return
             elif what is None:
@@ -128,25 +130,26 @@ class AdjustStockMenu(Menu):
         self.print_header()
         product = self.input_product('Product> ')
 
-        print('The stock of this product is: %d ' % product.stock)
+        print(f'The stock of this product is: {product.stock:d} ')
         print('Write the number of products you have added to the stock')
         print('Alternatively, correct the stock for any mistakes')
         add_stock = self.input_int('Added stock> ', (-1000, 1000))
-        print('You added %d to the stock of %s' % (add_stock, product))
+        # TODO: Print something else when adding negative stock?
+        print(f'You added {add_stock:d} to the stock of {product}')
 
         product.stock += add_stock
 
-        print('The stock is now %d' % product.stock)
+        print(f'The stock is now {product.stock:d}')
 
         try:
             self.session.commit()
             print('Stock is now stored')
             self.pause()
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not store stock: %s' % e)
+            print(f'Could not store stock: {e}')
             self.pause()
             return
-        print('The stock is now %d' % product.stock)
+        print(f'The stock is now {product.stock:d}')
 
 
 class CleanupStockMenu(Menu):
@@ -179,7 +182,7 @@ class CleanupStockMenu(Menu):
             print('New stocks are now stored.')
             self.pause()
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not store stock: %s' % e)
+            print(f'Could not store stock: {e}')
             self.pause()
             return
 

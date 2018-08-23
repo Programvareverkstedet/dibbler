@@ -13,30 +13,30 @@ class TransferMenu(Menu):
     def _execute(self):
         self.print_header()
         amount = self.input_int('Transfer amount> ', (1, 100000))
-        self.set_context('Transfering %d kr' % amount, display=False)
+        self.set_context(f'Transferring {amount:d} kr', display=False)
         user1 = self.input_user('From user> ')
-        self.add_to_context(' from ' + user1.name)
+        self.add_to_context(f' from {user1.name}')
         user2 = self.input_user('To user> ')
-        self.add_to_context(' to ' + user2.name)
+        self.add_to_context(f' to {user2.name}')
         comment = self.input_str('Comment> ')
-        self.add_to_context(' (comment) ' + user2.name)
+        self.add_to_context(f' (comment) {user2.name}')
 
         t1 = Transaction(user1, amount,
-                         'transfer to ' + user2.name + ' "' + comment + '"')
+                         f'transfer to {user2.name} "{comment}"')
         t2 = Transaction(user2, -amount,
-                         'transfer from ' + user1.name + ' "' + comment + '"')
+                         f'transfer from {user1.name} "{comment}"')
         t1.perform_transaction()
         t2.perform_transaction()
         self.session.add(t1)
         self.session.add(t2)
         try:
             self.session.commit()
-            print('Transfered %d kr from %s to %s' % (amount, user1, user2))
-            print('User %s\'s credit is now %d kr' % (user1, user1.credit))
-            print('User %s\'s credit is now %d kr' % (user2, user2.credit))
-            print('Comment: %s' % comment)
+            print(f"Transferred {amount:d} kr from {user1} to {user2}")
+            print(f"User {user1}'s credit is now {user1.credit:d} kr")
+            print(f"User {user2}'s credit is now {user2.credit:d} kr")
+            print(f"Comment: {comment}")
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not perform transfer: %s' % e)
+            print(f'Could not perform transfer: {e}')
             # self.pause()
 
 
@@ -47,14 +47,14 @@ class ShowUserMenu(Menu):
     def _execute(self):
         self.print_header()
         user = self.input_user('User name, card number or RFID> ')
-        print('User name: %s' % user.name)
-        print('Card number: %s' % user.card)
-        print('RFID: %s' % user.rfid)
-        print('Credit: %s kr' % user.credit)
-        selector = Selector('What do you want to know about %s?' % user.name,
+        print(f'User name: {user.name}')
+        print(f'Card number: {user.card}')
+        print(f'RFID: {user.rfid}')
+        print(f'Credit: {user.credit} kr')
+        selector = Selector(f'What do you want to know about {user.name}?',
                             items=[('transactions', 'Recent transactions (List of last ' + str(
                                 conf.user_recent_transaction_limit) + ')'),
-                                   ('products', 'Which products %s has bought, and how many' % user.name),
+                                   ('products', f'Which products {user.name} has bought, and how many'),
                                    ('transactions-all', 'Everything (List of all transactions)')])
         what = selector.execute()
         if what == 'transactions':
@@ -66,21 +66,24 @@ class ShowUserMenu(Menu):
         else:
             print('What what?')
 
+    # TODO: This is almost identical to the print_transactions function. Reimplement using that one?
     @staticmethod
     def print_all_transactions(user):
         num_trans = len(user.transactions)
-        string = '%s\'s transactions (%d):\n' % (user.name, num_trans)
+        string = f"{user.name}'s transactions ({num_trans:d}):\n"
         for t in user.transactions[::-1]:
             string += ' * %s: %s %d kr, ' % \
                       (t.time.strftime('%Y-%m-%d %H:%M'),
-                       {True: 'in', False: 'out'}[t.amount < 0],
+                       'in' if t.amount < 0 else 'out',
                        abs(t.amount))
             if t.purchase:
+                # TODO: Print purchased amount, not just product names
+                # TODO: Print something other than "purchase" when user put products into dibbler?
                 string += 'purchase ('
                 string += ', '.join([e.product.name for e in t.purchase.entries])
                 string += ')'
                 if t.penalty > 1:
-                    string += ' * %dx penalty applied' % t.penalty
+                    string += f' * {t.penalty:d}x penalty applied'
             else:
                 string += t.description
             string += '\n'
@@ -90,20 +93,20 @@ class ShowUserMenu(Menu):
     def print_transactions(user, limit=10):
         num_trans = len(user.transactions)
         if num_trans <= limit:
-            string = '%s\'s transactions (%d):\n' % (user.name, num_trans)
+            string = f"{user.name}'s transactions ({num_trans:d}):\n"
         else:
-            string = '%s\'s transactions (%d, showing only last %d):\n' % (user.name, num_trans, limit)
+            string = f"{user.name}'s transactions ({num_trans:d}, showing only last {limit:d}):\n"
         for t in user.transactions[-1:-limit - 1:-1]:
             string += ' * %s: %s %d kr, ' % \
                       (t.time.strftime('%Y-%m-%d %H:%M'),
-                       {True: 'in', False: 'out'}[t.amount < 0],
+                       'in' if t.amount < 0 else 'out',
                        abs(t.amount))
             if t.purchase:
                 string += 'purchase ('
                 string += ', '.join([e.product.name for e in t.purchase.entries])
                 string += ')'
                 if t.penalty > 1:
-                    string += ' * %dx penalty applied' % t.penalty
+                    string += f' * {t.penalty:d}x penalty applied'
             else:
                 string += t.description
             string += '\n'
@@ -124,7 +127,7 @@ class ShowUserMenu(Menu):
             text = ''
             text += 'Products purchased:\n'
             for product, count in products:
-                text += '{0:<47} {1:>3}\n'.format(product.name, count)
+                text += f'{product.name:<47} {count:>3}\n'
             less(text)
 
 
@@ -148,16 +151,17 @@ class UserListMenu(Menu):
         text += line_format % ('total credit', total_credit)
         less(text)
 
-
-class AdjustCreditMenu(Menu):  # reimplements ChargeMenu; these should be combined to one
+# reimplements ChargeMenu
+# TODO: these should be combined to one
+class AdjustCreditMenu(Menu):
     def __init__(self):
         Menu.__init__(self, 'Adjust credit', uses_db=True)
 
     def _execute(self):
         self.print_header()
         user = self.input_user('User> ')
-        print('User %s\'s credit is %d kr' % (user.name, user.credit))
-        self.set_context('Adjusting credit for user %s' % user.name, display=False)
+        print(f"User {user.name}'s credit is {user.credit:d} kr")
+        self.set_context(f'Adjusting credit for user {user.name}', display=False)
         print('(Note on sign convention: Enter a positive amount here if you have')
         print('added money to the PVVVV money box, a negative amount if you have')
         print('taken money from it)')
@@ -173,9 +177,9 @@ class AdjustCreditMenu(Menu):  # reimplements ChargeMenu; these should be combin
         self.session.add(transaction)
         try:
             self.session.commit()
-            print('User %s\'s credit is now %d kr' % (user.name, user.credit))
+            print(f"User {user.name}'s credit is now {user.credit:d} kr")
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not store transaction: %s' % e)
+            print(f'Could not store transaction: {e}')
             # self.pause()
 
 

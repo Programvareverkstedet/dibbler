@@ -32,7 +32,7 @@ class User(Base):
         self.credit = credit
 
     def __repr__(self):
-        return "<User('%s')>" % self.name
+        return f"<User('{self.name}')>"
 
     def __str__(self):
         return self.name
@@ -63,8 +63,7 @@ class Product(Base):
         self.hidden = hidden
 
     def __repr__(self):
-        return "<Product('%s', '%s', '%s', '%s', '%s')>" %\
-               (self.name, self.bar_code, self.price, self.stock, self.hidden)
+        return f"<Product('{self.name}', '{self.bar_code}', '{self.price}', '{self.stock}', '{self.hidden}')>"
 
     def __str__(self):
         return self.name
@@ -97,7 +96,7 @@ class PurchaseEntry(Base):
         self.amount = amount
 
     def __repr__(self):
-        return "<PurchaseEntry('%s', '%s')>" % (self.product.name, self.amount)
+        return f"<PurchaseEntry('{self.product.name}', '{self.amount}')>"
 
 
 class Transaction(Base):
@@ -141,7 +140,7 @@ class Purchase(Base):
         pass
 
     def __repr__(self):
-        return "<Purchase(%d, %d, '%s')>" % (int(self.id), self.price, self.time.strftime('%c'))
+        return f"<Purchase({int(self.id):d}, {self.price:d}, '{self.time.strftime('%c')}')>"
 
     def is_complete(self):
         return len(self.transactions) > 0 and len(self.entries) > 0

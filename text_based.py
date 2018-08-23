@@ -64,7 +64,7 @@ if __name__ == '__main__':
             print('Interrupted.')
         except:
             print('Something went wrong.')
-            print('%s: %s' % (sys.exc_info()[0], sys.exc_info()[1]))
+            print(f'{sys.exc_info()[0]}: {sys.exc_info()[1]}')
             if conf.show_tracebacks:
                 traceback.print_tb(sys.exc_info()[2])
         else:

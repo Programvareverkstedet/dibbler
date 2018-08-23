@@ -5,30 +5,30 @@ import subprocess
 import os
 import signal
 
-def search_user(string, session, ignorethisflag=None):
-    string = string.lower()
-    exact_match = session.query(User).filter(or_(User.name==string, User.card==string, User.rfid==string)).first()
+def search_user(str, session, ignorethisflag=None):
+    str = str.lower()
+    exact_match = session.query(User).filter(or_(User.name == str, User.card == str, User.rfid == str)).first()
     if exact_match:
         return exact_match
-    user_list = session.query(User).filter(or_(User.name.ilike('%'+string+'%'),
-                           User.card.ilike('%'+string+'%'),
-                           User.rfid.ilike('%'+string+'%'))).all()
+    user_list = session.query(User).filter(or_(User.name.ilike(f'%{str}%'),
+                                               User.card.ilike(f'%{str}%'),
+                                               User.rfid.ilike(f'%{str}%'))).all()
     return user_list
 
-def search_product(string, session, find_hidden_products=True):
+def search_product(str, session, find_hidden_products=True):
     if find_hidden_products:
-        exact_match = session.query(Product).filter(or_(Product.bar_code==string, Product.name==string)).first()
+        exact_match = session.query(Product).filter(or_(Product.bar_code == str, Product.name == str)).first()
     else:
-        exact_match = session.query(Product).filter(or_(Product.bar_code==string,
-                                                        and_(Product.name==string, Product.hidden == False))).first()
+        exact_match = session.query(Product).filter(or_(Product.bar_code == str,
+                                                        and_(Product.name == str, Product.hidden == False))).first()
     if exact_match:
         return exact_match
     if find_hidden_products:
-        product_list = session.query(Product).filter(or_(Product.bar_code.ilike('%'+string+'%'),
-                                                         Product.name.ilike('%'+string+'%'))).all()
+        product_list = session.query(Product).filter(or_(Product.bar_code.ilike(f'%{str}%'),
+                                                         Product.name.ilike(f'%{str}%'))).all()
     else:
-        product_list = session.query(Product).filter(or_(Product.bar_code.ilike('%' + string + '%'),
-                                                         and_(Product.name.ilike('%' + string + '%'),
+        product_list = session.query(Product).filter(or_(Product.bar_code.ilike(f'%{str}%'),
+                                                         and_(Product.name.ilike(f'%{str}%'),
                                                               Product.hidden == False))).all()
     return product_list
 

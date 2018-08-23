@@ -87,6 +87,7 @@ class Menu(object):
             return i
         return self.items[i]
 
+    # TODO: Allow default
     def input_str(self, prompt=None, regex=None, length_range=(None, None),
                   empty_string_is_none=False, timeout=None):
         if prompt is None:
@@ -98,7 +99,7 @@ class Menu(object):
                 if result is None or re.match(regex + '$', result):
                     return result
                 else:
-                    print('Value must match regular expression "%s"' % regex)
+                    print(f'Value must match regular expression "{regex}"')
         if length_range != (None, None):
             while True:
                 result = self.input_str(prompt, empty_string_is_none=empty_string_is_none)
@@ -109,11 +110,11 @@ class Menu(object):
                 if ((length_range[0] and length < length_range[0]) or
                         (length_range[1] and length > length_range[1])):
                     if length_range[0] and length_range[1]:
-                        print('Value must have length in range [%d,%d]' % length_range)
+                        print(f'Value must have length in range [{length_range[0]:d}, {length_range[1]:d}]')
                     elif length_range[0]:
-                        print('Value must have length at least %d' % length_range[0])
+                        print(f'Value must have length at least {length_range[0]:d}')
                     else:
-                        print('Value must have length at most %d' % length_range[1])
+                        print(f'Value must have length at most {length_range[1]:d}')
                 else:
                     return result
         while True:
@@ -129,9 +130,9 @@ class Menu(object):
                         # timeout occurred, simulate empty line
                         result = ''
                     else:
-                        result = str(input(), conf.input_encoding).strip()
+                        result = input().strip()
                 else:
-                    result = str(input(safe_str(prompt)), conf.input_encoding).strip()
+                    result = input(safe_str(prompt)).strip()
             except EOFError:
                 print('quit')
                 self.exit_menu()
@@ -210,7 +211,7 @@ class Menu(object):
         if prompt is None:
             prompt = self.prompt
         if default is not None:
-            prompt += ("[%s] " % default)
+            prompt += (f"[{default}] ")
         while True:
             result = self.input_str(prompt)
             if result == '':
@@ -223,11 +224,11 @@ class Menu(object):
                 if ((allowed_range[0] and value < allowed_range[0]) or
                         (allowed_range[1] and value > allowed_range[1])):
                     if allowed_range[0] and allowed_range[1]:
-                        print('Value must be in range [%d,%d]' % allowed_range)
+                        print(f'Value must be in range [{allowed_range[0]:d}, {allowed_range[1]:d}]')
                     elif allowed_range[0]:
-                        print('Value must be at least %d' % allowed_range[0])
+                        print(f'Value must be at least {allowed_range[0]:d}')
                     else:
-                        print('Value must be at most %d' % allowed_range[1])
+                        print(f'Value must be at most {allowed_range[1]:d}')
                 else:
                     return value
             except ValueError:
@@ -302,7 +303,7 @@ class Menu(object):
             type_guess = guess_data_type(search_str)
             if type_guess is not None and thing_for_type[type_guess] in add_non_existing:
                 return self.search_add(search_str)
-            # print 'No match found for "%s".' % search_str
+            # print('No match found for "%s".' % search_str)
             return None
         return self.search_ui2(search_str, results[selected_thing], selected_thing)
 
@@ -321,16 +322,16 @@ class Menu(object):
     def search_add(self, string):
         type_guess = guess_data_type(string)
         if type_guess == 'username':
-            print('"%s" looks like a username, but no such user exists.' % string)
-            if self.confirm('Create user %s?' % string):
+            print(f'"{string}" looks like a username, but no such user exists.')
+            if self.confirm(f'Create user {string}?'):
                 user = User(string, None)
                 self.session.add(user)
                 return user
             return None
         if type_guess == 'card':
-            selector = Selector('"%s" looks like a card number, but no user with that card number exists.' % string,
-                                [('create', 'Create user with card number %s' % string),
-                                 ('set', 'Set card number of an existing user to %s' % string)])
+            selector = Selector(f'"{string}" looks like a card number, but no user with that card number exists.',
+                                [('create', f'Create user with card number {string}'),
+                                 ('set', f'Set card number of an existing user to {string}')])
             selection = selector.execute()
             if selection == 'create':
                 username = self.input_str('Username for new user (should be same as PVV username)> ',
@@ -342,7 +343,7 @@ class Menu(object):
                 user = self.input_user('User to set card number for> ')
                 old_card = user.card
                 user.card = string
-                print('Card number of %s set to %s (was %s)' % (user.name, string, old_card))
+                print(f'Card number of {user.name} set to {string} (was {old_card})')
                 return user
             return None
         if type_guess == 'bar_code':
@@ -357,22 +358,19 @@ class Menu(object):
         if not isinstance(result, list):
             return result
         if len(result) == 0:
-            print('No %ss matching "%s"' % (thing, search_str))
+            print(f'No {thing}s matching "{search_str}"')
             return None
         if len(result) == 1:
-            msg = 'One %s matching "%s": %s.  Use this?' % \
-                  (thing, search_str, str(result[0]))
+            msg = f'One {thing} matching "{search_str}": {str(result[0])}.  Use this?'
             if self.confirm(msg, default=True):
                 return result[0]
             return None
         limit = 9
         if len(result) > limit:
-            select_header = '%d %ss matching "%s"; showing first %d' % \
-                            (len(result), thing, search_str, limit)
+            select_header = f'{len(result):d} {thing}s matching "{search_str}"; showing first {limit:d}'
             select_items = result[:limit]
         else:
-            select_header = '%d %ss matching "%s"' % \
-                            (len(result), thing, search_str)
+            select_header = f'{len(result):d} {thing}s matching "{search_str}"'
             select_items = result
         selector = Selector(select_header, items=select_items,
                             return_index=False)
@@ -419,7 +417,8 @@ class Menu(object):
             print('no help here')
         else:
             print('')
-            print('Help for %s:' % (self.header_format % self.name))
+            print('Help for %s:' % (self.header_format
+                                    % self.name))
             print(self.help_text)
 
     def execute(self, **kwargs):
@@ -437,6 +436,7 @@ class Menu(object):
                 self.session = None
 
     def _execute(self, **kwargs):
+        # TODO: This is a very awkward line. Is there a better way of doing this?
         line_format = '%' + str(len(str(len(self.items)))) + 'd ) %s'
         while True:
             self.print_header()
@@ -478,7 +478,7 @@ class ConfirmMenu(Menu):
     def _execute(self):
         options = {True: '[y]/n', False: 'y/[n]', None: 'y/n'}[self.default]
         while True:
-            result = self.input_str('%s (%s) ' % (self.prompt, options), timeout=self.timeout)
+            result = self.input_str(f'{self.prompt} ({options}) ', timeout=self.timeout)
             result = result.lower().strip()
             if result in ['y', 'yes']:
                 return True
@@ -507,5 +507,5 @@ class Selector(Menu):
             print('\'exit\' to go out and do something else.')
         else:
             print('')
-            print('Help for selector (%s):' % self.name)
+            print(f'Help for selector ({self.name}):')
             print(self.help_text)

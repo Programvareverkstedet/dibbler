@@ -49,7 +49,7 @@ When finished, write an empty line to confirm the purchase.\n'''
         print("***********************************************************************")
         print("***********************************************************************")
         print("")
-        print("USER %s HAS LOWER CREDIT THAN %d." % (user.name, conf.low_credit_warning_limit))
+        print(f"USER {user.name} HAS LOWER CREDIT THAN {conf.low_credit_warning_limit:d}.")
         print("THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH.")
         print("CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS.")
         print("")
@@ -149,16 +149,16 @@ When finished, write an empty line to confirm the purchase.\n'''
         try:
             self.session.commit()
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print('Could not store purchase: %s' % e)
+            print(f'Could not store purchase: {e}')
         else:
             print('Purchase stored.')
             self.print_purchase()
             for t in self.purchase.transactions:
                 if not t.user.is_anonymous():
-                    print('User %s\'s credit is now %d kr' % (t.user.name, t.user.credit))
+                    print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
                     if t.user.credit < conf.low_credit_warning_limit:
-                        print('USER %s HAS LOWER CREDIT THAN %d, AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.' \
-                              % (t.user.name, conf.low_credit_warning_limit))
+                        print(f'USER {t.user.name} HAS LOWER CREDIT THAN {conf.low_credit_warning_limit:d},',
+                              'AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.')
 
         return True
 
@@ -183,15 +183,17 @@ When finished, write an empty line to confirm the purchase.\n'''
             string += '(empty)'
         else:
             string += "\n    "
-            string += '\n    '.join(['%dx %s (%d kr)' % (e.amount, e.product.name, e.product.price) for e in entries])
+            string += '\n    '.join([f'{e.amount:d}x {e.product.name} ({e.product.price:d} kr)' for e in entries])
         if len(transactions) > 1:
-            string += '\n  price per person: %d kr' % self.purchase.price_per_transaction()
+            string += f'\n  price per person: {self.purchase.price_per_transaction():d} kr'
             if any(t.penalty > 1 for t in transactions):
-                string += ' *(%d kr)' % (self.purchase.price_per_transaction() * 2)
+                # TODO: Use penalty multiplier instead of 2
+                string += f' *({self.purchase.price_per_transaction() * 2:d} kr)'
 
-        string += '\n  total price: %d kr' % self.purchase.price
+        string += f'\n  total price: {self.purchase.price:d} kr'
 
         if any(t.penalty > 1 for t in transactions):
+            # TODO: Rewrite?
             string += '\n  *total with penalty: %d kr' % sum(
                 self.purchase.price_per_transaction() * t.penalty for t in transactions)
 
