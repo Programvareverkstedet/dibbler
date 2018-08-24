@@ -9,7 +9,7 @@ from select import select
 
 import conf
 from db import User, Session
-from helpers import search_user, search_product, safe_str, guess_data_type, argmax
+from helpers import search_user, search_product, guess_data_type, argmax
 from text_interface import context_commands, local_help_commands, help_commands, \
     exit_commands
 
@@ -118,11 +118,9 @@ class Menu(object):
                     return result
         while True:
             try:
-                # result = None
-                # It is replaced either way
                 if timeout:
                     # assuming line buffering
-                    sys.stdout.write(safe_str(prompt))
+                    sys.stdout.write(prompt)
                     sys.stdout.flush()
                     rlist, _, _ = select([sys.stdin], [], [], timeout)
                     if not rlist:
@@ -131,7 +129,7 @@ class Menu(object):
                     else:
                         result = input().strip()
                 else:
-                    result = input(safe_str(prompt)).strip()
+                    result = input(prompt).strip()
             except EOFError:
                 print('quit')
                 self.exit_menu()
@@ -207,6 +205,7 @@ class Menu(object):
         print('Please enter a valid choice.')
 
     def input_int(self, prompt=None, allowed_range=(None, None), null_allowed=False, default=None):
+        # TODO: Proper default handling
         if prompt is None:
             prompt = self.prompt
         while True:

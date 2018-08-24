@@ -113,14 +113,6 @@ def argmax(d, all=False, value=None):
         return [k for k in list(d.keys()) if d[k] == d[maxarg]]
     return maxarg
 
-def safe_str(obj):
-    '''
-    Ugly hack to avoid Python complaining about encodings.
-
-    Call this on any object to turn it into a string which is
-    (hopefully) safe for printing.
-    '''
-    return obj
 
 def less(string):
     '''
@@ -131,6 +123,6 @@ def less(string):
     int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
     env = dict(os.environ)
     env['LESSSECURE'] = '1'
-    proc = subprocess.Popen('less', env=env, stdin=subprocess.PIPE)
-    proc.communicate(safe_str(string))
+    proc = subprocess.Popen('less', env=env, encoding='utf-8', stdin=subprocess.PIPE)
+    proc.communicate(string)
     signal.signal(signal.SIGINT, int_handler)

@@ -160,6 +160,10 @@ When finished, write an empty line to confirm the purchase.\n'''
                         print(f'USER {t.user.name} HAS LOWER CREDIT THAN {conf.low_credit_warning_limit:d},',
                               'AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.')
 
+        # Superfast mode skips a linebreak for some reason. This looks ugly.
+        # TODO: Figure out why this happens, and fix it in a less hacky way.
+        if self.superfast_mode:
+            print("")
         return True
 
     def complete_input(self):
