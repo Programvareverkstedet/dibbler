@@ -32,7 +32,6 @@ class Menu(object):
         self.exit_disallowed_msg = exit_disallowed_msg
         self.help_text = help_text
         self.context = None
-        self.header_format = '[%s]'
         self.uses_db = uses_db
         self.session = None
 
@@ -65,7 +64,7 @@ class Menu(object):
             self.context += '\n' + string
 
     def show_context(self):
-        print(self.header_format % self.name)
+        print(self.header())
         if self.context is not None:
             print(self.context)
 
@@ -210,8 +209,6 @@ class Menu(object):
     def input_int(self, prompt=None, allowed_range=(None, None), null_allowed=False, default=None):
         if prompt is None:
             prompt = self.prompt
-        if default is not None:
-            prompt += (f"[{default}] ")
         while True:
             result = self.input_str(prompt)
             if result == '':
@@ -361,7 +358,7 @@ class Menu(object):
             print(f'No {thing}s matching "{search_str}"')
             return None
         if len(result) == 1:
-            msg = f'One {thing} matching "{search_str}": {str(result[0])}.  Use this?'
+            msg = f'One {thing} matching "{search_str}": {str(result[0])}. Use this?'
             if self.confirm(msg, default=True):
                 return result[0]
             return None
@@ -380,9 +377,12 @@ class Menu(object):
     def confirm(prompt, default=None, timeout=None):
         return ConfirmMenu(prompt, default, timeout).execute()
 
+    def header(self):
+        return f"[{self.name}]"
+
     def print_header(self):
         print("")
-        print(self.header_format % self.name)
+        print(self.header())
 
     def pause(self):
         self.input_str('.')
@@ -417,8 +417,7 @@ class Menu(object):
             print('no help here')
         else:
             print('')
-            print('Help for %s:' % (self.header_format
-                                    % self.name))
+            print(f'Help for {self.header()}:')
             print(self.help_text)
 
     def execute(self, **kwargs):
@@ -478,7 +477,7 @@ class ConfirmMenu(Menu):
     def _execute(self):
         options = {True: '[y]/n', False: 'y/[n]', None: 'y/n'}[self.default]
         while True:
-            result = self.input_str(f'{self.prompt} ({options}) ', timeout=self.timeout)
+            result = self.input_str(f'{self.prompt} ({options}): ', timeout=self.timeout)
             result = result.lower().strip()
             if result in ['y', 'yes']:
                 return True
@@ -496,10 +495,12 @@ class Selector(Menu):
         if items is None:
             items = []
         Menu.__init__(self, name, items, prompt, return_index, exit_msg)
-        self.header_format = '%s'
+
+    def header(self):
+        return self.name
 
     def print_header(self):
-        print(self.header_format % self.name)
+        print(self.header())
 
     def local_help(self):
         if self.help_text is None:

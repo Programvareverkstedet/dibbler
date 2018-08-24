@@ -120,12 +120,7 @@ def safe_str(obj):
     Call this on any object to turn it into a string which is
     (hopefully) safe for printing.
     '''
-    if isinstance(obj, str):
-        return obj
-    if isinstance(obj, str):
-        return obj.encode('utf8')
-    else:
-        return safe_str(str(obj))
+    return obj
 
 def less(string):
     '''
