@@ -39,20 +39,14 @@ user, then rfid (write an empty line to remove the card number or rfid).
         self.print_header()
         user = self.input_user('User')
         self.printc(f'Editing user {user.name}')
-        card_str = f'"{user.card}"'
-        if user.card is None:
-            card_str = 'empty'
-        # TODO: Inconsistent with other defaulted strings. Redo.
+        card_str = f'"{user.card}"' if user.card is not None else 'empty'
         user.card = self.input_str(f'Card number (currently {card_str})',
                                    regex=User.card_re, length_range=(0, 10),
                                    empty_string_is_none=True)
         if user.card:
             user.card = user.card.lower()
 
-        rfid_str = f'"{user.rfid}"'
-        if user.rfid is None:
-            rfid_str = 'empty'
-        # TODO: Inconsistent with other defaulted strings. Redo.
+        rfid_str = f'"{user.rfid}"' if user.rfid is not None else 'empty'
         user.rfid = self.input_str(f'RFID (currently {rfid_str})',
                                    regex=User.rfid_re, length_range=(0, 10),
                                    empty_string_is_none=True)
@@ -100,15 +94,15 @@ class EditProductMenu(Menu):
                                        ('store', 'Store')])
             what = selector.execute()
             if what == 'name':
-                product.name = self.input_str(f'Name[{product.name}]', regex=Product.name_re,
+                product.name = self.input_str('Name', default=product.name, regex=Product.name_re,
                                               length_range=(1, product.name_length))
             elif what == 'price':
-                product.price = self.input_int(f'Price[{product.price}]', allowed_range=(1, 100000))
+                product.price = self.input_int('Price', default=product.price, allowed_range=(1, 100000))
             elif what == 'barcode':
-                product.bar_code = self.input_str(f'Bar code[{product.bar_code}]', regex=Product.bar_code_re,
+                product.bar_code = self.input_str('Bar code', default=product.bar_code, regex=Product.bar_code_re,
                                                   length_range=(8, 13))
             elif what == 'hidden':
-                product.hidden = self.confirm('Hidden[%s]' % ("Y" if product.hidden else "N"), False)
+                product.hidden = self.confirm(f'Hidden(currently {product.hidden})', default=False)
             elif what == 'store':
                 try:
                     self.session.commit()
