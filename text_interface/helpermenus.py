@@ -200,13 +200,15 @@ class Menu(object):
     def invalid_menu_choice(self, in_str):
         print('Please enter a valid choice.')
 
-    def input_int(self, prompt=None, end_prompt=None, allowed_range=(None, None), null_allowed=False, default=None):
+    def input_int(self, prompt=None, end_prompt=None, allowed_range=(None, None), null_allowed=False, zero_allowed=True,
+                  default=None):
         while True:
             result = self.input_str(prompt, end_prompt, default=default)
             if result == '' and null_allowed:
                 return False
             try:
                 value = int(result)
+                # TODO: Should this be turned into greater-than-equals and less-than-equals?
                 if ((allowed_range[0] and value < allowed_range[0]) or (allowed_range[1] and value > allowed_range[1])):
                     if allowed_range[0] and allowed_range[1]:
                         print(f'Value must be in range [{allowed_range[0]:d}, {allowed_range[1]:d}]')
@@ -214,6 +216,8 @@ class Menu(object):
                         print(f'Value must be at least {allowed_range[0]:d}')
                     else:
                         print(f'Value must be at most {allowed_range[1]:d}')
+                elif not zero_allowed and value == 0:
+                    print("Value cannot be zero")
                 else:
                     return value
             except ValueError:

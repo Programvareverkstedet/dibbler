@@ -129,9 +129,11 @@ class AdjustStockMenu(Menu):
         print(f'The stock of this product is: {product.stock:d}')
         print('Write the number of products you have added to the stock')
         print('Alternatively, correct the stock for any mistakes')
-        add_stock = self.input_int('Added stock', allowed_range=(-1000, 1000))
-        # TODO: Print something else when adding negative stock?
-        print(f'You added {add_stock:d} to the stock of {product}')
+        add_stock = self.input_int('Added stock', allowed_range=(-1000, 1000), zero_allowed=False)
+        if add_stock > 0:
+            print(f'You added {add_stock:d} to the stock of {product}')
+        else:
+            print(f'You removed {add_stock:d} from the stock of {product}')
 
         product.stock += add_stock
 
