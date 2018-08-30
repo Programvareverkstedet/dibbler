@@ -11,10 +11,10 @@ class AddUserMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        username = self.input_str('Username (should be same as PVV username)> ', User.name_re, (1, 10))
-        cardnum = self.input_str('Card number (optional)> ', User.card_re, (0, 10))
+        username = self.input_str('Username (should be same as PVV username)', regex=User.name_re, length_range=(1, 10))
+        cardnum = self.input_str('Card number (optional)', regex=User.card_re, length_range=(0, 10))
         cardnum = cardnum.lower()
-        rfid = self.input_str('RFID (optional)> ', User.rfid_re, (0, 10))
+        rfid = self.input_str('RFID (optional)', regex=User.rfid_re, length_range=(0, 10))
         user = User(username, cardnum, rfid)
         self.session.add(user)
         try:
@@ -37,14 +37,14 @@ user, then rfid (write an empty line to remove the card number or rfid).
 
     def _execute(self):
         self.print_header()
-        user = self.input_user('User> ')
+        user = self.input_user('User')
         self.printc(f'Editing user {user.name}')
         card_str = f'"{user.card}"'
         if user.card is None:
             card_str = 'empty'
         # TODO: Inconsistent with other defaulted strings. Redo.
-        user.card = self.input_str('Card number (currently %s)> ' % card_str,
-                                   User.card_re, (0, 10),
+        user.card = self.input_str(f'Card number (currently {card_str})',
+                                   regex=User.card_re, length_range=(0, 10),
                                    empty_string_is_none=True)
         if user.card:
             user.card = user.card.lower()
@@ -53,8 +53,8 @@ user, then rfid (write an empty line to remove the card number or rfid).
         if user.rfid is None:
             rfid_str = 'empty'
         # TODO: Inconsistent with other defaulted strings. Redo.
-        user.rfid = self.input_str(f'RFID (currently {rfid_str})> ',
-                                   User.rfid_re, (0, 10),
+        user.rfid = self.input_str(f'RFID (currently {rfid_str})',
+                                   regex=User.rfid_re, length_range=(0, 10),
                                    empty_string_is_none=True)
         try:
             self.session.commit()
@@ -70,9 +70,9 @@ class AddProductMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        bar_code = self.input_str('Bar code> ', Product.bar_code_re, (8, 13))
-        name = self.input_str('Name> ', Product.name_re, (1, Product.name_length))
-        price = self.input_int('Price> ', (1, 100000))
+        bar_code = self.input_str('Bar code', regex=Product.bar_code_re, length_range=(8, 13))
+        name = self.input_str('Name', regex=Product.name_re, length_range=(1, Product.name_length))
+        price = self.input_int('Price', allowed_range=(1, 100000))
         product = Product(bar_code, name, price)
         self.session.add(product)
         try:
@@ -89,7 +89,7 @@ class EditProductMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        product = self.input_product('Product> ')
+        product = self.input_product('Product')
         self.printc(f'Editing product {product.name}')
         while True:
             selector = Selector(f'Do what with {product.name}?',
@@ -100,11 +100,13 @@ class EditProductMenu(Menu):
                                        ('store', 'Store')])
             what = selector.execute()
             if what == 'name':
-                product.name = self.input_str(f'Name[{product.name}]> ', Product.name_re, (1, product.name_length))
+                product.name = self.input_str(f'Name[{product.name}]', regex=Product.name_re,
+                                              length_range=(1, product.name_length))
             elif what == 'price':
-                product.price = self.input_int(f'Price[{product.price}]> ', (1, 100000))
+                product.price = self.input_int(f'Price[{product.price}]', allowed_range=(1, 100000))
             elif what == 'barcode':
-                product.bar_code = self.input_str(f'Bar code[{product.bar_code}]> ', Product.bar_code_re, (8, 13))
+                product.bar_code = self.input_str(f'Bar code[{product.bar_code}]', regex=Product.bar_code_re,
+                                                  length_range=(8, 13))
             elif what == 'hidden':
                 product.hidden = self.confirm('Hidden[%s]' % ("Y" if product.hidden else "N"), False)
             elif what == 'store':
@@ -128,18 +130,16 @@ class AdjustStockMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        product = self.input_product('Product> ')
+        product = self.input_product('Product')
 
-        print(f'The stock of this product is: {product.stock:d} ')
+        print(f'The stock of this product is: {product.stock:d}')
         print('Write the number of products you have added to the stock')
         print('Alternatively, correct the stock for any mistakes')
-        add_stock = self.input_int('Added stock> ', (-1000, 1000))
+        add_stock = self.input_int('Added stock', allowed_range=(-1000, 1000))
         # TODO: Print something else when adding negative stock?
         print(f'You added {add_stock:d} to the stock of {product}')
 
         product.stock += add_stock
-
-        print(f'The stock is now {product.stock:d}')
 
         try:
             self.session.commit()
@@ -172,7 +172,7 @@ class CleanupStockMenu(Menu):
 
         for product in products:
             oldstock = product.stock
-            product.stock = self.input_int(product.name, (0, 10000), default=max(0, oldstock))
+            product.stock = self.input_int(product.name, allowed_range=(0, 10000), default=max(0, oldstock))
             self.session.add(product)
             if oldstock != product.stock:
                 changed_products.append((product, oldstock))

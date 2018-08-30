@@ -101,7 +101,7 @@ much money you're due in credits for the purchase when prompted.\n'''
             else:
                 self.price = price
 
-        description = self.input_str('Log message> ', length_range=(0, 50))
+        description = self.input_str('Log message', length_range=(0, 50))
         if description == '':
             description = 'Purchased products for PVVVV, adjusted credit ' + str(self.price)
         for product in self.products:

@@ -18,7 +18,7 @@ Put it up somewhere in the vicinity.
     def _execute(self):
         self.print_header()
 
-        thing = self.input_thing('Product/User> ')
+        thing = self.input_thing('Product/User')
 
         if isinstance(thing, Product):
             if re.match(r"^[0-9]{13}$", thing.bar_code):

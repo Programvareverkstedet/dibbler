@@ -12,13 +12,13 @@ class TransferMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        amount = self.input_int('Transfer amount> ', (1, 100000))
+        amount = self.input_int('Transfer amount', (1, 100000))
         self.set_context(f'Transferring {amount:d} kr', display=False)
-        user1 = self.input_user('From user> ')
+        user1 = self.input_user('From user')
         self.add_to_context(f' from {user1.name}')
-        user2 = self.input_user('To user> ')
+        user2 = self.input_user('To user')
         self.add_to_context(f' to {user2.name}')
-        comment = self.input_str('Comment> ')
+        comment = self.input_str('Comment')
         self.add_to_context(f' (comment) {user2.name}')
 
         t1 = Transaction(user1, amount,
@@ -46,7 +46,7 @@ class ShowUserMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        user = self.input_user('User name, card number or RFID> ')
+        user = self.input_user('User name, card number or RFID')
         print(f'User name: {user.name}')
         print(f'Card number: {user.card}')
         print(f'RFID: {user.rfid}')
@@ -159,17 +159,17 @@ class AdjustCreditMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        user = self.input_user('User> ')
+        user = self.input_user('User')
         print(f"User {user.name}'s credit is {user.credit:d} kr")
         self.set_context(f'Adjusting credit for user {user.name}', display=False)
         print('(Note on sign convention: Enter a positive amount here if you have')
         print('added money to the PVVVV money box, a negative amount if you have')
         print('taken money from it)')
-        amount = self.input_int('Add amount> ', (-100000, 100000))
+        amount = self.input_int('Add amount', allowed_range=(-100000, 100000))
         print('(The "log message" will show up in the transaction history in the')
         print('"Show user" menu.  It is not necessary to enter a message, but it')
         print('might be useful to help you remember why you adjusted the credit)')
-        description = self.input_str('Log message> ', length_range=(0, 50))
+        description = self.input_str('Log message', length_range=(0, 50))
         if description == '':
             description = 'manually adjusted credit'
         transaction = Transaction(user, -amount, description)
