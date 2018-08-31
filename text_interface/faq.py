@@ -8,20 +8,24 @@ class FAQMenu(Menu):
         Menu.__init__(self, 'Frequently Asked Questions')
         self.items = [MessageMenu('What is the meaning with this program?',
                                   '''
-            We want to avoid keeping lots of cash in PVVVV\'s money box and to
+            We want to avoid keeping lots of cash in PVVVV's money box and to
             make it easy to pay for stuff without using money.  (Without using
             money each time, that is.  You do of course have to pay for the things
             you buy eventually).
 
             Dibbler stores a "credit" amount for each user.  When you register a
             purchase in Dibbler, this amount is decreased.  To increase your
-            credit, add money to the money box and use "Adjust credit" to tell
-            Dibbler about it.
+            credit, purchase products for dibbler, and register them using "Add 
+            stock and adjust credit". 
+            Alternatively, add money to the money box and use "Adjust credit" to
+            tell Dibbler about it.
             '''),
                       MessageMenu('Can I still pay for stuff using cash?',
-                                  'Yes.  You can safely ignore this program completely.'),
+                                  '''
+            Please put money in the money box and use "Adjust Credit" so that 
+            dibbler can keep track of credit and purchases.'''),
                       MessageMenu('How do I exit from a submenu/dialog/thing?',
-                                  'Type "exit" or C-d.'),
+                                  'Type "exit", "q", or C-d.'),
                       MessageMenu('What does "." mean?',
                                   '''
             The "." character, known as "full stop" or "period", is most often
@@ -36,7 +40,7 @@ class FAQMenu(Menu):
                                   '''
             Answer #1:  It is not.
 
-            Answer #2:  We are trying to compete with PVV\'s microwave oven in
+            Answer #2:  We are trying to compete with PVV's microwave oven in
             userfriendliness.
 
             Answer #3:  YOU are unintuitive.
@@ -47,6 +51,11 @@ class FAQMenu(Menu):
                                   'Don\'t say "moo".'),
                       MessageMenu('Why does the program speak English when all the users are Norwegians?',
                                   'Godt spørsmål.  Det virket sikkert som en god idé der og da.'),
+                      MessageMenu('Why does the screen have strange colours?',
+                                  '''
+            Type "c" on the main menu to change the colours of the display, or 
+            "cs" if you are a boring person.
+            '''),
                       MessageMenu('I found a bug; is there a reward?',
                                   '''
             No.
@@ -56,7 +65,7 @@ class FAQMenu(Menu):
 
             Follow this procedure:
 
-            1. Check out the Dibbler code from https://dev.pvv.ntnu.no/svn/dibbler
+            1. Check out the Dibbler code: https://github.com/Programvareverkstedet/dibbler
 
             2. Fix the bug.
 
@@ -70,20 +79,20 @@ class FAQMenu(Menu):
                 $ su -
                 # su -l -s /bin/bash pvvvv
                 $ cd dibbler
-                $ svn up
+                $ git pull
 
             6. Type "restart" in Dibbler to replace the running process by a new
                one using the updated files.
             '''),
                       MessageMenu('My question isn\'t listed here; what do I do?',
                                   '''
-            DON\'T PANIC.
+            DON'T PANIC.
 
             Follow this procedure:
 
             1. Ask someone (or read the source code) and get an answer.
 
-            2. Check out the Dibbler code from https://dev.pvv.ntnu.no/svn/dibbler
+            2. Check out the Dibbler code: https://github.com/Programvareverkstedet/dibbler
 
             3. Add your question (with answer) to the FAQ and commit.
 
@@ -92,7 +101,7 @@ class FAQMenu(Menu):
                 $ su -
                 # su -l -s /bin/bash pvvvv
                 $ cd dibbler
-                $ svn up
+                $ git pull
 
             5. Type "restart" in Dibbler to replace the running process by a new
                one using the updated files.
