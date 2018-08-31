@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 
 
-import os
-import random
 import re
 import sys
 from select import select
@@ -174,19 +172,6 @@ class Menu(object):
             result = self.input_str(prompt, end_prompt)
             if result == '':
                 print('Please enter something')
-            #TODO: Move this into mainmenu.py special options
-            # 'c' in main menu to change colours
-            elif result == 'c':
-                os.system('echo -e "\033[' + str(random.randint(40, 49)) + ';' + str(random.randint(30, 37)) + ';5m"')
-                os.system('clear')
-                self.show_context()
-
-            # 'cs' in main menu to change colours back to default
-            elif result == 'cs':
-                os.system('echo -e "\033[0m"')
-                os.system('clear')
-                self.show_context()
-
             else:
                 if result.isdigit():
                     choice = int(result)

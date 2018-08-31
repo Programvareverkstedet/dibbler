@@ -1,7 +1,7 @@
 
 # -*- coding: utf-8 -*-
 import os
-
+import random
 import sys
 
 from db import Session
@@ -42,6 +42,16 @@ class MainMenu(Menu):
             if self.confirm('Restart Dibbler?'):
                 restart()
                 pass
+            return True
+        elif result == 'c':
+            os.system('echo -e "\033[' + str(random.randint(40, 49)) + ';' + str(random.randint(30, 37)) + ';5m"')
+            os.system('clear')
+            self.show_context()
+            return True
+        elif result == 'cs':
+            os.system('echo -e "\033[0m"')
+            os.system('clear')
+            self.show_context()
             return True
         return False
 
