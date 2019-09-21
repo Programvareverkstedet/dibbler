@@ -25,7 +25,7 @@ class FAQMenu(Menu):
             Please put money in the money box and use "Adjust Credit" so that 
             dibbler can keep track of credit and purchases.'''),
                       MessageMenu('How do I exit from a submenu/dialog/thing?',
-                                  'Type "exit", "q", or C-d.'),
+                                  'Type "exit", "q", or ^d.'),
                       MessageMenu('What does "." mean?',
                                   '''
             The "." character, known as "full stop" or "period", is most often
