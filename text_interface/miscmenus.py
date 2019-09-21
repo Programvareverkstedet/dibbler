@@ -12,7 +12,7 @@ class TransferMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        amount = self.input_int('Transfer amount', (1, 100000))
+        amount = self.input_int('Transfer amount', 1, 100000)
         self.set_context(f'Transferring {amount:d} kr', display=False)
         user1 = self.input_user('From user')
         self.add_to_context(f' from {user1.name}')
@@ -62,48 +62,32 @@ class ShowUserMenu(Menu):
         elif what == 'products':
             self.print_purchased_products(user)
         elif what == 'transactions-all':
-            self.print_all_transactions(user)
+            self.print_transactions(user)
         else:
             print('What what?')
 
-    # TODO: This is almost identical to the print_transactions function. Reimplement using that one?
     @staticmethod
-    def print_all_transactions(user):
+    def print_transactions(user, limit=None):
         num_trans = len(user.transactions)
-        string = f"{user.name}'s transactions ({num_trans:d}):\n"
-        for t in user.transactions[::-1]:
-            string += ' * %s: %s %d kr, ' % \
-                      (t.time.strftime('%Y-%m-%d %H:%M'),
-                       'in' if t.amount < 0 else 'out',
-                       abs(t.amount))
-            if t.purchase:
-                # TODO: Print purchased amount, not just product names
-                # TODO: Print something other than "purchase" when user put products into dibbler?
-                string += 'purchase ('
-                string += ', '.join([e.product.name for e in t.purchase.entries])
-                string += ')'
-                if t.penalty > 1:
-                    string += f' * {t.penalty:d}x penalty applied'
-            else:
-                string += t.description
-            string += '\n'
-        less(string)
-
-    @staticmethod
-    def print_transactions(user, limit=10):
-        num_trans = len(user.transactions)
+        if limit is None:
+            limit = num_trans
         if num_trans <= limit:
             string = f"{user.name}'s transactions ({num_trans:d}):\n"
         else:
             string = f"{user.name}'s transactions ({num_trans:d}, showing only last {limit:d}):\n"
         for t in user.transactions[-1:-limit - 1:-1]:
-            string += ' * %s: %s %d kr, ' % \
-                      (t.time.strftime('%Y-%m-%d %H:%M'),
-                       'in' if t.amount < 0 else 'out',
-                       abs(t.amount))
+            string += f" * {t.time.isoformat(' ')}: {'in' if t.amount < 0 else 'out'} {abs(t.amount)} kr, "
             if t.purchase:
+                products = []
+                for entry in t.purchase.entries:
+                    if abs(entry.amount) != 1:
+                        amount = f"{abs(entry.amount)}x "
+                    else:
+                        amount = ""
+                    product = f"{amount}{entry.product.name}"
+                    products.append(product)
                 string += 'purchase ('
-                string += ', '.join([e.product.name for e in t.purchase.entries])
+                string += ', '.join(products)
                 string += ')'
                 if t.penalty > 1:
                     string += f' * {t.penalty:d}x penalty applied'
@@ -151,8 +135,6 @@ class UserListMenu(Menu):
         text += line_format % ('total credit', total_credit)
         less(text)
 
-# reimplements ChargeMenu
-# TODO: these should be combined to one
 class AdjustCreditMenu(Menu):
     def __init__(self):
         Menu.__init__(self, 'Adjust credit', uses_db=True)
@@ -165,7 +147,7 @@ class AdjustCreditMenu(Menu):
         print('(Note on sign convention: Enter a positive amount here if you have')
         print('added money to the PVVVV money box, a negative amount if you have')
         print('taken money from it)')
-        amount = self.input_int('Add amount', allowed_range=(-100000, 100000))
+        amount = self.input_int('Add amount', -100000, 100000)
         print('(The "log message" will show up in the transaction history in the')
         print('"Show user" menu.  It is not necessary to enter a message, but it')
         print('might be useful to help you remember why you adjusted the credit)')

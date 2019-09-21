@@ -185,26 +185,32 @@ class Menu(object):
     def invalid_menu_choice(self, in_str):
         print('Please enter a valid choice.')
 
-    def input_int(self, prompt=None, end_prompt=None, allowed_range=(None, None), null_allowed=False, zero_allowed=True,
-                  default=None):
+    def input_int(self, prompt=None, minimum=None, maximum=None, null_allowed=False, zero_allowed=True, default=None):
+        if minimum is not None and maximum is not None:
+            end_prompt = f"({minimum}-{maximum})>"
+        elif minimum is not None:
+            end_prompt = f"(>{minimum})>"
+        elif maximum is not None:
+            end_prompt = f"(<{maximum})>"
+        else:
+            end_prompt = ""
+
         while True:
-            result = self.input_str(prompt, end_prompt, default=default)
+            result = self.input_str(prompt + end_prompt, default=default)
             if result == '' and null_allowed:
                 return False
             try:
                 value = int(result)
-                # TODO: Should this be turned into greater-than-equals and less-than-equals?
-                if ((allowed_range[0] and value < allowed_range[0]) or (allowed_range[1] and value > allowed_range[1])):
-                    if allowed_range[0] and allowed_range[1]:
-                        print(f'Value must be in range [{allowed_range[0]:d}, {allowed_range[1]:d}]')
-                    elif allowed_range[0]:
-                        print(f'Value must be at least {allowed_range[0]:d}')
-                    else:
-                        print(f'Value must be at most {allowed_range[1]:d}')
-                elif not zero_allowed and value == 0:
+                if minimum is not None and value < minimum:
+                    print(f'Value must be at least {minimum:d}')
+                    continue
+                if maximum is not None and value > maximum:
+                    print(f'Value must be at most {maximum:d}')
+                    continue
+                if not zero_allowed and value == 0:
                     print("Value cannot be zero")
-                else:
-                    return value
+                    continue
+                return value
             except ValueError:
                 print("Please enter an integer")
 
@@ -412,8 +418,6 @@ class Menu(object):
                 self.session = None
 
     def _execute(self, **kwargs):
-        # TODO: This is a very awkward line. Is there a better way of doing this?
-        line_format = '%' + str(len(str(len(self.items)))) + 'd ) %s'
         while True:
             self.print_header()
             self.set_context(None)
@@ -422,7 +426,8 @@ class Menu(object):
                 self.pause()
                 return None
             for i in range(len(self.items)):
-                self.printc(line_format % (i + 1, self.item_name(i)))
+                length = len(str(len(self.items)))
+                self.printc(f"{i + 1:>{length}} ) {self.item_name(i)}")
             item_i = self.input_choice(len(self.items)) - 1
             if self.item_is_submenu(item_i):
                 self.items[item_i].execute()

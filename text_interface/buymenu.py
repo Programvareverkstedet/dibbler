@@ -77,10 +77,12 @@ When finished, write an empty line to confirm the purchase.\n'''
             else:
                 Transaction(thing, purchase=self.purchase)
         elif isinstance(thing, Product):
-            if len(self.purchase.entries) and self.purchase.entries[-1].product == thing:
-                self.purchase.entries[-1].amount += amount
-            else:
-                PurchaseEntry(self.purchase, thing, amount)
+            if self.purchase.entries:
+                for entry in self.purchase.entries:
+                    if entry.product == thing:
+                        entry.amount += amount
+                        return True
+            PurchaseEntry(self.purchase, thing, amount)
         return True
 
     def _execute(self, initial_contents=None):
@@ -160,10 +162,9 @@ When finished, write an empty line to confirm the purchase.\n'''
                         print(f'USER {t.user.name} HAS LOWER CREDIT THAN {conf.low_credit_warning_limit:d},',
                               'AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.')
 
-        # Superfast mode skips a linebreak for some reason. This looks ugly.
-        # TODO: Figure out why this happens, and fix it in a less hacky way.
+        # Superfast mode skips a linebreak for some reason.
         if self.superfast_mode:
-            print("")
+           print("")
         return True
 
     def complete_input(self):
@@ -197,9 +198,8 @@ When finished, write an empty line to confirm the purchase.\n'''
         string += f'\n  total price: {self.purchase.price:d} kr'
 
         if any(t.penalty > 1 for t in transactions):
-            # TODO: Rewrite?
-            string += '\n  *total with penalty: %d kr' % sum(
-                self.purchase.price_per_transaction() * t.penalty for t in transactions)
+            total = sum(self.purchase.price_per_transaction() * t.penalty for t in transactions)
+            string += f'\n  *total with penalty: {total} kr'
 
         return string
 

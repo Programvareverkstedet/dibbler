@@ -66,7 +66,7 @@ class AddProductMenu(Menu):
         self.print_header()
         bar_code = self.input_str('Bar code', regex=Product.bar_code_re, length_range=(8, 13))
         name = self.input_str('Name', regex=Product.name_re, length_range=(1, Product.name_length))
-        price = self.input_int('Price', allowed_range=(1, 100000))
+        price = self.input_int('Price', 1, 100000)
         product = Product(bar_code, name, price)
         self.session.add(product)
         try:
@@ -97,7 +97,7 @@ class EditProductMenu(Menu):
                 product.name = self.input_str('Name', default=product.name, regex=Product.name_re,
                                               length_range=(1, product.name_length))
             elif what == 'price':
-                product.price = self.input_int('Price', default=product.price, allowed_range=(1, 100000))
+                product.price = self.input_int('Price', 1, 100000, default=product.price)
             elif what == 'barcode':
                 product.bar_code = self.input_str('Bar code', default=product.bar_code, regex=Product.bar_code_re,
                                                   length_range=(8, 13))
@@ -129,7 +129,7 @@ class AdjustStockMenu(Menu):
         print(f'The stock of this product is: {product.stock:d}')
         print('Write the number of products you have added to the stock')
         print('Alternatively, correct the stock for any mistakes')
-        add_stock = self.input_int('Added stock', allowed_range=(-1000, 1000), zero_allowed=False)
+        add_stock = self.input_int('Added stock', -1000, 1000, zero_allowed=False)
         if add_stock > 0:
             print(f'You added {add_stock:d} to the stock of {product}')
         else:
@@ -168,7 +168,7 @@ class CleanupStockMenu(Menu):
 
         for product in products:
             oldstock = product.stock
-            product.stock = self.input_int(product.name, allowed_range=(0, 10000), default=max(0, oldstock))
+            product.stock = self.input_int(product.name, 0, 10000, default=max(0, oldstock))
             self.session.add(product)
             if oldstock != product.stock:
                 changed_products.append((product, oldstock))

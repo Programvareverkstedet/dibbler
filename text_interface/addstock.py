@@ -42,8 +42,7 @@ much money you're due in credits for the purchase when prompted.\n'''
 
                 if isinstance(thing, Product):
                     self.printc(f"{amount:d} of {thing.name} registered")
-                    thing_price = self.input_int('What did you pay a piece? ', (1, 100000),
-                                                 default=thing.price) * amount
+                    thing_price = self.input_int('What did you pay a piece?', 1, 100000, default=thing.price) * amount
                     self.price += thing_price
 
                 # once we get something in the
@@ -65,21 +64,25 @@ much money you're due in credits for the purchase when prompted.\n'''
     def complete_input(self):
         return bool(self.users) and len(self.products) and self.price
 
-    # TODO: Rewrite this madness
     def print_info(self):
-        print((6 + Product.name_length) * '-')
+        width = 6 + Product.name_length
+        print()
+        print(width * '-')
         if self.price:
-            print("Amount to be credited: {{0:>{0}d}}".format(Product.name_length-17).format(self.price))
+            print(f"Amount to be credited:{self.price:>{width - 22}}")
         if self.users:
             print("Users to credit:")
             for user in self.users:
-                print(f"  {str(user.name)}")
-        print("\n{{0:s}}{{1:>{0}s}}".format(Product.name_length-1).format("Product", "Amount"))
-        print((6 + Product.name_length) * '-')
+                print(f"\t{user.name}")
+        print()
+        print("Products", end="")
+        print("Amount".rjust(width - 8))
+        print(width * '-')
         if len(self.products):
             for product in list(self.products.keys()):
-                print('{{0:<{0}}}{{1:>6d}}'.format(Product.name_length).format(product.name, self.products[product][0]))
-                print((6 + Product.name_length) * '-')
+                print(f"{product.name}", end="")
+                print(f"{self.products[product][0]}".rjust(width - len(product.name)))
+                print(width * '-')
 
     def add_thing_to_pending(self, thing, amount, price):
         if isinstance(thing, User):
@@ -94,12 +97,7 @@ much money you're due in credits for the purchase when prompted.\n'''
     def perform_transaction(self):
         print('Did you pay a different price?')
         if self.confirm('>', default=False):
-            price = self.input_int('How much did you pay?', default=self.price)
-            # TODO: Loop until we get a valid answer instead of assuming default
-            if price > self.price:
-                print('Illegal action, total can not be higher than your total.')
-            else:
-                self.price = price
+            self.price = self.input_int('How much did you pay?', 0, self.price, default=self.price)
 
         description = self.input_str('Log message', length_range=(0, 50))
         if description == '':
