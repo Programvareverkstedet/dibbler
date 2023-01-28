@@ -9,5 +9,5 @@ user_recent_transaction_limit = 100
 
 # See https://pypi.org/project/brother_ql/ for label types
 # Set rotate to False for endless labels
-label_type = "29x90"
-label_rotate = True
+label_type = "62"
+label_rotate = False
