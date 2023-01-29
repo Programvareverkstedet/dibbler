@@ -58,8 +58,10 @@
             groups.dibbler = { };
             users.dibbler = {
               group = "dibbler";
+              extraGroups = [ "lp" ];
               isNormalUser = true;
-              shell = "${screen} -x dibbler";
+              shell = ((pkgs.writeShellScriptBin "login-shell" "${screen} -x dibbler") // {shellPath = "/bin/login-shell";});
+            };
             };
           };
 
@@ -68,7 +70,7 @@
             wantedBy = [ "default.target" ];
             serviceConfig = {
               ExecStartPre = "-${screen} -X -S dibbler kill";
-              ExecStart = "${screen} -dmS dibbler -O -l /home/dibbler/dibbler/text_based.py";
+              ExecStart = "${screen} -dmS dibbler -O -l ${cfg.package.override { conf = cfg.config; }}/bin/dibbler";
               ExecStartPost = "${screen} -X -S dibbler width 42 80";
               User = "dibbler";
               Group = "dibbler";
@@ -81,10 +83,14 @@
           };
 
           # https://github.com/NixOS/nixpkgs/issues/84105
+          boot.kernelParams = [
+            "console=ttyUSB0,9600"
+            "console=tty1"
+          ];
           systemd.services."serial-getty@ttyUSB0" = {
             enable = true;
-            wantedBy = [ "getty.target" ];
-            serviceConfig.Restart = "always";
+            wantedBy = [ "getty.target" ]; # to start at boot
+            serviceConfig.Restart = "always"; # restart when session is closed
           };
 
           services = {
