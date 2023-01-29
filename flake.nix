@@ -42,36 +42,76 @@
             default = ./conf.py;
           };
         };
-        config = {
+
+        config = let
+          screen = "${pkgs.screen}/bin/screen";
+        in {
           nixpkgs.overlays = [ self.overlays.default ];
 
-          users.users.dibbler = {
-            group = "dibbler";
-            isNormalUser = true;
-            shell = "${cfg.package.override { conf = cfg.config; }}/bin/dibbler";
+          boot = {
+            consoleLogLevel = 0;
+            enableContainers = false;
+            loader.grub.enable = false;
+          };
+
+          users = {
+            groups.dibbler = { };
+            users.dibbler = {
+              group = "dibbler";
+              isNormalUser = true;
+              shell = "${screen} -x dibbler";
+            };
+          };
+
+          systemd.services.screen-daemon = {
+            description = "Dibbler service screen";
+            wantedBy = [ "default.target" ];
+            serviceConfig = {
+              ExecStartPre = "-${screen} -X -S dibbler kill";
+              ExecStart = "${screen} -dmS dibbler -O -l /home/dibbler/dibbler/text_based.py";
+              ExecStartPost = "${screen} -X -S dibbler width 42 80";
+              User = "dibbler";
+              Group = "dibbler";
+              Type = "forking";
+              RemainAfterExit = false;
+              Restart = "always";
+              RestartSec = "5s";
+              SuccessExitStatus = 1;
+            }; 
+          };
+
+          # https://github.com/NixOS/nixpkgs/issues/84105
+          systemd.services."serial-getty@ttyUSB0" = {
+            enable = true;
+            wantedBy = [ "getty.target" ];
+            serviceConfig.Restart = "always";
+          };
+
+          services = {
+            openssh = {
+              enable = true;
+              permitRootLogin = "yes";
+            };
+
+            getty.autologinUser = lib.mkForce "dibbler";
+            udisks2.enable = false;
           };
 
           networking.firewall.logRefusedConnections = false;
           console.keyMap = "no";
-          boot.consoleLogLevel = 0;
-
-          services.openssh.enable = true;
-          services.openssh.permitRootLogin = "yes";
-
-          users.groups.dibbler = { };
-          services.getty.autologinUser = lib.mkForce "dibbler";
-
-          i18n.supportedLocales = ["en_US.UTF-8/UTF-8"];
-          documentation.info.enable = false;
-          documentation.man.enable = false;
           programs.command-not-found.enable = false;
-          security.polkit.enable = lib.mkForce false;
-          security.audit.enable = false;
-          services.udisks2.enable = false;
-          boot.enableContainers = false;
-          boot.loader.grub.enable = false;
-
+          i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
           environment.noXlibs = true;
+
+          documentation = {
+            info.enable = false;
+            man.enable = false;
+          };
+
+          security = {
+            polkit.enable = lib.mkForce false;
+            audit.enable = false;
+          };
         };
       };
     } //
@@ -84,6 +124,7 @@
           self.nixosModules.default
           ({...}: {
             system.stateVersion = "22.05";
+
             networking = {
               hostName = "skrot";
               domain = "pvv.ntnu.no";
@@ -91,14 +132,10 @@
               defaultGateway = "129.241.210.129";
               interfaces.eth0 = {
                 useDHCP = false;
-                ipv4 = {
-                  addresses = [
-                    {
-                      address = "129.241.210.235";
-                      prefixLength = 25;
-                    }
-                  ];
-                };
+                ipv4.addresses = [{
+                  address = "129.241.210.235";
+                  prefixLength = 25;
+                }];
               };
             };
             # services.resolved.enable = true;
