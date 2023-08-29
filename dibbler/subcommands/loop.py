@@ -5,9 +5,9 @@ import random
 import sys
 import traceback
 
-from .conf import config
-from .helpers import *
-from .menus import *
+from ..conf import config
+from ..lib.helpers import *
+from ..menus import *
 
 random.seed()
 

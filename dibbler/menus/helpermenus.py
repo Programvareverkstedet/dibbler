@@ -7,19 +7,17 @@ from select import select
 
 from dibbler.db import Session
 from dibbler.models import User
-from dibbler.helpers import (
+from dibbler.lib.helpers import (
     search_user,
     search_product,
     guess_data_type,
     argmax,
 )
 
-from . import (
-    context_commands,
-    local_help_commands,
-    help_commands,
-    exit_commands,
-)
+exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death', 'q']
+help_commands = ['help', '?']
+context_commands = ['what', '??']
+local_help_commands = ['help!', '???']
 
 
 class ExitMenu(Exception):

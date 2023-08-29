@@ -2,7 +2,7 @@ import sqlalchemy
 
 from dibbler.conf import config
 from dibbler.models import Transaction, Product, User
-from dibbler.helpers import less
+from dibbler.lib.helpers import less
 
 from .helpermenus import Menu, Selector
 

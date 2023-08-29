@@ -2,7 +2,7 @@ import re
 
 from dibbler.conf import config
 from dibbler.models import Product, User
-from dibbler.printer_helpers import print_bar_code, print_name_label
+from dibbler.lib.printer_helpers import print_bar_code, print_name_label
 
 from .helpermenus import Menu
 

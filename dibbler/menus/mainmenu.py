@@ -6,11 +6,12 @@ import sys
 
 from dibbler.db import Session
 
-from . import faq_commands, restart_commands
 from .buymenu import BuyMenu
 from .faq import FAQMenu
 from .helpermenus import Menu
 
+faq_commands = ['faq']
+restart_commands = ['restart']
 
 def restart():
     # Does not work if the script is not executable, or if it was

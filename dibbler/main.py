@@ -35,15 +35,15 @@ def main():
     config.read(args.config)
 
     if args.subcommand == 'loop':
-      import dibbler.text_based as text_based
-      text_based.main()
+      import dibbler.subcommands.loop as loop
+      loop.main()
 
     elif args.subcommand == 'create-db':
-      import dibbler.scripts.makedb as makedb
+      import dibbler.subcommands.makedb as makedb
       makedb.main()
 
     elif args.subcommand == 'slabbedasker':
-      import dibbler.scripts.slabbedasker as slabbedasker
+      import dibbler.subcommands.slabbedasker as slabbedasker
       slabbedasker.main()
 
 

@@ -4,7 +4,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-from dibbler.statistikkHelpers import *
+from dibbler.lib.statistikkHelpers import *
 
 def getInputType():
   inp = 0
