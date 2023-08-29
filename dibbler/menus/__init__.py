@@ -21,8 +21,8 @@ from .miscmenus import (
 )
 from .printermenu import PrintLabelMenu
 from .stats import (
-  ProductPopularityMenu,
-  ProductRevenueMenu,
-  BalanceMenu,
-  LoggedStatisticsMenu
+    ProductPopularityMenu,
+    ProductRevenueMenu,
+    BalanceMenu,
+    LoggedStatisticsMenu,
 )

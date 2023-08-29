@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 import os
 import random
@@ -10,8 +9,9 @@ from .buymenu import BuyMenu
 from .faq import FAQMenu
 from .helpermenus import Menu
 
-faq_commands = ['faq']
-restart_commands = ['restart']
+faq_commands = ["faq"]
+restart_commands = ["restart"]
+
 
 def restart():
     # Does not work if the script is not executable, or if it was
@@ -41,18 +41,24 @@ class MainMenu(Menu):
             FAQMenu().execute()
             return True
         if result in restart_commands:
-            if self.confirm('Restart Dibbler?'):
+            if self.confirm("Restart Dibbler?"):
                 restart()
                 pass
             return True
-        elif result == 'c':
-            os.system('echo -e "\033[' + str(random.randint(40, 49)) + ';' + str(random.randint(30, 37)) + ';5m"')
-            os.system('clear')
+        elif result == "c":
+            os.system(
+                'echo -e "\033['
+                + str(random.randint(40, 49))
+                + ";"
+                + str(random.randint(30, 37))
+                + ';5m"'
+            )
+            os.system("clear")
             self.show_context()
             return True
-        elif result == 'cs':
+        elif result == "cs":
             os.system('echo -e "\033[0m"')
-            os.system('clear')
+            os.system("clear")
             self.show_context()
             return True
         return False

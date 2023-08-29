@@ -21,8 +21,9 @@ if TYPE_CHECKING:
     from .User import User
     from .Purchase import Purchase
 
+
 class Transaction(Base):
-    __tablename__ = 'transactions'
+    __tablename__ = "transactions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
@@ -31,11 +32,11 @@ class Transaction(Base):
     penalty: Mapped[int] = mapped_column(Integer)
     description: Mapped[str | None] = mapped_column(String(50))
 
-    user_name: Mapped[str] = mapped_column(ForeignKey('users.name'))
-    purchase_id: Mapped[int | None] = mapped_column(ForeignKey('purchases.id'))
+    user_name: Mapped[str] = mapped_column(ForeignKey("users.name"))
+    purchase_id: Mapped[int | None] = mapped_column(ForeignKey("purchases.id"))
 
-    user: Mapped[User] = relationship(lazy='joined')
-    purchase: Mapped[Purchase] = relationship(lazy='joined')
+    user: Mapped[User] = relationship(lazy="joined")
+    purchase: Mapped[Purchase] = relationship(lazy="joined")
 
     def __init__(self, user, amount=0, description=None, purchase=None, penalty=1):
         self.user = user

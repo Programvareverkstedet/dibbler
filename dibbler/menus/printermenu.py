@@ -9,17 +9,17 @@ from .helpermenus import Menu
 
 class PrintLabelMenu(Menu):
     def __init__(self):
-        Menu.__init__(self, 'Print a label', uses_db=True)
-        self.help_text = '''
+        Menu.__init__(self, "Print a label", uses_db=True)
+        self.help_text = """
 Prints out a product bar code on the printer
 
 Put it up somewhere in the vicinity.
-'''
+"""
 
     def _execute(self):
         self.print_header()
 
-        thing = self.input_thing('Product/User')
+        thing = self.input_thing("Product/User")
 
         if isinstance(thing, Product):
             if re.match(r"^[0-9]{13}$", thing.bar_code):
@@ -32,14 +32,14 @@ Put it up somewhere in the vicinity.
                 thing.bar_code,
                 thing.name,
                 barcode_type=bar_type,
-                rotate=config.getboolean('printer', 'rotate'),
+                rotate=config.getboolean("printer", "rotate"),
                 printer_type="QL-700",
-                label_type=config.get('printer', 'label_type'),
+                label_type=config.get("printer", "label_type"),
             )
         elif isinstance(thing, User):
             print_name_label(
                 text=thing.name,
-                label_type=config.get('printer', 'label_type'),
-                rotate=config.getboolean('printer', 'rotate'),
-                printer_type="QL-700"
+                label_type=config.get("printer", "label_type"),
+                rotate=config.getboolean("printer", "rotate"),
+                printer_type="QL-700",
             )

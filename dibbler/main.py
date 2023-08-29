@@ -13,38 +13,33 @@ parser.add_argument(
 )
 
 subparsers = parser.add_subparsers(
-    title='subcommands',
-    dest='subcommand',
+    title="subcommands",
+    dest="subcommand",
     required=True,
 )
-subparsers.add_parser(
-    'loop',
-    help='Run the dibbler loop'
-)
-subparsers.add_parser(
-    'create-db',
-    help='Create the database'
-)
-subparsers.add_parser(
-    'slabbedasker',
-    help='Find out who is slabbedasker'
-)
+subparsers.add_parser("loop", help="Run the dibbler loop")
+subparsers.add_parser("create-db", help="Create the database")
+subparsers.add_parser("slabbedasker", help="Find out who is slabbedasker")
+
 
 def main():
     args = parser.parse_args()
     config.read(args.config)
 
-    if args.subcommand == 'loop':
-      import dibbler.subcommands.loop as loop
-      loop.main()
+    if args.subcommand == "loop":
+        import dibbler.subcommands.loop as loop
 
-    elif args.subcommand == 'create-db':
-      import dibbler.subcommands.makedb as makedb
-      makedb.main()
+        loop.main()
 
-    elif args.subcommand == 'slabbedasker':
-      import dibbler.subcommands.slabbedasker as slabbedasker
-      slabbedasker.main()
+    elif args.subcommand == "create-db":
+        import dibbler.subcommands.makedb as makedb
+
+        makedb.main()
+
+    elif args.subcommand == "slabbedasker":
+        import dibbler.subcommands.slabbedasker as slabbedasker
+
+        slabbedasker.main()
 
 
 if __name__ == "__main__":

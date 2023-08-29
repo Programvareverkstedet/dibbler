@@ -17,10 +17,11 @@ if TYPE_CHECKING:
     from .User import User
     from .Product import Product
 
-class UserProducts(Base):
-    __tablename__ = 'user_products'
 
-    user_name: Mapped[str] = mapped_column(ForeignKey('users.name'), primary_key=True)
+class UserProducts(Base):
+    __tablename__ = "user_products"
+
+    user_name: Mapped[str] = mapped_column(ForeignKey("users.name"), primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"), primary_key=True)
 
     count: Mapped[int] = mapped_column(Integer)
@@ -28,4 +29,3 @@ class UserProducts(Base):
 
     user: Mapped[User] = relationship()
     product: Mapped[Product] = relationship()
-

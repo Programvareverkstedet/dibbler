@@ -14,10 +14,10 @@ from dibbler.lib.helpers import (
     argmax,
 )
 
-exit_commands = ['exit', 'abort', 'quit', 'bye', 'eat flaming death', 'q']
-help_commands = ['help', '?']
-context_commands = ['what', '??']
-local_help_commands = ['help!', '???']
+exit_commands = ["exit", "abort", "quit", "bye", "eat flaming death", "q"]
+help_commands = ["help", "?"]
+context_commands = ["what", "??"]
+local_help_commands = ["help!", "???"]
 
 
 class ExitMenu(Exception):
@@ -25,10 +25,19 @@ class ExitMenu(Exception):
 
 
 class Menu(object):
-    def __init__(self, name, items=None, prompt=None, end_prompt="> ",
-                 return_index=True,
-                 exit_msg=None, exit_confirm_msg=None, exit_disallowed_msg=None,
-                 help_text=None, uses_db=False):
+    def __init__(
+        self,
+        name,
+        items=None,
+        prompt=None,
+        end_prompt="> ",
+        return_index=True,
+        exit_msg=None,
+        exit_confirm_msg=None,
+        exit_disallowed_msg=None,
+        help_text=None,
+        uses_db=False,
+    ):
         self.name = name
         self.items = items if items is not None else []
         self.prompt = prompt
@@ -68,7 +77,7 @@ class Menu(object):
         if self.context is None:
             self.context = string
         else:
-            self.context += '\n' + string
+            self.context += "\n" + string
 
     def show_context(self):
         print(self.header())
@@ -93,8 +102,16 @@ class Menu(object):
             return i
         return self.items[i]
 
-    def input_str(self, prompt=None, end_prompt=None, regex=None, length_range=(None, None),
-                  empty_string_is_none=False, timeout=None, default=None):
+    def input_str(
+        self,
+        prompt=None,
+        end_prompt=None,
+        regex=None,
+        length_range=(None, None),
+        empty_string_is_none=False,
+        timeout=None,
+        default=None,
+    ):
         if prompt is None:
             prompt = self.prompt if self.prompt is not None else ""
         if default is not None:
@@ -114,13 +131,13 @@ class Menu(object):
                     rlist, _, _ = select([sys.stdin], [], [], timeout)
                     if not rlist:
                         # timeout occurred, simulate empty line
-                        result = ''
+                        result = ""
                     else:
                         result = input(prompt).strip()
                 else:
                     result = input(prompt).strip()
             except EOFError:
-                print('quit')
+                print("quit")
                 self.exit_menu()
                 continue
             if result in exit_commands:
@@ -137,22 +154,26 @@ class Menu(object):
                 continue
             if self.special_input_options(result):
                 continue
-            if empty_string_is_none and result == '':
+            if empty_string_is_none and result == "":
                 return None
-            if default is not None and result == '':
+            if default is not None and result == "":
                 return default
-            if regex is not None and not re.match(regex + '$', result):
+            if regex is not None and not re.match(regex + "$", result):
                 print(f'Value must match regular expression "{regex}"')
                 continue
             if length_range != (None, None):
                 length = len(result)
-                if ((length_range[0] and length < length_range[0]) or (length_range[1] and length > length_range[1])):
+                if (length_range[0] and length < length_range[0]) or (
+                    length_range[1] and length > length_range[1]
+                ):
                     if length_range[0] and length_range[1]:
-                        print(f'Value must have length in range [{length_range[0]:d}, {length_range[1]:d}]')
+                        print(
+                            f"Value must have length in range [{length_range[0]:d}, {length_range[1]:d}]"
+                        )
                     elif length_range[0]:
-                        print(f'Value must have length at least {length_range[0]:d}')
+                        print(f"Value must have length at least {length_range[0]:d}")
                     else:
-                        print(f'Value must have length at most {length_range[1]:d}')
+                        print(f"Value must have length at most {length_range[1]:d}")
                     continue
             return result
 
@@ -179,8 +200,8 @@ class Menu(object):
     def input_choice(self, number_of_choices, prompt=None, end_prompt=None):
         while True:
             result = self.input_str(prompt, end_prompt)
-            if result == '':
-                print('Please enter something')
+            if result == "":
+                print("Please enter something")
             else:
                 if result.isdigit():
                     choice = int(result)
@@ -192,9 +213,17 @@ class Menu(object):
                     self.invalid_menu_choice(result)
 
     def invalid_menu_choice(self, in_str):
-        print('Please enter a valid choice.')
+        print("Please enter a valid choice.")
 
-    def input_int(self, prompt=None, minimum=None, maximum=None, null_allowed=False, zero_allowed=True, default=None):
+    def input_int(
+        self,
+        prompt=None,
+        minimum=None,
+        maximum=None,
+        null_allowed=False,
+        zero_allowed=True,
+        default=None,
+    ):
         if minimum is not None and maximum is not None:
             end_prompt = f"({minimum}-{maximum})>"
         elif minimum is not None:
@@ -206,15 +235,15 @@ class Menu(object):
 
         while True:
             result = self.input_str(prompt + end_prompt, default=default)
-            if result == '' and null_allowed:
+            if result == "" and null_allowed:
                 return False
             try:
                 value = int(result)
                 if minimum is not None and value < minimum:
-                    print(f'Value must be at least {minimum:d}')
+                    print(f"Value must be at least {minimum:d}")
                     continue
                 if maximum is not None and value > maximum:
-                    print(f'Value must be at most {maximum:d}')
+                    print(f"Value must be at most {maximum:d}")
                     continue
                 if not zero_allowed and value == 0:
                     print("Value cannot be zero")
@@ -230,7 +259,7 @@ class Menu(object):
         return user
 
     def retrieve_user(self, search_str):
-        return self.search_ui(search_user, search_str, 'user')
+        return self.search_ui(search_user, search_str, "user")
 
     def input_product(self, prompt=None, end_prompt=None):
         product = None
@@ -239,47 +268,73 @@ class Menu(object):
         return product
 
     def retrieve_product(self, search_str):
-        return self.search_ui(search_product, search_str, 'product')
+        return self.search_ui(search_product, search_str, "product")
 
-    def input_thing(self, prompt=None, end_prompt=None, permitted_things=('user', 'product'),
-                    add_nonexisting=(), empty_input_permitted=False, find_hidden_products=True):
+    def input_thing(
+        self,
+        prompt=None,
+        end_prompt=None,
+        permitted_things=("user", "product"),
+        add_nonexisting=(),
+        empty_input_permitted=False,
+        find_hidden_products=True,
+    ):
         result = None
         while result is None:
             search_str = self.input_str(prompt, end_prompt)
-            if search_str == '' and empty_input_permitted:
+            if search_str == "" and empty_input_permitted:
                 return None
-            result = self.search_for_thing(search_str, permitted_things, add_nonexisting, find_hidden_products)
+            result = self.search_for_thing(
+                search_str, permitted_things, add_nonexisting, find_hidden_products
+            )
         return result
 
-    def input_multiple(self, prompt=None, end_prompt=None, permitted_things=('user', 'product'),
-                       add_nonexisting=(), empty_input_permitted=False, find_hidden_products=True):
+    def input_multiple(
+        self,
+        prompt=None,
+        end_prompt=None,
+        permitted_things=("user", "product"),
+        add_nonexisting=(),
+        empty_input_permitted=False,
+        find_hidden_products=True,
+    ):
         result = None
         num = 0
         while result is None:
             search_str = self.input_str(prompt, end_prompt)
             search_lst = search_str.split(" ")
-            if search_str == '' and empty_input_permitted:
+            if search_str == "" and empty_input_permitted:
                 return None
             else:
-                result = self.search_for_thing(search_str, permitted_things, add_nonexisting, find_hidden_products)
+                result = self.search_for_thing(
+                    search_str, permitted_things, add_nonexisting, find_hidden_products
+                )
                 num = 1
 
                 if (result is None) and (len(search_lst) > 1):
                     print('Interpreting input as "<number> <product>"')
                     try:
                         num = int(search_lst[0])
-                        result = self.search_for_thing(" ".join(search_lst[1:]), permitted_things, add_nonexisting,
-                                                       find_hidden_products)
+                        result = self.search_for_thing(
+                            " ".join(search_lst[1:]),
+                            permitted_things,
+                            add_nonexisting,
+                            find_hidden_products,
+                        )
                     # Her kan det legges inn en except ValueError,
                     # men da blir det fort mye plaging av brukeren
                     except Exception as e:
                         print(e)
         return result, num
 
-    def search_for_thing(self, search_str, permitted_things=('user', 'product'),
-                         add_non_existing=(), find_hidden_products=True):
-        search_fun = {'user': search_user,
-                      'product': search_product}
+    def search_for_thing(
+        self,
+        search_str,
+        permitted_things=("user", "product"),
+        add_non_existing=(),
+        find_hidden_products=True,
+    ):
+        search_fun = {"user": search_user, "product": search_product}
         results = {}
         result_values = {}
         for thing in permitted_things:
@@ -287,8 +342,12 @@ class Menu(object):
             result_values[thing] = self.search_result_value(results[thing])
         selected_thing = argmax(result_values)
         if not results[selected_thing]:
-            thing_for_type = {'card': 'user', 'username': 'user',
-                              'bar_code': 'product', 'rfid': 'rfid'}
+            thing_for_type = {
+                "card": "user",
+                "username": "user",
+                "bar_code": "product",
+                "rfid": "rfid",
+            }
             type_guess = guess_data_type(search_str)
             if type_guess is not None and thing_for_type[type_guess] in add_non_existing:
                 return self.search_add(search_str)
@@ -310,32 +369,39 @@ class Menu(object):
 
     def search_add(self, string):
         type_guess = guess_data_type(string)
-        if type_guess == 'username':
+        if type_guess == "username":
             print(f'"{string}" looks like a username, but no such user exists.')
-            if self.confirm(f'Create user {string}?'):
+            if self.confirm(f"Create user {string}?"):
                 user = User(string, None)
                 self.session.add(user)
                 return user
             return None
-        if type_guess == 'card':
-            selector = Selector(f'"{string}" looks like a card number, but no user with that card number exists.',
-                                [('create', f'Create user with card number {string}'),
-                                 ('set', f'Set card number of an existing user to {string}')])
+        if type_guess == "card":
+            selector = Selector(
+                f'"{string}" looks like a card number, but no user with that card number exists.',
+                [
+                    ("create", f"Create user with card number {string}"),
+                    ("set", f"Set card number of an existing user to {string}"),
+                ],
+            )
             selection = selector.execute()
-            if selection == 'create':
-                username = self.input_str('Username for new user (should be same as PVV username)',
-                                          User.name_re, (1, 10))
+            if selection == "create":
+                username = self.input_str(
+                    "Username for new user (should be same as PVV username)",
+                    User.name_re,
+                    (1, 10),
+                )
                 user = User(username, string)
                 self.session.add(user)
                 return user
-            if selection == 'set':
-                user = self.input_user('User to set card number for')
+            if selection == "set":
+                user = self.input_user("User to set card number for")
                 old_card = user.card
                 user.card = string
-                print(f'Card number of {user.name} set to {string} (was {old_card})')
+                print(f"Card number of {user.name} set to {string} (was {old_card})")
                 return user
             return None
-        if type_guess == 'bar_code':
+        if type_guess == "bar_code":
             print(f'"{string}" looks like the bar code for a product, but no such product exists.')
             return None
 
@@ -356,13 +422,14 @@ class Menu(object):
             return None
         limit = 9
         if len(result) > limit:
-            select_header = f'{len(result):d} {thing}s matching "{search_str}"; showing first {limit:d}'
+            select_header = (
+                f'{len(result):d} {thing}s matching "{search_str}"; showing first {limit:d}'
+            )
             select_items = result[:limit]
         else:
             select_header = f'{len(result):d} {thing}s matching "{search_str}"'
             select_items = result
-        selector = Selector(select_header, items=select_items,
-                            return_index=False)
+        selector = Selector(select_header, items=select_items, return_index=False)
         return selector.execute()
 
     @staticmethod
@@ -377,11 +444,12 @@ class Menu(object):
         print(self.header())
 
     def pause(self):
-        self.input_str('.', end_prompt="")
+        self.input_str(".", end_prompt="")
 
     @staticmethod
     def general_help():
-        print('''
+        print(
+            """
        DIBBLER HELP
 
        The following commands are recognized (almost) everywhere:
@@ -402,14 +470,15 @@ class Menu(object):
        of money PVVVV owes the user.  This value decreases with the
        appropriate amount when you register a purchase, and you may increase
        it by putting money in the box and using the "Adjust credit" menu.
-       ''')
+       """
+        )
 
     def local_help(self):
         if self.help_text is None:
-            print('no help here')
+            print("no help here")
         else:
-            print('')
-            print(f'Help for {self.header()}:')
+            print("")
+            print(f"Help for {self.header()}:")
             print(self.help_text)
 
     def execute(self, **kwargs):
@@ -431,7 +500,7 @@ class Menu(object):
             self.print_header()
             self.set_context(None)
             if len(self.items) == 0:
-                self.printc('(empty menu)')
+                self.printc("(empty menu)")
                 self.pause()
                 return None
             for i in range(len(self.items)):
@@ -452,37 +521,52 @@ class MessageMenu(Menu):
 
     def _execute(self):
         self.print_header()
-        print('')
+        print("")
         print(self.message)
         if self.pause_after_message:
             self.pause()
 
 
 class ConfirmMenu(Menu):
-    def __init__(self, prompt='confirm? ', end_prompt=": ", default=None, timeout=0):
-        Menu.__init__(self, 'question', prompt=prompt, end_prompt=end_prompt,
-                      exit_disallowed_msg='Please answer yes or no')
+    def __init__(self, prompt="confirm? ", end_prompt=": ", default=None, timeout=0):
+        Menu.__init__(
+            self,
+            "question",
+            prompt=prompt,
+            end_prompt=end_prompt,
+            exit_disallowed_msg="Please answer yes or no",
+        )
         self.default = default
         self.timeout = timeout
 
     def _execute(self):
-        options = {True: '[y]/n', False: 'y/[n]', None: 'y/n'}[self.default]
+        options = {True: "[y]/n", False: "y/[n]", None: "y/n"}[self.default]
         while True:
-            result = self.input_str(f'{self.prompt} ({options})', end_prompt=": ", timeout=self.timeout)
+            result = self.input_str(
+                f"{self.prompt} ({options})", end_prompt=": ", timeout=self.timeout
+            )
             result = result.lower().strip()
-            if result in ['y', 'yes']:
+            if result in ["y", "yes"]:
                 return True
-            elif result in ['n', 'no']:
+            elif result in ["n", "no"]:
                 return False
-            elif self.default is not None and result == '':
+            elif self.default is not None and result == "":
                 return self.default
             else:
-                print('Please answer yes or no')
+                print("Please answer yes or no")
 
 
 class Selector(Menu):
-    def __init__(self, name, items=None, prompt='select', return_index=True, exit_msg=None, exit_confirm_msg=None,
-                 help_text=None):
+    def __init__(
+        self,
+        name,
+        items=None,
+        prompt="select",
+        return_index=True,
+        exit_msg=None,
+        exit_confirm_msg=None,
+        help_text=None,
+    ):
         if items is None:
             items = []
         Menu.__init__(self, name, items, prompt, return_index=return_index, exit_msg=exit_msg)
@@ -495,9 +579,9 @@ class Selector(Menu):
 
     def local_help(self):
         if self.help_text is None:
-            print('This is a selection menu.  Enter one of the listed numbers, or')
-            print('\'exit\' to go out and do something else.')
+            print("This is a selection menu.  Enter one of the listed numbers, or")
+            print("'exit' to go out and do something else.")
         else:
-            print('')
-            print(f'Help for selector ({self.name}):')
+            print("")
+            print(f"Help for selector ({self.name}):")
             print(self.help_text)

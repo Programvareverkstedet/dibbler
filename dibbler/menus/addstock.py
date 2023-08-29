@@ -14,10 +14,10 @@ from .helpermenus import Menu
 
 class AddStockMenu(Menu):
     def __init__(self):
-        Menu.__init__(self, 'Add stock and adjust credit', uses_db=True)
-        self.help_text = '''
+        Menu.__init__(self, "Add stock and adjust credit", uses_db=True)
+        self.help_text = """
 Enter what you have bought for PVVVV here, along with your user name and how
-much money you're due in credits for the purchase when prompted.\n'''
+much money you're due in credits for the purchase when prompted.\n"""
         self.users = []
         self.users = []
         self.products = {}
@@ -25,10 +25,19 @@ much money you're due in credits for the purchase when prompted.\n'''
 
     def _execute(self):
         questions = {
-            (False, False): 'Enter user id or a string of the form "<number> <product>"',
-            (False, True): 'Enter user id or more strings of the form "<number> <product>"',
+            (
+                False,
+                False,
+            ): 'Enter user id or a string of the form "<number> <product>"',
+            (
+                False,
+                True,
+            ): 'Enter user id or more strings of the form "<number> <product>"',
             (True, False): 'Enter a string of the form "<number> <product>"',
-            (True, True): 'Enter more strings of the form "<number> <product>", or an empty line to confirm'
+            (
+                True,
+                True,
+            ): 'Enter more strings of the form "<number> <product>", or an empty line to confirm',
         }
 
         self.users = []
@@ -41,24 +50,33 @@ much money you're due in credits for the purchase when prompted.\n'''
             thing_price = 0
 
             # Read in a 'thing' (product or user):
-            line = self.input_multiple(add_nonexisting=('user', 'product'), empty_input_permitted=True,
-                                       find_hidden_products=False)
+            line = self.input_multiple(
+                add_nonexisting=("user", "product"),
+                empty_input_permitted=True,
+                find_hidden_products=False,
+            )
 
             if line:
                 (thing, amount) = line
 
                 if isinstance(thing, Product):
                     self.printc(f"{amount:d} of {thing.name} registered")
-                    thing_price = self.input_int('What did you pay a piece?', 1, 100000, default=thing.price) * amount
+                    thing_price = (
+                        self.input_int("What did you pay a piece?", 1, 100000, default=thing.price)
+                        * amount
+                    )
                     self.price += thing_price
 
                 # once we get something in the
                 # purchase, we want to protect the
                 # user from accidentally killing it
-                self.exit_confirm_msg = 'Abort transaction?'
+                self.exit_confirm_msg = "Abort transaction?"
             else:
                 if not self.complete_input():
-                    if self.confirm('Not enough information entered. Abort transaction?', default=True):
+                    if self.confirm(
+                        "Not enough information entered. Abort transaction?",
+                        default=True,
+                    ):
                         return False
                     continue
                 break
@@ -74,7 +92,7 @@ much money you're due in credits for the purchase when prompted.\n'''
     def print_info(self):
         width = 6 + Product.name_length
         print()
-        print(width * '-')
+        print(width * "-")
         if self.price:
             print(f"Amount to be credited:{self.price:>{width - 22}}")
         if self.users:
@@ -84,41 +102,47 @@ much money you're due in credits for the purchase when prompted.\n'''
         print()
         print("Products", end="")
         print("Amount".rjust(width - 8))
-        print(width * '-')
+        print(width * "-")
         if len(self.products):
             for product in list(self.products.keys()):
                 print(f"{product.name}", end="")
                 print(f"{self.products[product][0]}".rjust(width - len(product.name)))
-                print(width * '-')
+                print(width * "-")
 
     def add_thing_to_pending(self, thing, amount, price):
         if isinstance(thing, User):
             self.users.append(thing)
         elif thing in list(self.products.keys()):
-            print('Already added this product, adding amounts')
+            print("Already added this product, adding amounts")
             self.products[thing][0] += amount
             self.products[thing][1] += price
         else:
             self.products[thing] = [amount, price]
 
     def perform_transaction(self):
-        print('Did you pay a different price?')
-        if self.confirm('>', default=False):
-            self.price = self.input_int('How much did you pay?', 0, self.price, default=self.price)
+        print("Did you pay a different price?")
+        if self.confirm(">", default=False):
+            self.price = self.input_int("How much did you pay?", 0, self.price, default=self.price)
 
-        description = self.input_str('Log message', length_range=(0, 50))
-        if description == '':
-            description = 'Purchased products for PVVVV, adjusted credit ' + str(self.price)
+        description = self.input_str("Log message", length_range=(0, 50))
+        if description == "":
+            description = "Purchased products for PVVVV, adjusted credit " + str(self.price)
         for product in self.products:
             value = max(product.stock, 0) * product.price + self.products[product][1]
             old_price = product.price
             old_hidden = product.hidden
-            product.price = int(ceil(float(value) / (max(product.stock, 0) + self.products[product][0])))
-            product.stock = max(self.products[product][0], product.stock + self.products[product][0])
+            product.price = int(
+                ceil(float(value) / (max(product.stock, 0) + self.products[product][0]))
+            )
+            product.stock = max(
+                self.products[product][0], product.stock + self.products[product][0]
+            )
             product.hidden = False
-            print(f"New stock for {product.name}: {product.stock:d}",
-                  f"- New price: {product.price}" if old_price != product.price else "",
-                  "- Removed hidden status" if old_hidden != product.hidden else "")
+            print(
+                f"New stock for {product.name}: {product.stock:d}",
+                f"- New price: {product.price}" if old_price != product.price else "",
+                "- Removed hidden status" if old_hidden != product.hidden else "",
+            )
 
         purchase = Purchase()
         for user in self.users:
@@ -136,4 +160,4 @@ much money you're due in credits for the purchase when prompted.\n'''
             for user in self.users:
                 print(f"User {user.name}'s credit is now {user.credit:d}")
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print(f'Could not perform transaction: {e}')
+            print(f"Could not perform transaction: {e}")

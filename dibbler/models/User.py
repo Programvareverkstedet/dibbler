@@ -12,12 +12,14 @@ from sqlalchemy.orm import (
 )
 
 from .Base import Base
+
 if TYPE_CHECKING:
     from .UserProducts import UserProducts
     from .Transaction import Transaction
 
+
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     name: Mapped[str] = mapped_column(String(10), primary_key=True)
     credit: Mapped[str] = mapped_column(Integer)
     card: Mapped[str | None] = mapped_column(String(20))
@@ -32,10 +34,10 @@ class User(Base):
 
     def __init__(self, name, card, rfid=None, credit=0):
         self.name = name
-        if card == '':
+        if card == "":
             card = None
         self.card = card
-        if rfid == '':
+        if rfid == "":
             rfid = None
         self.rfid = rfid
         self.credit = credit
@@ -44,4 +46,4 @@ class User(Base):
         return self.name
 
     def is_anonymous(self):
-        return self.card == '11122233'
+        return self.card == "11122233"

@@ -14,18 +14,18 @@ from .helpermenus import Menu
 
 class BuyMenu(Menu):
     def __init__(self, session=None):
-        Menu.__init__(self, 'Buy', uses_db=True)
+        Menu.__init__(self, "Buy", uses_db=True)
         if session:
             self.session = session
         self.superfast_mode = False
-        self.help_text = '''
+        self.help_text = """
 Each purchase may contain one or more products and one or more buyers.
 
 Enter products (by name or bar code) and buyers (by name or bar code)
 in any order.  The information gathered so far is displayed after each
 addition, and you can type 'what' at any time to redisplay it.
 
-When finished, write an empty line to confirm the purchase.\n'''
+When finished, write an empty line to confirm the purchase.\n"""
 
     @staticmethod
     def credit_check(user):
@@ -37,7 +37,7 @@ When finished, write an empty line to confirm the purchase.\n'''
         """
         assert isinstance(user, User)
 
-        return user.credit > config.getint('limits', 'low_credit_warning_limit')
+        return user.credit > config.getint("limits", "low_credit_warning_limit")
 
     def low_credit_warning(self, user, timeout=False):
         assert isinstance(user, User)
@@ -57,7 +57,9 @@ When finished, write an empty line to confirm the purchase.\n'''
         print("***********************************************************************")
         print("***********************************************************************")
         print("")
-        print(f"USER {user.name} HAS LOWER CREDIT THAN {config.getint('limits', 'low_credit_warning_limit'):d}.")
+        print(
+            f"USER {user.name} HAS LOWER CREDIT THAN {config.getint('limits', 'low_credit_warning_limit'):d}."
+        )
         print("THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH.")
         print("CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS.")
         print("")
@@ -72,10 +74,10 @@ When finished, write an empty line to confirm the purchase.\n'''
     def add_thing_to_purchase(self, thing, amount=1):
         if isinstance(thing, User):
             if thing.is_anonymous():
-                print('---------------------------------------------')
-                print('| You are now purchasing as the user anonym.|')
-                print('| You have to put money in the anonym-jar.  |')
-                print('---------------------------------------------')
+                print("---------------------------------------------")
+                print("| You are now purchasing as the user anonym.|")
+                print("| You have to put money in the anonym-jar.  |")
+                print("---------------------------------------------")
 
             if not self.credit_check(thing):
                 if self.low_credit_warning(user=thing, timeout=self.superfast_mode):
@@ -110,24 +112,32 @@ When finished, write an empty line to confirm the purchase.\n'''
 
         if len(initial_contents) > 0 and all(map(is_product, initial_contents)):
             self.superfast_mode = True
-            print('***********************************************')
-            print('****** Buy menu is in SUPERFASTmode[tm]! ******')
-            print('*** The purchase will be stored immediately ***')
-            print('*** when you enter a user.                  ***')
-            print('***********************************************')
+            print("***********************************************")
+            print("****** Buy menu is in SUPERFASTmode[tm]! ******")
+            print("*** The purchase will be stored immediately ***")
+            print("*** when you enter a user.                  ***")
+            print("***********************************************")
 
         while True:
             self.print_purchase()
-            self.printc({(False, False): 'Enter user or product identification',
-                         (False, True): 'Enter user identification or more products',
-                         (True, False): 'Enter product identification or more users',
-                         (True, True): 'Enter more products or users, or an empty line to confirm'
-                         }[(len(self.purchase.transactions) > 0,
-                            len(self.purchase.entries) > 0)])
+            self.printc(
+                {
+                    (False, False): "Enter user or product identification",
+                    (False, True): "Enter user identification or more products",
+                    (True, False): "Enter product identification or more users",
+                    (
+                        True,
+                        True,
+                    ): "Enter more products or users, or an empty line to confirm",
+                }[(len(self.purchase.transactions) > 0, len(self.purchase.entries) > 0)]
+            )
 
             # Read in a 'thing' (product or user):
-            line = self.input_multiple(add_nonexisting=('user', 'product'), empty_input_permitted=True,
-                                       find_hidden_products=False)
+            line = self.input_multiple(
+                add_nonexisting=("user", "product"),
+                empty_input_permitted=True,
+                find_hidden_products=False,
+            )
             if line is not None:
                 thing, num = line
             else:
@@ -136,7 +146,9 @@ When finished, write an empty line to confirm the purchase.\n'''
             # Possibly exit from the menu:
             if thing is None:
                 if not self.complete_input():
-                    if self.confirm('Not enough information entered. Abort purchase?', default=True):
+                    if self.confirm(
+                        "Not enough information entered. Abort purchase?", default=True
+                    ):
                         return False
                     continue
                 break
@@ -144,7 +156,7 @@ When finished, write an empty line to confirm the purchase.\n'''
                 # once we get something in the
                 # purchase, we want to protect the
                 # user from accidentally killing it
-                self.exit_confirm_msg = 'Abort purchase?'
+                self.exit_confirm_msg = "Abort purchase?"
 
             # Add the thing to our purchase object:
             if not self.add_thing_to_purchase(thing, amount=num):
@@ -159,20 +171,22 @@ When finished, write an empty line to confirm the purchase.\n'''
         try:
             self.session.commit()
         except sqlalchemy.exc.SQLAlchemyError as e:
-            print(f'Could not store purchase: {e}')
+            print(f"Could not store purchase: {e}")
         else:
-            print('Purchase stored.')
+            print("Purchase stored.")
             self.print_purchase()
             for t in self.purchase.transactions:
                 if not t.user.is_anonymous():
                     print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
-                    if t.user.credit < config.getint('limits', 'low_credit_warning_limit'):
-                        print(f'USER {t.user.name} HAS LOWER CREDIT THAN {config.getint("limits", "low_credit_warning_limit"):d},',
-                              'AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.')
+                    if t.user.credit < config.getint("limits", "low_credit_warning_limit"):
+                        print(
+                            f'USER {t.user.name} HAS LOWER CREDIT THAN {config.getint("limits", "low_credit_warning_limit"):d},',
+                            "AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.",
+                        )
 
         # Superfast mode skips a linebreak for some reason.
         if self.superfast_mode:
-           print("")
+            print("")
         return True
 
     def complete_input(self):
@@ -184,30 +198,33 @@ When finished, write an empty line to confirm the purchase.\n'''
         entries = self.purchase.entries
         if len(transactions) == 0 and len(entries) == 0:
             return None
-        string = 'Purchase:'
-        string += '\n  buyers: '
+        string = "Purchase:"
+        string += "\n  buyers: "
         if len(transactions) == 0:
-            string += '(empty)'
+            string += "(empty)"
         else:
-            string += ', '.join(
-                [t.user.name + ("*" if not self.credit_check(t.user) else "") for t in transactions])
-        string += '\n  products: '
+            string += ", ".join(
+                [t.user.name + ("*" if not self.credit_check(t.user) else "") for t in transactions]
+            )
+        string += "\n  products: "
         if len(entries) == 0:
-            string += '(empty)'
+            string += "(empty)"
         else:
             string += "\n    "
-            string += '\n    '.join([f'{e.amount:d}x {e.product.name} ({e.product.price:d} kr)' for e in entries])
+            string += "\n    ".join(
+                [f"{e.amount:d}x {e.product.name} ({e.product.price:d} kr)" for e in entries]
+            )
         if len(transactions) > 1:
-            string += f'\n  price per person: {self.purchase.price_per_transaction():d} kr'
+            string += f"\n  price per person: {self.purchase.price_per_transaction():d} kr"
             if any(t.penalty > 1 for t in transactions):
                 # TODO: Use penalty multiplier instead of 2
-                string += f' *({self.purchase.price_per_transaction() * 2:d} kr)'
+                string += f" *({self.purchase.price_per_transaction() * 2:d} kr)"
 
-        string += f'\n  total price: {self.purchase.price:d} kr'
+        string += f"\n  total price: {self.purchase.price:d} kr"
 
         if any(t.penalty > 1 for t in transactions):
             total = sum(self.purchase.price_per_transaction() * t.penalty for t in transactions)
-            string += f'\n  *total with penalty: {total} kr'
+            string += f"\n  *total with penalty: {total} kr"
 
         return string
 

@@ -17,8 +17,9 @@ if TYPE_CHECKING:
     from .Product import Product
     from .Purchase import Purchase
 
+
 class PurchaseEntry(Base):
-    __tablename__ = 'purchase_entries'
+    __tablename__ = "purchase_entries"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     amount: Mapped[int] = mapped_column(Integer)
@@ -26,8 +27,8 @@ class PurchaseEntry(Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"))
     purchase_id: Mapped[int] = mapped_column(ForeignKey("purchases.id"))
 
-    product: Mapped[Product] = relationship(lazy='joined')
-    purchase: Mapped[Purchase] = relationship(lazy='joined')
+    product: Mapped[Product] = relationship(lazy="joined")
+    purchase: Mapped[Purchase] = relationship(lazy="joined")
 
     def __init__(self, purchase, product, amount):
         self.product = product

@@ -13,12 +13,14 @@ from sqlalchemy.orm import (
 )
 
 from .Base import Base
+
 if TYPE_CHECKING:
     from .PurchaseEntry import PurchaseEntry
     from .UserProducts import UserProducts
 
+
 class Product(Base):
-    __tablename__ = 'products'
+    __tablename__ = "products"
 
     product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     bar_code: Mapped[str] = mapped_column(String(13))
@@ -34,7 +36,7 @@ class Product(Base):
     name_re = r".+"
     name_length = 45
 
-    def __init__(self, bar_code, name, price, stock=0, hidden = False):
+    def __init__(self, bar_code, name, price, stock=0, hidden=False):
         self.name = name
         self.bar_code = bar_code
         self.price = price
