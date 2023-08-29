@@ -44,7 +44,7 @@ def search_product(string, session, find_hidden_products=True):
             .filter(
                 or_(
                     Product.bar_code == string,
-                    and_(Product.name == string, Product.hidden == False),
+                    and_(Product.name == string, Product.hidden is False),
                 )
             )
             .first()
@@ -68,7 +68,7 @@ def search_product(string, session, find_hidden_products=True):
             .filter(
                 or_(
                     Product.bar_code.ilike(f"%{string}%"),
-                    and_(Product.name.ilike(f"%{string}%"), Product.hidden == False),
+                    and_(Product.name.ilike(f"%{string}%"), Product.hidden is False),
                 )
             )
             .all()
@@ -103,14 +103,13 @@ def guess_data_type(string):
 
 def argmax(d, all=False, value=None):
     maxarg = None
-    maxargs = []
-    if value != None:
+    if value is not None:
         dd = d
         d = {}
         for key in list(dd.keys()):
             d[key] = value(dd[key])
     for key in list(d.keys()):
-        if maxarg == None or d[key] > d[maxarg]:
+        if maxarg is None or d[key] > d[maxarg]:
             maxarg = key
     if all:
         return [k for k in list(d.keys()) if d[k] == d[maxarg]]

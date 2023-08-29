@@ -1,3 +1,28 @@
+__all__ = [
+    "AddProductMenu",
+    "AddStockMenu",
+    "AddUserMenu",
+    "AdjustCreditMenu",
+    "AdjustStockMenu",
+    "BalanceMenu",
+    "BuyMenu",
+    "CleanupStockMenu",
+    "EditProductMenu",
+    "EditUserMenu",
+    "FAQMenu",
+    "LoggedStatisticsMenu",
+    "MainMenu",
+    "Menu",
+    "PrintLabelMenu",
+    "ProductListMenu",
+    "ProductPopularityMenu",
+    "ProductRevenueMenu",
+    "ProductSearchMenu",
+    "ShowUserMenu",
+    "TransferMenu",
+    "UserListMenu",
+]
+
 from .addstock import AddStockMenu
 from .buymenu import BuyMenu
 from .editing import (

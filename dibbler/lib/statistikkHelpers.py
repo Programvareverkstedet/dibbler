@@ -283,10 +283,8 @@ def buildDatabaseFromDb(inputType, inputProduct, inputUser):
     for transaction in transaction_list:
         if transaction.purchase:
             products = "¤".join([ent.product.name for ent in transaction.purchase.entries])
-            description = ""
         else:
             products = ""
-            description = transaction.description
         line = line_format % (
             "purchase",
             transaction.time,
