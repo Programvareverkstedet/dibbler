@@ -5,7 +5,8 @@ import re
 import sys
 from select import select
 
-from dibbler.models.db import User, Session
+from dibbler.db import Session
+from dibbler.models import User
 from dibbler.helpers import (
     search_user,
     search_product,

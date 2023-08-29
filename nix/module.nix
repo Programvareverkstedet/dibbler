@@ -32,7 +32,7 @@ in {
       wantedBy = [ "default.target" ];
       serviceConfig = {
         ExecStartPre = "-${screen} -X -S dibbler kill";
-        ExecStart = "${screen} -dmS dibbler -O -l ${cfg.package}/bin/dibbler --config ${cfg.config}";
+        ExecStart = "${screen} -dmS dibbler -O -l ${cfg.package}/bin/dibbler --config ${cfg.config} loop";
         ExecStartPost = "${screen} -X -S dibbler width 42 80";
         User = "dibbler";
         Group = "dibbler";
@@ -41,7 +41,7 @@ in {
         Restart = "always";
         RestartSec = "5s";
         SuccessExitStatus = 1;
-      }; 
+      };
     };
 
     # https://github.com/NixOS/nixpkgs/issues/84105

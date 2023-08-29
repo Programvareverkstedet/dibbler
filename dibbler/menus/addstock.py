@@ -2,7 +2,7 @@ from math import ceil
 
 import sqlalchemy
 
-from dibbler.models.db import (
+from dibbler.models import (
     Product,
     Purchase,
     PurchaseEntry,

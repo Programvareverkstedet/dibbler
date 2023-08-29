@@ -5,7 +5,8 @@ import datetime
 from collections import defaultdict
 
 from .helpers import *
-from .models.db import *;
+from .models import Transaction
+from .db import Session
 
 def getUser():
 	while 1:

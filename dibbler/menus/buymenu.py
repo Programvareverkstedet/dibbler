@@ -1,7 +1,7 @@
 import sqlalchemy
 
 from dibbler.conf import config
-from dibbler.models.db import (
+from dibbler.models import (
     Product,
     Purchase,
     PurchaseEntry,

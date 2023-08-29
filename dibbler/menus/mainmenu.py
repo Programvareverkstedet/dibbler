@@ -4,7 +4,7 @@ import os
 import random
 import sys
 
-from dibbler.models.db import Session
+from dibbler.db import Session
 
 from . import faq_commands, restart_commands
 from .buymenu import BuyMenu

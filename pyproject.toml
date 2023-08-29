@@ -25,6 +25,4 @@ dynamic = ["version"]
 include = ["dibbler*"]
 
 [project.scripts]
-dibbler = "dibbler.cli:main"
-slabbedasker = "dibbler.scripts.slabbedasker:main"
-statistikk = "dibbler.scripts.statistikk:main"
+dibbler = "dibbler.main:main"

@@ -29,7 +29,6 @@ from .conf import config
 
 random.seed()
 
-
 def main():
     if not config.getboolean('general', 'stop_allowed'):
         signal.signal(signal.SIGQUIT, signal.SIG_IGN)

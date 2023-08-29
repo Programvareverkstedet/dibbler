@@ -5,7 +5,7 @@ import signal
 
 from sqlalchemy import or_, and_
 
-from .models.db import *
+from .models import User, Product
 
 def search_user(string, session, ignorethisflag=None):
     string = string.lower()

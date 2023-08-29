@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-from dibbler.models.db import *
+from dibbler.db import Session
+from dibbler.models import User
 
 def main():
   # Start an SQL session
