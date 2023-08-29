@@ -20,6 +20,16 @@
           drv = self.packages.${system}.dibbler;
         };
       };
+
+      devShells = {
+        default = self.devShells.${system}.dibbler;
+        dibbler = pkgs.mkShell {
+          packages = with pkgs; [
+            python311Packages.black
+            ruff
+          ];
+        };
+      };
     })
 
     //

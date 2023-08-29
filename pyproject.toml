@@ -26,3 +26,10 @@ include = ["dibbler*"]
 
 [project.scripts]
 dibbler = "dibbler.main:main"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+
