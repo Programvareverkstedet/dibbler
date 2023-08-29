@@ -5,27 +5,9 @@ import random
 import sys
 import traceback
 
-from .helpers import *
-from .menus.addstock import AddStockMenu
-from .menus.buymenu import BuyMenu
-from .menus.editing import *
-from .menus.faq import FAQMenu
-from .menus.helpermenus import Menu
-from .menus.mainmenu import MainMenu
-
-from .menus.miscmenus import (
-    ProductSearchMenu,
-    TransferMenu,
-    AdjustCreditMenu,
-    UserListMenu,
-    ShowUserMenu,
-    ProductListMenu,
-)
-
-from .menus.printermenu import PrintLabelMenu
-from .menus.stats import *
-
 from .conf import config
+from .helpers import *
+from .menus import *
 
 random.seed()
 
