@@ -1,8 +1,15 @@
 from math import ceil
 
 import sqlalchemy
-from db import Product, User, Transaction, PurchaseEntry, Purchase
-from text_interface.helpermenus import Menu
+
+from dibbler.models.db import (
+    Product,
+    Purchase,
+    PurchaseEntry,
+    Transaction,
+    User,
+)
+from .helpermenus import Menu
 
 
 class AddStockMenu(Menu):

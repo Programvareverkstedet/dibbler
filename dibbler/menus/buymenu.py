@@ -1,7 +1,15 @@
-import conf
 import sqlalchemy
-from db import User, Purchase, PurchaseEntry, Transaction, Product
-from text_interface.helpermenus import Menu
+
+from dibbler.conf import config
+from dibbler.models.db import (
+    Product,
+    Purchase,
+    PurchaseEntry,
+    Transaction,
+    User,
+)
+
+from .helpermenus import Menu
 
 
 class BuyMenu(Menu):
@@ -29,7 +37,7 @@ When finished, write an empty line to confirm the purchase.\n'''
         """
         assert isinstance(user, User)
 
-        return user.credit > conf.low_credit_warning_limit
+        return user.credit > config.getint('limits', 'low_credit_warning_limit')
 
     def low_credit_warning(self, user, timeout=False):
         assert isinstance(user, User)
@@ -49,7 +57,7 @@ When finished, write an empty line to confirm the purchase.\n'''
         print("***********************************************************************")
         print("***********************************************************************")
         print("")
-        print(f"USER {user.name} HAS LOWER CREDIT THAN {conf.low_credit_warning_limit:d}.")
+        print(f"USER {user.name} HAS LOWER CREDIT THAN {config.getint('limits', 'low_credit_warning_limit'):d}.")
         print("THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH.")
         print("CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS.")
         print("")
@@ -158,8 +166,8 @@ When finished, write an empty line to confirm the purchase.\n'''
             for t in self.purchase.transactions:
                 if not t.user.is_anonymous():
                     print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
-                    if t.user.credit < conf.low_credit_warning_limit:
-                        print(f'USER {t.user.name} HAS LOWER CREDIT THAN {conf.low_credit_warning_limit:d},',
+                    if t.user.credit < config.getint('limits', 'low_credit_warning_limit'):
+                        print(f'USER {t.user.name} HAS LOWER CREDIT THAN {config.getint("limits", "low_credit_warning_limit"):d},',
                               'AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.')
 
         # Superfast mode skips a linebreak for some reason.

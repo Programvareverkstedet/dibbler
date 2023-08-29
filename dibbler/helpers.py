@@ -1,9 +1,11 @@
-from db import *
-from sqlalchemy import or_, and_
 import pwd
 import subprocess
 import os
 import signal
+
+from sqlalchemy import or_, and_
+
+from .models.db import *
 
 def search_user(string, session, ignorethisflag=None):
     string = string.lower()

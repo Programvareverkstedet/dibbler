@@ -1,4 +1,4 @@
 #!/usr/bin/python
-import db
+from .models.db import db
 
 db.Base.metadata.create_all(db.engine)

@@ -1,10 +1,10 @@
-import sqlalchemy
-from db import PurchaseEntry, Product, User
-from helpers import less
-from sqlalchemy import desc
-from sqlalchemy import func
-from statistikkHelpers import statisticsTextOnly
-from text_interface.helpermenus import Menu
+from sqlalchemy import desc, func
+
+from dibbler.helpers import less
+from dibbler.models.db import PurchaseEntry, Product, User
+from dibbler.statistikkHelpers import statisticsTextOnly
+
+from .helpermenus import Menu
 
 __all__ = ["ProductPopularityMenu", "ProductRevenueMenu", "BalanceMenu", "LoggedStatisticsMenu"]
 
@@ -77,8 +77,8 @@ class BalanceMenu(Menu):
         for p in product_list:
             total_value += p.stock * p.price
 
-        total_positive_credit = self.session.query(sqlalchemy.func.sum(User.credit)).filter(User.credit > 0).first()[0]
-        total_negative_credit = self.session.query(sqlalchemy.func.sum(User.credit)).filter(User.credit < 0).first()[0]
+        total_positive_credit = self.session.query(func.sum(User.credit)).filter(User.credit > 0).first()[0]
+        total_negative_credit = self.session.query(func.sum(User.credit)).filter(User.credit < 0).first()[0]
 
         total_credit = total_positive_credit + total_negative_credit
         total_balance = total_value - total_credit

@@ -1,6 +1,7 @@
 import sqlalchemy
-from db import User, Product
-from text_interface.helpermenus import Menu, Selector
+
+from dibbler.models.db import User, Product
+from .helpermenus import Menu, Selector
 
 __all__ = ["AddUserMenu", "AddProductMenu", "EditProductMenu", "AdjustStockMenu", "CleanupStockMenu", "EditUserMenu"]
 

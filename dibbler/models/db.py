@@ -1,14 +1,15 @@
+from math import ceil, floor
+import datetime
+
 from sqlalchemy import Column, Integer, String, ForeignKey, create_engine, DateTime, Boolean
 from sqlalchemy.orm import sessionmaker, relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
-from math import ceil, floor
-import datetime
-import conf
 
-engine = create_engine(conf.db_url)
+from dibbler.conf import config
+
+engine = create_engine(config.get('database', 'url'))
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
-
 
 class User(Base):
     __tablename__ = 'users'

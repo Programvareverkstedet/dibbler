@@ -1,16 +1,13 @@
 import os
+import datetime
 
 import barcode
-import datetime
-from PIL import Image
-from PIL import ImageDraw
-from PIL import ImageFont
-from brother_ql import BrotherQLRaster
-from brother_ql import create_label
+from brother_ql import BrotherQLRaster, create_label
 from brother_ql.backends import backend_factory
 from brother_ql.devicedependent import label_type_specs
+from PIL import Image, ImageDraw, ImageFont
 
-from barcode_helpers import BrotherLabelWriter
+from .barcode_helpers import BrotherLabelWriter
 
 
 def print_name_label(text, margin=10, rotate=False, label_type="62", printer_type="QL-700",):

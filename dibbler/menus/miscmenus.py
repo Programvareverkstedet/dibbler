@@ -1,8 +1,10 @@
-import conf
 import sqlalchemy
-from db import Transaction, Product, User
-from helpers import less
-from text_interface.helpermenus import Menu, Selector
+
+from dibbler.conf import config
+from dibbler.models.db import Transaction, Product, User
+from dibbler.helpers import less
+
+from .helpermenus import Menu, Selector
 
 
 class TransferMenu(Menu):
@@ -53,12 +55,12 @@ class ShowUserMenu(Menu):
         print(f'Credit: {user.credit} kr')
         selector = Selector(f'What do you want to know about {user.name}?',
                             items=[('transactions', 'Recent transactions (List of last ' + str(
-                                conf.user_recent_transaction_limit) + ')'),
+                                config.getint('limits', 'user_recent_transaction_limit')) + ')'),
                                    ('products', f'Which products {user.name} has bought, and how many'),
                                    ('transactions-all', 'Everything (List of all transactions)')])
         what = selector.execute()
         if what == 'transactions':
-            self.print_transactions(user, conf.user_recent_transaction_limit)
+            self.print_transactions(user, config.getint('limits', 'user_recent_transaction_limit'))
         elif what == 'products':
             self.print_purchased_products(user)
         elif what == 'transactions-all':

@@ -4,11 +4,12 @@ import os
 import random
 import sys
 
-from db import Session
-from text_interface import faq_commands, restart_commands
-from text_interface.buymenu import BuyMenu
-from text_interface.faq import FAQMenu
-from text_interface.helpermenus import Menu
+from dibbler.models.db import Session
+
+from . import faq_commands, restart_commands
+from .buymenu import BuyMenu
+from .faq import FAQMenu
+from .helpermenus import Menu
 
 
 def restart():

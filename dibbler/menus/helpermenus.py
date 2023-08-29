@@ -5,10 +5,20 @@ import re
 import sys
 from select import select
 
-import conf
-from db import User, Session
-from helpers import search_user, search_product, guess_data_type, argmax
-from text_interface import context_commands, local_help_commands, help_commands, exit_commands
+from dibbler.models.db import User, Session
+from dibbler.helpers import (
+    search_user,
+    search_product,
+    guess_data_type,
+    argmax,
+)
+
+from . import (
+    context_commands,
+    local_help_commands,
+    help_commands,
+    exit_commands,
+)
 
 
 class ExitMenu(Exception):
