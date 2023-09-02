@@ -4,125 +4,43 @@
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils }:
-    {
-      overlays.default = final: prev: {
-        dibbler = prev.callPackage ./nix/dibbler.nix { };
+    flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = nixpkgs.legacyPackages.${system};
+    in {
+      packages = {
+        default = self.packages.${system}.dibbler;
+        dibbler = pkgs.callPackage ./nix/dibbler.nix {
+          python3Packages = pkgs.python311Packages;
+        };
       };
-    } //
 
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.default ];
+      apps = {
+        default = self.apps.${system}.dibbler;
+        dibbler = flake-utils.lib.mkApp {
+          drv = self.packages.${system}.dibbler;
         };
-      in {
-        packages = rec {
-          dibbler = pkgs.dibbler;
-          # dibblerCross = pkgs.pkgsCross.aarch64-multiplatform.dibbler;
-          default = dibbler;
-        };
-        apps = rec {
-          dibbler = flake-utils.lib.mkApp {
-            drv = self.packages.${system}.dibbler;
-          };
-          default = dibbler;
-        };
-      }
-    ) //
+      };
 
-    {
-      nixosModules.default = { config, pkgs, ... }: let
-        inherit (nixpkgs.legacyPackages."x86_64-linux") lib;
-        cfg = config.services.dibbler;
-      in {
-        options.services.dibbler = {
-          package = lib.mkPackageOption pkgs "dibbler" { };
-          config = lib.mkOption {
-            default = ./conf.py;
-          };
-        };
-
-        config = let
-          screen = "${pkgs.screen}/bin/screen";
-        in {
-          nixpkgs.overlays = [ self.overlays.default ];
-
-          boot = {
-            consoleLogLevel = 0;
-            enableContainers = false;
-            loader.grub.enable = false;
-          };
-
-          users = {
-            groups.dibbler = { };
-            users.dibbler = {
-              group = "dibbler";
-              extraGroups = [ "lp" ];
-              isNormalUser = true;
-              shell = ((pkgs.writeShellScriptBin "login-shell" "${screen} -x dibbler") // {shellPath = "/bin/login-shell";});
-            };
-            };
-          };
-
-          systemd.services.screen-daemon = {
-            description = "Dibbler service screen";
-            wantedBy = [ "default.target" ];
-            serviceConfig = {
-              ExecStartPre = "-${screen} -X -S dibbler kill";
-              ExecStart = "${screen} -dmS dibbler -O -l ${cfg.package.override { conf = cfg.config; }}/bin/dibbler";
-              ExecStartPost = "${screen} -X -S dibbler width 42 80";
-              User = "dibbler";
-              Group = "dibbler";
-              Type = "forking";
-              RemainAfterExit = false;
-              Restart = "always";
-              RestartSec = "5s";
-              SuccessExitStatus = 1;
-            }; 
-          };
-
-          # https://github.com/NixOS/nixpkgs/issues/84105
-          boot.kernelParams = [
-            "console=ttyUSB0,9600"
-            "console=tty1"
+      devShells = {
+        default = self.devShells.${system}.dibbler;
+        dibbler = pkgs.mkShell {
+          packages = with pkgs; [
+            python311Packages.black
+            ruff
           ];
-          systemd.services."serial-getty@ttyUSB0" = {
-            enable = true;
-            wantedBy = [ "getty.target" ]; # to start at boot
-            serviceConfig.Restart = "always"; # restart when session is closed
-          };
-
-          services = {
-            openssh = {
-              enable = true;
-              permitRootLogin = "yes";
-            };
-
-            getty.autologinUser = lib.mkForce "dibbler";
-            udisks2.enable = false;
-          };
-
-          networking.firewall.logRefusedConnections = false;
-          console.keyMap = "no";
-          programs.command-not-found.enable = false;
-          i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
-          environment.noXlibs = true;
-
-          documentation = {
-            info.enable = false;
-            man.enable = false;
-          };
-
-          security = {
-            polkit.enable = lib.mkForce false;
-            audit.enable = false;
-          };
         };
       };
-    } //
+    })
+
+    //
 
     {
+      # Note: using the module requires that you have applied the
+      #       overlay first
+      nixosModules.default = import ./nix/module.nix;
+
+      images.skrot = self.nixosConfigurations.skrot.config.system.build.sdImage;
+
       nixosConfigurations.skrot = nixpkgs.lib.nixosSystem {
         system = "aarch64-linux";
         modules = [
@@ -155,6 +73,5 @@
           })
         ];
       };
-      images.skrot = self.nixosConfigurations.skrot.config.system.build.sdImage;
     };
 }

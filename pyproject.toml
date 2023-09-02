@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dibbler"
+authors = []
+description = "EDB-system for PVV"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "SQLAlchemy >= 2.0, <2.1",
+    "brother-ql",
+    "matplotlib",
+    "psycopg2 >= 2.8, <2.10",
+    "python-barcode",
+]
+dynamic = ["version"]
+
+[tool.setuptools.packages.find]
+include = ["dibbler*"]
+
+[project.scripts]
+dibbler = "dibbler.main:main"
+
+[tool.black]
+line-length = 100
+
+[tool.ruff]
+line-length = 100
+

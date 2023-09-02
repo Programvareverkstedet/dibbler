@@ -1,2 +1,8 @@
 result
 result-*
+
+dist
+
+test.db
+
+.ruff_cache
