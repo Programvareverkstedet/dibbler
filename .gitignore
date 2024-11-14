@@ -3,6 +3,7 @@ result-*
 
 dist
 
+config.ini
 test.db
 
 .ruff_cache
