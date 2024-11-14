@@ -23,7 +23,10 @@ in {
         group = "dibbler";
         extraGroups = [ "lp" ];
         isNormalUser = true;
-        shell = ((pkgs.writeShellScriptBin "login-shell" "${screen} -x dibbler") // {shellPath = "/bin/login-shell";});
+        shell = (
+          (pkgs.writeShellScriptBin "login-shell" "${screen} -x dibbler")
+          // {shellPath = "/bin/login-shell";}
+        );
       };
     };
 

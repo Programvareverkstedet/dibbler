@@ -1,17 +1,24 @@
 { lib
-, python3Packages
 , fetchFromGitHub
+, buildPythonApplication
+, setuptools
+, brother-ql
+, matplotlib
+, psycopg2
+, python-barcode
+, sqlalchemy
 }:
-python3Packages.buildPythonApplication {
+
+buildPythonApplication {
   pname = "dibbler";
-  version = "unstable-2021-09-07";
+  version = "0-unstable-2021-09-07";
+  pyproject = true;
+
   src = lib.cleanSource ../.;
 
-  format = "pyproject";
-
-  nativeBuildInputs = with python3Packages; [ setuptools ];
-  propagatedBuildInputs = with python3Packages; [
-    brother-ql
+  built-system = [ setuptools ];
+  dependencies = [
+    brother-ql#-next
     matplotlib
     psycopg2
     python-barcode

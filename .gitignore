@@ -1,5 +1,7 @@
 result
 result-*
+.direnv
+.devenv
 
 dist
 

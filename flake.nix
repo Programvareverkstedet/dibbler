@@ -9,9 +9,7 @@
     in {
       packages = {
         default = self.packages.${system}.dibbler;
-        dibbler = pkgs.callPackage ./nix/dibbler.nix {
-          python3Packages = pkgs.python311Packages;
-        };
+        dibbler = pkgs.python311Packages.callPackage ./nix/dibbler.nix { };
       };
 
       apps = {
