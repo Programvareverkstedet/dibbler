@@ -1,4 +1,6 @@
 import argparse
+import sys
+import os
 
 from dibbler.conf import config
 
@@ -10,6 +12,7 @@ parser.add_argument(
     help="Path to the config file",
     type=str,
     required=False,
+    default=os.environ.get("DIBBLER_CONFIG_FILE", None)
 )
 
 subparsers = parser.add_subparsers(
@@ -24,6 +27,8 @@ subparsers.add_parser("slabbedasker", help="Find out who is slabbedasker")
 
 def main():
     args = parser.parse_args()
+    if args.config is None:
+        print("ERROR: no config was provided", file=sys.stderr)
     config.read(args.config)
 
     if args.subcommand == "loop":

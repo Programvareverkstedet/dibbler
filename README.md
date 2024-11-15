@@ -6,7 +6,23 @@ EDB-system for PVVVV
 
 ### Hvordan kjøre
 
-    nix run github:Prograrmvarverkstedet/dibbler
+    nix run github:Programvareverkstedet/dibbler
+
+### Hvordan utvikle?
+
+    python -m venv .venv
+    source .venv/activate
+    pip install -e .
+    cp example-config.ini config.ini
+    dibbler -c config.ini create-db
+    dibbler -c config.ini loop
+
+eller hvis du tolererer nix og postgres:
+
+    direnv allow # eller bare `nix develop`
+    devenv up
+    dibbler create-db
+    dibbler loop
 
 ### Bygge image
 

@@ -11,14 +11,15 @@
 
 buildPythonApplication {
   pname = "dibbler";
-  version = "0-unstable-2021-09-07";
+  version = "0.0.0";
   pyproject = true;
 
   src = lib.cleanSource ../.;
 
-  built-system = [ setuptools ];
+  build-system = [ setuptools ];
   dependencies = [
-    brother-ql#-next
+    # we override pname to satisfy mkPythonEditablePackage
+    (brother-ql.overridePythonAttrs { pname = "brother-ql-next"; })
     matplotlib
     psycopg2
     python-barcode

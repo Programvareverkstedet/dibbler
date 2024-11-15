@@ -1,33 +1,85 @@
 {
   description = "Dibbler samspleisebod";
 
-  inputs.flake-utils.url = "github:numtide/flake-utils";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable-small";
+    flake-utils.url = "github:numtide/flake-utils";
+    devenv.url = "github:cachix/devenv";
+  };
 
-  outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
+  nixConfig = {
+    extra-trusted-public-keys = [
+      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw="
+    ];
+    extra-substituters = [
+      "https://devenv.cachix.org"
+    ];
+  };
+
+  outputs = { self, ... } @ inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (system: let
+      pkgs = inputs.nixpkgs.legacyPackages.${system};
+      inherit (pkgs) lib;
     in {
+
       packages = {
         default = self.packages.${system}.dibbler;
-        dibbler = pkgs.python311Packages.callPackage ./nix/dibbler.nix { };
-      };
 
-      apps = {
-        default = self.apps.${system}.dibbler;
-        dibbler = flake-utils.lib.mkApp {
-          drv = self.packages.${system}.dibbler;
-        };
+        dibbler = pkgs.python311Packages.callPackage ./nix/dibbler.nix { };
+        skrot-vm = self.nixosConfigurations.skrot.config.system.build.vm;
+
+        # devenv cruft
+        devenv-up = self.devShells.${system}.default.config.procfileScript;
+        devenv-test = self.devShells.${system}.default.config.test;
       };
 
       devShells = {
         default = self.devShells.${system}.dibbler;
-        dibbler = pkgs.mkShell {
-          packages = with pkgs; [
-            python311Packages.black
-            ruff
-          ];
+        dibbler = inputs.devenv.lib.mkShell {
+          inherit inputs pkgs;
+          modules = [({ config, ... }: {
+            # https://devenv.sh/reference/options/
+
+            enterShell = ''
+              if [[ ! -f config.ini ]]; then
+                  cp -v example-config.ini config.ini
+              fi
+
+              export REPO_ROOT=$(realpath .) # used by mkPythonEditablePackage
+              export DIBBLER_CONFIG_FILE=$(realpath config.ini)
+              export DIBBLER_DATABASE_URL=postgresql://dibbler:hunter2@/dibbler?host=${config.env.PGHOST}
+            '';
+
+            packages = [
+
+              /* self.packages.${system}.dibbler */
+              (pkgs.python311Packages.mkPythonEditablePackage {
+                inherit (self.packages.${system}.dibbler)
+                  pname version
+                  build-system dependencies;
+                scripts = (lib.importTOML ./pyproject.toml).project.scripts;
+                root = "$REPO_ROOT";
+              })
+
+              pkgs.python311Packages.black
+              pkgs.ruff
+            ];
+
+            services.postgres = {
+              enable = true;
+              initialDatabases = [
+                {
+                  name = "dibbler";
+                  user = "dibbler";
+                  pass = "hunter2";
+                }
+              ];
+            };
+
+          })];
         };
       };
+
     })
 
     //
@@ -39,10 +91,10 @@
 
       images.skrot = self.nixosConfigurations.skrot.config.system.build.sdImage;
 
-      nixosConfigurations.skrot = nixpkgs.lib.nixosSystem {
+      nixosConfigurations.skrot = inputs.nixpkgs.lib.nixosSystem {
         system = "aarch64-linux";
         modules = [
-          (nixpkgs + "/nixos/modules/installer/sd-card/sd-image-aarch64.nix")
+          (inputs.nixpkgs + "/nixos/modules/installer/sd-card/sd-image-aarch64.nix")
           self.nixosModules.default
           ({...}: {
             system.stateVersion = "22.05";
@@ -71,5 +123,6 @@
           })
         ];
       };
+
     };
 }
