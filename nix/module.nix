@@ -9,7 +9,7 @@ in {
     config = lib.mkOption {
       type = lib.types.path;
       description = "Path to the configuration file.";
-      default = ../conf.py;
+      default = ../example-config.ini;
     };
   };
 

@@ -34,16 +34,16 @@ For å bygge et image trenger du en builder som takler å bygge for arkitekturen
 
 Flaket exposer en modul som autologger inn med en bruker som automatisk kjører dibbler, og setter opp et minimalistisk miljø.
 
-Før du bygger imaget burde du endre `conf.py` lokalt til å inneholde instillingene dine. **NB: Denne kommer til å ligge i nix storen, ikke si noe her som du ikke vil at moren din skal høre.**
+Før du bygger imaget burde du kopiere og endre `example-config.ini` lokalt til å inneholde instillingene dine. **NB: Denne kommer til å ligge i nix storen, ikke si noe her som du ikke vil at moren din skal høre.**
 
-Du kan også endre hvilken `conf.py` som blir brukt direkte i pakken eller i modulen.
+Du kan også endre hvilken config-fil som blir brukt direkte i pakken eller i modulen.
 
 Se eksempelet for hvordan skrot er satt opp i `flake.nix` og `nix/skrott.nix`
 
 ### Bygge image for skrot
 Skrot har et image definert i flake.nix:
 
-1. endre conf.py
+1. endre `example-config.ini`
 2. `nix build .#images.skrot`
 3. ???
 4. non-profit
