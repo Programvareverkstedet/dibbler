@@ -4,7 +4,7 @@
 }:
 python3Packages.buildPythonApplication {
   pname = "dibbler";
-  version = "unstable-2021-09-07";
+  version = "unstable";
   src = lib.cleanSource ../.;
 
   format = "pyproject";

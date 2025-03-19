@@ -2,15 +2,20 @@
   cfg = config.services.dibbler;
 in {
   options.services.dibbler = {
+    enable = lib.mkEnableOption "dibbler, the little kiosk computer";
+    
     package = lib.mkPackageOption pkgs "dibbler" { };
+    
     config = lib.mkOption {
+      type = lib.types.path;
+      description = "Path to the configuration file.";
       default = ../conf.py;
     };
   };
 
   config = let
     screen = "${pkgs.screen}/bin/screen";
-  in {
+  in lib.mkIf cfg.enable {
     boot = {
       consoleLogLevel = 0;
       enableContainers = false;
@@ -69,7 +74,7 @@ in {
     console.keyMap = "no";
     programs.command-not-found.enable = false;
     i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
-    environment.noXlibs = true;
+    # environment.noXlibs = true;
 
     documentation = {
       info.enable = false;

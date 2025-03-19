@@ -13,7 +13,7 @@ classifiers = [
 ]
 dependencies = [
     "SQLAlchemy >= 2.0, <2.1",
-    "brother-ql",
+    # "brother-ql",
     "matplotlib",
     "psycopg2 >= 2.8, <2.10",
     "python-barcode",
