@@ -2,9 +2,10 @@ import os
 import datetime
 
 import barcode
-from brother_ql import BrotherQLRaster, create_label
+from brother_ql.brother_ql_create import create_label
+from brother_ql.raster import BrotherQLRaster
 from brother_ql.backends import backend_factory
-from brother_ql.devicedependent import label_type_specs
+from brother_ql.labels import ALL_LABELS
 from PIL import Image, ImageDraw, ImageFont
 
 from .barcode_helpers import BrotherLabelWriter
@@ -17,10 +18,11 @@ def print_name_label(
     label_type="62",
     printer_type="QL-700",
 ):
+    label = next([l for l in ALL_LABELS if l.identifier == label_type])
     if not rotate:
-        width, height = label_type_specs[label_type]["dots_printable"]
+        width, height = label.dots_printable
     else:
-        height, width = label_type_specs[label_type]["dots_printable"]
+        height, width = label.dots_printable
 
     font_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ChopinScript.ttf")
     fs = 2000

@@ -2,7 +2,7 @@ import os
 
 from PIL import ImageFont
 from barcode.writer import ImageWriter, mm2px
-from brother_ql.devicedependent import label_type_specs
+from brother_ql.labels import ALL_LABELS
 
 
 def px2mm(px, dpi=300):
@@ -12,14 +12,15 @@ def px2mm(px, dpi=300):
 class BrotherLabelWriter(ImageWriter):
     def __init__(self, typ="62", max_height=350, rot=False, text=None):
         super(BrotherLabelWriter, self).__init__()
-        assert typ in label_type_specs
+        label = next([l for l in ALL_LABELS if l.identifier == typ])
+        assert label is not None
         self.rot = rot
         if self.rot:
-            self._h, self._w = label_type_specs[typ]["dots_printable"]
+            self._h, self._w = label.dots_printable
             if self._w == 0 or self._w > max_height:
                 self._w = min(max_height, self._h / 2)
         else:
-            self._w, self._h = label_type_specs[typ]["dots_printable"]
+            self._w, self._h = label.dots_printable
             if self._h == 0 or self._h > max_height:
                 self._h = min(max_height, self._w / 2)
         self._xo = 0.0
