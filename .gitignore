@@ -1,6 +1,7 @@
 result
 result-*
 **/__pycache__
+dibbler.egg-info
 dist
 
 test.db
