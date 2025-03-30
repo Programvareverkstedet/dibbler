@@ -20,7 +20,7 @@ subparsers = parser.add_subparsers(
 subparsers.add_parser("loop", help="Run the dibbler loop")
 subparsers.add_parser("create-db", help="Create the database")
 subparsers.add_parser("slabbedasker", help="Find out who is slabbedasker")
-subparsers.add_parser("seed-data",help="Fill with mock data")
+subparsers.add_parser("seed-data", help="Fill with mock data")
 
 
 def main():
@@ -41,12 +41,11 @@ def main():
         import dibbler.subcommands.slabbedasker as slabbedasker
 
         slabbedasker.main()
-    
+
     elif args.subcommand == "seed-data":
         import dibbler.subcommands.seed_test_data as seed_test_data
 
         seed_test_data.main()
-
 
 
 if __name__ == "__main__":

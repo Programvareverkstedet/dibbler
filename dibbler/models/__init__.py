@@ -1,11 +1,11 @@
 __all__ = [
-    'Base',
-    'Product',
-    'Purchase',
-    'PurchaseEntry',
-    'Transaction',
-    'User',
-    'UserProducts',
+    "Base",
+    "Product",
+    "Purchase",
+    "PurchaseEntry",
+    "Transaction",
+    "User",
+    "UserProducts",
 ]
 
 from .Base import Base

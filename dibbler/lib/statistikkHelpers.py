@@ -76,12 +76,8 @@ class Database:
     personDatoVerdi = defaultdict(list)  # dict->array
     personUkedagVerdi = defaultdict(list)
     # for global
-    personPosTransactions = (
-        {}
-    )  # personPosTransactions[trygvrad] == 100 #trygvrad har lagt 100kr i boksen
-    personNegTransactions = (
-        {}
-    )  # personNegTransactions[trygvrad» == 70 #trygvrad har tatt 70kr fra boksen
+    personPosTransactions = {}  # personPosTransactions[trygvrad] == 100 #trygvrad har lagt 100kr i boksen
+    personNegTransactions = {}  # personNegTransactions[trygvrad» == 70 #trygvrad har tatt 70kr fra boksen
     globalVareAntall = {}  # globalVareAntall[Oreo] == 3
     globalVareVerdi = {}  # globalVareVerdi[Oreo] == 30 #[kr]
     globalPersonAntall = {}  # globalPersonAntall[trygvrad] == 3
