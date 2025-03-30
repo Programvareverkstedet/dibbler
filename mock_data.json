@@ -1,0 +1,76 @@
+{
+    "products": [
+        {
+            "product_id": 1,
+            "bar_code": "1234567890123",
+            "name": "Wireless Mouse",
+            "price": 2999,
+            "stock": 150,
+            "hidden": false
+        },
+        {
+            "product_id": 2,
+            "bar_code": "9876543210987",
+            "name": "Mechanical Keyboard",
+            "price": 5999,
+            "stock": 75,
+            "hidden": false
+        },
+        {
+            "product_id": 3,
+            "bar_code": "1112223334445",
+            "name": "Gaming Monitor",
+            "price": 19999,
+            "stock": 20,
+            "hidden": false
+        },
+        {
+            "product_id": 4,
+            "bar_code": "5556667778889",
+            "name": "USB-C Docking Station",
+            "price": 8999,
+            "stock": 50,
+            "hidden": true
+        },
+        {
+            "product_id": 5,
+            "bar_code": "4445556667771",
+            "name": "Noise Cancelling Headphones",
+            "price": 12999,
+            "stock": 30,
+            "hidden": true
+        }
+    ],
+    "users": [
+        {
+            "name": "Albert",
+            "credit": 42069,
+            "card": "NTU12345678",
+            "rfid": "a1b2c3d4e5"
+        },
+        {
+            "name": "lorem",
+            "credit": 2000,
+            "card": "9876543210",
+            "rfid": "f6e7d8c9b0"
+        },
+        {
+            "name": "ibsum",
+            "credit": 1000,
+            "card": "11122233",
+            "rfid": ""
+        },
+        {
+            "name": "dave",
+            "credit": 7500,
+            "card": "NTU56789012",
+            "rfid": "1234abcd5678"
+        },
+        {
+            "name": "eve",
+            "credit": 3000,
+            "card": null,
+            "rfid": "deadbeef1234"
+        }
+    ]
+}

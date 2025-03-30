@@ -180,7 +180,7 @@ When finished, write an empty line to confirm the purchase.\n"""
                     print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
                     if t.user.credit < config.getint("limits", "low_credit_warning_limit"):
                         print(
-                            f'USER {t.user.name} HAS LOWER CREDIT THAN {config.getint("limits", "low_credit_warning_limit"):d},',
+                            f"USER {t.user.name} HAS LOWER CREDIT THAN {config.getint('limits', 'low_credit_warning_limit'):d},",
                             "AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.",
                         )
 
