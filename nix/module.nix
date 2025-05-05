@@ -1,21 +1,31 @@
 { config, pkgs, lib, ... }: let
   cfg = config.services.dibbler;
+
+  format = pkgs.formats.ini { };
 in {
   options.services.dibbler = {
     enable = lib.mkEnableOption "dibbler, the little kiosk computer";
-    
+
     package = lib.mkPackageOption pkgs "dibbler" { };
-    
-    config = lib.mkOption {
-      type = lib.types.path;
-      description = "Path to the configuration file.";
-      default = ../example-config.ini;
+
+    settings = lib.mkOption {
+      description = "Configuration for dibbler";
+      default = { };
+      type = lib.types.submodule {
+        freeformType = format.type;
+      };
     };
   };
 
   config = let
     screen = "${pkgs.screen}/bin/screen";
   in lib.mkIf cfg.enable {
+    services.dibbler.settings = lib.pipe ../example-config.ini [
+      builtins.readFile
+      builtins.fromTOML
+      (lib.mapAttrsRecursive (_: lib.mkDefault))
+    ];
+
     boot = {
       consoleLogLevel = 0;
       enableContainers = false;
@@ -28,7 +38,7 @@ in {
         group = "dibbler";
         extraGroups = [ "lp" ];
         isNormalUser = true;
-        shell = ((pkgs.writeShellScriptBin "login-shell" "${screen} -x dibbler") // {shellPath = "/bin/login-shell";});
+        shell = (pkgs.writeShellScriptBin "login-shell" "${screen} -x dibbler") // {shellPath = "/bin/login-shell";};
       };
     };
 
@@ -37,7 +47,9 @@ in {
       wantedBy = [ "default.target" ];
       serviceConfig = {
         ExecStartPre = "-${screen} -X -S dibbler kill";
-        ExecStart = "${screen} -dmS dibbler -O -l ${cfg.package}/bin/dibbler --config ${cfg.config} loop";
+        ExecStart = let
+          config = format.generate "dibbler-config.ini" cfg.settings;
+        in "${screen} -dmS dibbler -O -l ${cfg.package}/bin/dibbler --config ${config} loop";
         ExecStartPost = "${screen} -X -S dibbler width 42 80";
         User = "dibbler";
         Group = "dibbler";

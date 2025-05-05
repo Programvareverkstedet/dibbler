@@ -5,14 +5,14 @@
 
   outputs = { self, nixpkgs, flake-utils }: let
     inherit (nixpkgs) lib;
-    
+
     systems = [
       "x86_64-linux"
       "aarch64-linux"
       "x86_64-darwin"
       "aarch64-darwin"
     ];
-    
+
     forAllSystems = f: lib.genAttrs systems (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in f system pkgs);
@@ -45,7 +45,7 @@
           python = pkgs.python312;
         };
       });
-      
+
       # Note: using the module requires that you have applied the overlay first
       nixosModules.default = import ./nix/module.nix;
 
