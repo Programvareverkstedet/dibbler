@@ -72,30 +72,6 @@ in {
       serviceConfig.Restart = "always"; # restart when session is closed
     };
 
-    services = {
-      openssh = {
-        enable = true;
-        permitRootLogin = "yes";
-      };
-
-      getty.autologinUser = lib.mkForce "dibbler";
-      udisks2.enable = false;
-    };
-
-    networking.firewall.logRefusedConnections = false;
-    console.keyMap = "no";
-    programs.command-not-found.enable = false;
-    i18n.supportedLocales = [ "en_US.UTF-8/UTF-8" ];
-    # environment.noXlibs = true;
-
-    documentation = {
-      info.enable = false;
-      man.enable = false;
-    };
-
-    security = {
-      polkit.enable = lib.mkForce false;
-      audit.enable = false;
-    };
+    services.getty.autologinUser = lib.mkForce "dibbler";
   };
 }
