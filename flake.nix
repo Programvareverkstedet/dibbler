@@ -1,9 +1,13 @@
 {
   description = "Dibbler samspleisebod";
 
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs, flake-utils }: let
+    libdib.url = "git+https://git.pvv.ntnu.no/Projects/libdib.git";
+  };
+
+  outputs = { self, nixpkgs, flake-utils, libdib }: let
     inherit (nixpkgs) lib;
 
     systems = [
@@ -14,7 +18,12 @@
     ];
 
     forAllSystems = f: lib.genAttrs systems (system: let
-      pkgs = nixpkgs.legacyPackages.${system};
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [
+          libdib.overlays.default
+        ];
+      };
     in f system pkgs);
   in {
       packages = forAllSystems (system: pkgs: {
