@@ -13,6 +13,14 @@ python3Packages.buildPythonApplication {
   # https://github.com/NixOS/nixpkgs/issues/285234
   dontCheckRuntimeDeps = true;
 
+  pythonImportsCheck = [];
+
+  doCheck = true;
+  nativeCheckInputs = with python3Packages; [
+    pytest
+    pytestCheckHook
+  ];
+
   nativeBuildInputs = with python3Packages; [ setuptools ];
   propagatedBuildInputs = with python3Packages; [
     brother-ql
