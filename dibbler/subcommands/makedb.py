@@ -1,11 +1,8 @@
-#!/usr/bin/python
+from sqlalchemy.orm import Session
 from dibbler.models import Base
-from dibbler.db import engine
 
 
-def main():
-    Base.metadata.create_all(engine)
-
-
-if __name__ == "__main__":
-    main()
+def main(sql_session: Session):
+    if not sql_session.bind:
+        raise RuntimeError("SQLAlchemy session is not bound to a database engine.")
+    Base.metadata.create_all(sql_session.bind)
