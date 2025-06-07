@@ -16,6 +16,7 @@ python3Packages.buildPythonApplication {
   nativeBuildInputs = with python3Packages; [ setuptools ];
   propagatedBuildInputs = with python3Packages; [
     brother-ql
+    libdib
     matplotlib
     psycopg2
     python-barcode
