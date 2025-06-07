@@ -1,6 +1,5 @@
 { lib
 , python3Packages
-, fetchFromGitHub
 }:
 python3Packages.buildPythonApplication {
   pname = "dibbler";

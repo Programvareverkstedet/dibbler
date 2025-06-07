@@ -15,10 +15,14 @@ dependencies = [
     "SQLAlchemy >= 2.0, <2.1",
     "brother-ql",
     "matplotlib",
+    "libdib",
     "psycopg2 >= 2.8, <2.10",
     "python-barcode",
 ]
 dynamic = ["version"]
+
+[tool.uv.sources]
+libdib = { git = "https://git.pvv.ntnu.no/Projects/libdib.git" }
 
 [tool.setuptools.packages.find]
 include = ["dibbler*"]
