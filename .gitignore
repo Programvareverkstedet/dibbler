@@ -7,3 +7,5 @@ dist
 test.db
 
 .ruff_cache
+
+.coverage
