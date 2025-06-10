@@ -15,6 +15,9 @@ mkShell {
       psycopg2
       python-barcode
       sqlalchemy
+
+      pytest
+      pytest-cov
     ]))
   ];
 }
