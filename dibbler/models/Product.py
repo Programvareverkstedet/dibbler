@@ -1,47 +1,129 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
+
+from typing import Self
 
 from sqlalchemy import (
     Boolean,
     Integer,
     String,
+    case,
+    func,
+    select,
 )
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     mapped_column,
-    relationship,
 )
 
-from .Base import Base
+import dibbler.models.User as user
 
-if TYPE_CHECKING:
-    from .PurchaseEntry import PurchaseEntry
-    from .UserProducts import UserProducts
+from .Base import Base
+from .Transaction import Transaction
+from .TransactionType import TransactionType
+
+# if TYPE_CHECKING:
+#     from .PurchaseEntry import PurchaseEntry
+#     from .UserProducts import UserProducts
 
 
 class Product(Base):
-    __tablename__ = "products"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
-    product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    bar_code: Mapped[str] = mapped_column(String(13))
+    bar_code: Mapped[str] = mapped_column(String(13), unique=True)
     name: Mapped[str] = mapped_column(String(45))
-    price: Mapped[int] = mapped_column(Integer)
-    stock: Mapped[int] = mapped_column(Integer)
-    hidden: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # price: Mapped[int] = mapped_column(Integer)
+    # stock: Mapped[int] = mapped_column(Integer)
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    purchases: Mapped[set[PurchaseEntry]] = relationship(back_populates="product")
-    users: Mapped[set[UserProducts]] = relationship(back_populates="product")
-
-    bar_code_re = r"[0-9]+"
-    name_re = r".+"
-    name_length = 45
-
-    def __init__(self, bar_code, name, price, stock=0, hidden=False):
-        self.name = name
+    def __init__(
+        self: Self,
+        bar_code: str,
+        name: str,
+        hidden: bool = False,
+    ) -> None:
         self.bar_code = bar_code
-        self.price = price
-        self.stock = stock
+        self.name = name
         self.hidden = hidden
 
-    def __str__(self):
-        return self.name
+    # - count (virtual)
+    def stock(self: Self, sql_session: Session) -> int:
+        """
+        Returns the number of products in stock.
+        """
+
+        result = sql_session.scalars(
+            select(
+                func.sum(
+                    case(
+                        (
+                            Transaction.type_ == TransactionType.ADD_PRODUCT,
+                            Transaction.product_count,
+                        ),
+                        (
+                            Transaction.type_ == TransactionType.BUY_PRODUCT,
+                            -Transaction.product_count,
+                        ),
+                        (
+                            Transaction.type_ == TransactionType.ADJUST_STOCK,
+                            Transaction.product_count,
+                        ),
+                        else_=0,
+                    )
+                )
+            ).where(
+                Transaction.type_.in_(
+                    [
+                        TransactionType.BUY_PRODUCT,
+                        TransactionType.ADD_PRODUCT,
+                        TransactionType.ADJUST_STOCK,
+                    ]
+                ),
+                Transaction.product_id == self.id,
+            )
+        ).one_or_none()
+
+        return result or 0
+
+    def remaining_with_exact_price(self: Self, sql_session: Session) -> list[int]:
+        """
+        Retrieves the remaining products with their exact price as they were bought.
+        """
+
+        stock = self.stock(sql_session)
+
+        # TODO: only retrieve as many transactions as exists in the stock
+        last_added = sql_session.scalars(
+            select(
+                func.row_number(),
+                Transaction.time,
+                Transaction.per_product,
+                Transaction.product_count,
+            )
+            .where(
+                Transaction.type_ == TransactionType.ADD_PRODUCT,
+                Transaction.product_id == self.id,
+            )
+            .order_by(Transaction.time.desc())
+        ).all()
+
+        # result = []
+        # while stock > 0 and last_added:
+
+        ...
+
+    def price(self: Self, sql_session: Session) -> int:
+        """
+        Returns the price of the product.
+
+        Average price over the last bought products.
+        """
+
+        return Transaction.product_price(sql_session=sql_session, product=self)
+
+    def owned_by_user(self: Self, sql_session: Session) -> dict[user.User, int]:
+        """
+        Returns an overview of how many of the remaining products are owned by which user.
+        """
+
+        ...
