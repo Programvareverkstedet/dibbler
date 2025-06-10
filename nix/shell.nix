@@ -1,6 +1,6 @@
 {
   mkShell,
-  python,
+  python3,
   ruff,
   uv,
 }:
@@ -9,12 +9,16 @@ mkShell {
   packages = [
     ruff
     uv
-    (python.withPackages (ps: with ps; [
+    (python3.withPackages (ps: with ps; [
       # brother-ql
       # matplotlib
       psycopg2
       # python-barcode
       sqlalchemy
+      sqlparse
+
+      pytest
+      pytest-cov
     ]))
   ];
 }

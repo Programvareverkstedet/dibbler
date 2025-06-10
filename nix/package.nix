@@ -37,6 +37,14 @@ python3Packages.buildPythonApplication {
     sqlalchemy
   ];
 
+  pythonImportsCheck = [];
+
+  doCheck = true;
+  nativeCheckInputs = with python3Packages; [
+    pytest
+    pytestCheckHook
+  ];
+
   postInstall = ''
     wrapProgram $out/bin/dibbler \
     --prefix PATH : "${lib.makeBinPath [ less ]}"

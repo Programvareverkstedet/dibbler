@@ -58,7 +58,7 @@
       devShells = forAllSystems (system: pkgs: {
         default = self.devShells.${system}.dibbler;
         dibbler = pkgs.callPackage ./nix/shell.nix {
-          python = pkgs.python313;
+          python3 = pkgs.python313;
         };
       });
 
