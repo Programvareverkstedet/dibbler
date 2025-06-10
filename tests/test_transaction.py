@@ -1,29 +1,15 @@
 from datetime import datetime
-from pathlib import Path
 
-from dibbler.db import Session
+import pytest
+
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from dibbler.models import Product, Transaction, TransactionType, User
 
-JSON_FILE = Path(__file__).parent.parent.parent / "mock_data.json"
 
-
-# TODO: integrate this as a part of create-db, either asking interactively
-#       whether to seed test data, or by using command line arguments for
-#       automatating the answer.
-
-def clear_db(sql_session):
-    sql_session.query(Product).delete()
-    sql_session.query(User).delete()
-    sql_session.commit()
-
-
-def main():
-    # TODO: There is some leftover json data in the mock_data.json file.
-    #       It should be dealt with before merging this PR, either by removing
-    #       it or using it here.
-    sql_session = Session()
-    clear_db(sql_session)
-
+def insert_test_data(sql_session: Session) -> None:
     # Add users
     user1 = User("Test User 1")
     user2 = User("Test User 2")
@@ -81,27 +67,31 @@ def main():
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    # Note: These constructors depend on the content of the previous transactions,
-    #       so they cannot be part of the initial transaction list.
+def test_no_duplicate_timestamps(sql_session: Session):
+    """
+    Ensure that no two transactions have the same timestamp.
+    """
+    # Insert test data
+    insert_test_data(sql_session)
 
-    transaction = Transaction.adjust_stock_auto_amount(
-        sql_session=sql_session,
-        time=datetime(2023, 10, 1, 12, 0, 2),
-        product_count=3,
-        user_id=user1.id,
-        product_id=product1.id,
+    user1 = sql_session.scalar(
+        select(User).where(User.name == "Test User 1")
     )
 
-    sql_session.add(transaction)
-    sql_session.commit()
+    assert user1 is not None, "Test User 1 should exist"
 
-    transaction = Transaction.adjust_stock_auto_amount(
-        sql_session=sql_session,
-        time=datetime(2023, 10, 1, 12, 0, 3),
-        product_count=-2,
-        user_id=user1.id,
-        product_id=product1.id,
+    transaction_to_duplicate = sql_session.scalar(
+        select(Transaction).limit(1)
     )
 
-    sql_session.add(transaction)
-    sql_session.commit()
+    assert transaction_to_duplicate is not None, "There should be at least one transaction"
+
+    duplicate_timestamp_transaction = Transaction.adjust_balance(
+        time=transaction_to_duplicate.time,  # Use the same timestamp as an existing transaction
+        amount=50,
+        user_id=user1.id,
+    )
+
+    with pytest.raises(IntegrityError):
+        sql_session.add(duplicate_timestamp_transaction)
+        sql_session.commit()
