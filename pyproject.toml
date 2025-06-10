@@ -20,6 +20,12 @@ dependencies = [
 ]
 dynamic = ["version"]
 
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+]
+
 [tool.setuptools.packages.find]
 include = ["dibbler*"]
 
