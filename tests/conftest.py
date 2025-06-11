@@ -5,12 +5,14 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Base
 
+
 def pytest_addoption(parser):
     parser.addoption(
         "--echo",
         action="store_true",
         help="Enable SQLAlchemy echo mode for debugging",
     )
+
 
 @pytest.fixture(scope="function")
 def sql_session(request):

@@ -5,7 +5,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from dibbler.models import Base
 
-class ProductPriceCache(Base):
+class ProductCache(Base):
     product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    timestamp: Mapped[datetime] = mapped_column(DateTime)
+
     price: Mapped[int] = mapped_column(Integer)
+    price_timestamp: Mapped[datetime] = mapped_column(DateTime)
+
+    stock: Mapped[int] = mapped_column(Integer)
+    stock_timestamp: Mapped[datetime] = mapped_column(DateTime)

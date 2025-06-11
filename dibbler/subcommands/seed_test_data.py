@@ -80,28 +80,3 @@ def main():
 
     sql_session.add_all(transactions)
     sql_session.commit()
-
-    # Note: These constructors depend on the content of the previous transactions,
-    #       so they cannot be part of the initial transaction list.
-
-    transaction = Transaction.adjust_stock_auto_amount(
-        sql_session=sql_session,
-        time=datetime(2023, 10, 1, 12, 0, 2),
-        product_count=3,
-        user_id=user1.id,
-        product_id=product1.id,
-    )
-
-    sql_session.add(transaction)
-    sql_session.commit()
-
-    transaction = Transaction.adjust_stock_auto_amount(
-        sql_session=sql_session,
-        time=datetime(2023, 10, 1, 12, 0, 3),
-        product_count=-2,
-        user_id=user1.id,
-        product_id=product1.id,
-    )
-
-    sql_session.add(transaction)
-    sql_session.commit()
