@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Self
+from typing import TYPE_CHECKING, Self
 
 from sqlalchemy import (
     Integer,
@@ -13,16 +13,21 @@ from sqlalchemy.orm import (
     mapped_column,
 )
 
-import dibbler.models.Product as product
-
 from .Base import Base
-from .Transaction import Transaction
+
+if TYPE_CHECKING:
+    from .Transaction import Transaction
 
 
 class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    """Internal database ID"""
 
     name: Mapped[str] = mapped_column(String(20), unique=True)
+    """
+        The PVV username of the user.
+    """
+
     card: Mapped[str | None] = mapped_column(String(20))
     rfid: Mapped[str | None] = mapped_column(String(20))
 
@@ -41,30 +46,13 @@ class User(Base):
     # def is_anonymous(self):
     #     return self.card == "11122233"
 
-    # TODO: rename to 'balance' everywhere
-    def credit(self, sql_session: Session) -> int:
-        """
-        Returns the current credit of the user.
-        """
-
-        result = Transaction.user_balance(
-            sql_session=sql_session,
-            user=self,
-        )
-
-        return result
-
-    def products(self, sql_session: Session) -> list[tuple[product.Product, int]]:
-        """
-        Returns the products that the user has put into the system (and has not been purchased yet)
-        """
-
-        ...
-
+    # TODO: move to 'queries'
     def transactions(self, sql_session: Session) -> list[Transaction]:
         """
         Returns the transactions of the user in chronological order.
         """
+
+        from .Transaction import Transaction  # Import here to avoid circular import
 
         return list(
             sql_session.scalars(
