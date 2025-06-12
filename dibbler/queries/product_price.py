@@ -17,6 +17,7 @@ from dibbler.models import (
     TransactionType,
 )
 
+# TODO: include the transaction id in the log for easier debugging
 
 def _product_price_query(
     product_id: int,
@@ -120,6 +121,13 @@ def _product_price_query(
 
     return recursive_cte.union_all(recursive_elements)
 
+
+
+# TODO: create a function for the log that pretty prints the log entries
+#       for debugging purposes
+
+
+# TODO: wrap the log entries in a dataclass, the don't cost that much
 
 def product_price_log(
     sql_session: Session,

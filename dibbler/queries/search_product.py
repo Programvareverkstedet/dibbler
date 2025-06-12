@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from dibbler.models import Product
 
 
+# TODO: modernize queries to use SQLAlchemy 2.0 style
 def search_product(
     string: str,
     session: Session,
