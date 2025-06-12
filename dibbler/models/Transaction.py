@@ -56,8 +56,6 @@ _EXPECTED_FIELDS: dict[TransactionType, set[str]] = {
     TransactionType.ADJUST_INTEREST: {"interest_rate_percent"},
     TransactionType.ADJUST_PENALTY: {"penalty_multiplier_percent", "penalty_threshold"},
     TransactionType.ADJUST_STOCK: {"product_count", "product_id"},
-    # TODO: remove amount from BUY_PRODUCT
-    #       this requires modifications to user credit calculations
     TransactionType.BUY_PRODUCT: {"product_count", "product_id"},
     TransactionType.TRANSFER: {"amount", "transfer_user_id"},
 }
@@ -91,6 +89,10 @@ class Transaction(Base):
             _transaction_type_field_constraints(transaction_type, expected_fields)
             for transaction_type, expected_fields in _EXPECTED_FIELDS.items()
         ],
+        CheckConstraint(
+            f"type <> '{TransactionType.TRANSFER}' OR user_id <> transfer_user_id",
+            name="trx_type_transfer_no_self_transfers",
+        ),
         # Speed up product count calculation
         Index("product_user_time", "product_id", "user_id", "time"),
         # Speed up product owner calculation
