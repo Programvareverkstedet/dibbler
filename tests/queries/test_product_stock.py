@@ -60,7 +60,6 @@ def test_product_stock_complex_history(sql_session: Session) -> None:
         ),
         Transaction.buy_product(
             time=datetime(2023, 10, 1, 13, 0, 1),
-            amount=27 * 3,
             user_id=user1.id,
             product_id=product.id,
             product_count=3,
@@ -123,7 +122,6 @@ def test_negative_product_stock(sql_session: Session) -> None:
         ),
         Transaction.buy_product(
             time=datetime(2023, 10, 1, 14, 0, 1),
-            amount=50,
             user_id=user1.id,
             product_id=product.id,
             product_count=2,

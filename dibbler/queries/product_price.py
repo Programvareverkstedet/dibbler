@@ -9,7 +9,6 @@ from sqlalchemy import (
     literal,
     select,
 )
-
 from sqlalchemy.orm import Session
 
 from dibbler.models import (
@@ -18,14 +17,20 @@ from dibbler.models import (
     TransactionType,
 )
 
+
 def _product_price_query(
-    product: Product,
-    # use_cache: bool = True,
-    # until: datetime | None = None,
+    product_id: int,
+    use_cache: bool = True,
+    until: datetime | None = None,
+    cte_name: str = "rec_cte",
 ):
     """
     The inner query for calculating the product price.
     """
+
+    if use_cache:
+        print("WARNING: Using cache for product price query is not implemented yet.")
+
     initial_element = select(
         literal(0).label("i"),
         literal(0).label("time"),
@@ -33,7 +38,7 @@ def _product_price_query(
         literal(0).label("product_count"),
     )
 
-    recursive_cte = initial_element.cte(name="rec_cte", recursive=True)
+    recursive_cte = initial_element.cte(name=cte_name, recursive=True)
 
     # Subset of transactions that we'll want to iterate over.
     trx_subset = (
@@ -52,11 +57,8 @@ def _product_price_query(
                     TransactionType.ADJUST_STOCK,
                 ]
             ),
-            Transaction.product_id == product.id,
-            # TODO:
-            # If we have a transaction to limit the price calculation to, use it.
-            # If not, use all transactions for the product.
-            # (Transaction.time <= until.time) if until else True,
+            Transaction.product_id == product_id,
+            Transaction.time <= until if until is not None else 1 == 1,
         )
         .order_by(Transaction.time.asc())
         .alias("trx_subset")
@@ -122,15 +124,18 @@ def _product_price_query(
 def product_price_log(
     sql_session: Session,
     product: Product,
-    # use_cache: bool = True,
-    # Optional: calculate the price until a certain transaction.
-    # until: Transaction | None = None,
+    use_cache: bool = True,
+    until: Transaction | None = None,
 ) -> list[tuple[int, datetime, int, int]]:
     """
     Calculates the price of a product and returns a log of the price changes.
     """
 
-    recursive_cte = _product_price_query(product)
+    recursive_cte = _product_price_query(
+        product.id,
+        use_cache=use_cache,
+        until=until.time if until else None,
+    )
 
     result = sql_session.execute(
         select(
@@ -154,15 +159,18 @@ def product_price_log(
 def product_price(
     sql_session: Session,
     product: Product,
-    # use_cache: bool = True,
-    # Optional: calculate the price until a certain transaction.
-    # until: Transaction | None = None,
+    use_cache: bool = True,
+    until: Transaction | None = None,
 ) -> int:
     """
     Calculates the price of a product.
     """
 
-    recursive_cte = _product_price_query(product)  # , until=until)
+    recursive_cte = _product_price_query(
+        product.id,
+        use_cache=use_cache,
+        until=until.time if until else None,
+    )
 
     # TODO: optionally verify subresults:
     #   - product_count should never be negative (but this happens sometimes, so just a warning)
