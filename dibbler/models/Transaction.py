@@ -64,6 +64,7 @@ assert all(x <= _DYNAMIC_FIELDS for x in _EXPECTED_FIELDS.values()), (
     "All expected fields must be part of _DYNAMIC_FIELDS."
 )
 
+# TODO: ensure that the transaction types are not prefixed with 'TransactionType.' in the database
 
 def _transaction_type_field_constraints(
     transaction_type: TransactionType,

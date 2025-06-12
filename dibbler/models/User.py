@@ -47,6 +47,7 @@ class User(Base):
     #     return self.card == "11122233"
 
     # TODO: move to 'queries'
+    # TODO: allow filtering out 'special transactions' like 'ADJUST_INTEREST' and 'ADJUST_PENALTY'
     def transactions(self, sql_session: Session) -> list[Transaction]:
         """
         Returns the transactions of the user in chronological order.

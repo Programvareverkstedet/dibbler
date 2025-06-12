@@ -26,6 +26,7 @@ from dibbler.models.Transaction import (
 )
 from dibbler.queries.product_price import _product_price_query
 
+# TODO: include the transaction id in the log for easier debugging
 
 def _user_balance_query(
     user: User,
@@ -197,6 +198,14 @@ def _user_balance_query(
     return recursive_cte.union_all(recursive_elements)
 
 
+# TODO: create a function for the log that pretty prints the log entries
+#       for debugging purposes
+
+# TODO: wrap the log entries in a dataclass, the don't cost that much
+
+# TODO: add a method on the dataclass, using the running penalization data
+#       to figure out if the current row was penalized or not.
+
 def user_balance_log(
     sql_session: Session,
     user: User,
@@ -233,7 +242,6 @@ def user_balance(
     sql_session: Session,
     user: User,
     use_cache: bool = True,
-    # Optional: calculate the balance until a certain transaction.
     until: Transaction | None = None,
 ) -> int:
     """

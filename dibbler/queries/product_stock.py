@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
@@ -11,12 +13,15 @@ from dibbler.models import (
 def product_stock(
     sql_session: Session,
     product: Product,
-    # use_cache: bool = True,
-    # until: datetime | None = None,
+    use_cache: bool = True,
+    until: datetime | None = None,
 ) -> int:
     """
     Returns the number of products in stock.
     """
+
+    if use_cache:
+        print("WARNING: Using cache for product stock query is not implemented yet.")
 
     result = sql_session.scalars(
         select(
@@ -46,6 +51,7 @@ def product_stock(
                 ]
             ),
             Transaction.product_id == product.id,
+            Transaction.time <= until if until is not None else 1 == 1,
         )
     ).one_or_none()
 
