@@ -27,6 +27,13 @@ if TYPE_CHECKING:
     from .Product import Product
     from .User import User
 
+
+# NOTE: these only matter when there are no adjustments made in the database.
+
+DEFAULT_INTEREST_RATE_PERCENTAGE = 100
+DEFAULT_PENALTY_THRESHOLD = -100
+DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE = 200
+
 # TODO: allow for joint transactions?
 #       dibbler allows joint transactions (e.g. buying more than one product at once, several people buying the same product, etc.)
 #       instead of having the software split the transactions up, making them hard to reconnect,
@@ -51,7 +58,7 @@ _EXPECTED_FIELDS: dict[TransactionType, set[str]] = {
     TransactionType.ADJUST_STOCK: {"product_count", "product_id"},
     # TODO: remove amount from BUY_PRODUCT
     #       this requires modifications to user credit calculations
-    TransactionType.BUY_PRODUCT: {"amount", "product_count", "product_id"},
+    TransactionType.BUY_PRODUCT: {"product_count", "product_id"},
     TransactionType.TRANSFER: {"amount", "transfer_user_id"},
 }
 
@@ -379,7 +386,6 @@ class Transaction(Base):
     @classmethod
     def buy_product(
         cls: type[Self],
-        amount: int,
         user_id: int,
         product_id: int,
         product_count: int,
@@ -389,7 +395,6 @@ class Transaction(Base):
         return cls(
             time=time,
             type_=TransactionType.BUY_PRODUCT,
-            amount=amount,
             user_id=user_id,
             product_id=product_id,
             product_count=product_count,

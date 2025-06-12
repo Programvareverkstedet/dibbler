@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries.user_balance import user_balance
+from dibbler.queries.user_balance import user_balance, user_balance_log
 
 
 def insert_test_data(sql_session: Session) -> None:
@@ -50,7 +50,6 @@ def insert_test_data(sql_session: Session) -> None:
         ),
         Transaction.buy_product(
             time=datetime(2023, 10, 1, 12, 0, 1),
-            amount=27,
             product_count=1,
             user_id=user2.id,
             product_id=product1.id,

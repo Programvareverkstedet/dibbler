@@ -49,7 +49,6 @@ def insert_test_data(sql_session: Session) -> None:
         ),
         Transaction.buy_product(
             time=datetime(2023, 10, 1, 12, 0, 1),
-            amount=27,
             product_count=1,
             user_id=user2.id,
             product_id=product1.id,
@@ -76,7 +75,6 @@ def insert_test_data(sql_session: Session) -> None:
         ),
         Transaction.buy_product(
             time=datetime(2023, 10, 1, 12, 0, 5),
-            amount=50,
             product_count=1,
             user_id=user1.id,
             product_id=product3.id,
@@ -139,7 +137,6 @@ def test_product_price_with_negative_stock_single_addition(sql_session: Session)
 
     transaction = Transaction.buy_product(
         time=datetime(2023, 10, 1, 13, 0, 0),
-        amount=27 * 5,
         product_count=10,
         user_id=user1.id,
         product_id=product1.id,

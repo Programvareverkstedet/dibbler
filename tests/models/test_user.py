@@ -59,7 +59,6 @@ def test_user_transactions(sql_session: Session):
         ),
         Transaction.buy_product(
             time=datetime(2023, 10, 1, 12, 0, 1),
-            amount=27,
             product_count=1,
             user_id=user2.id,
             product_id=product.id,

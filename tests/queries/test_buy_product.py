@@ -4,7 +4,6 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries.buy_product import buy_product
 from dibbler.queries.product_stock import product_stock
 from dibbler.queries.user_balance import user_balance
 
@@ -48,11 +47,10 @@ def insert_test_data(sql_session: Session) -> tuple[User, Product]:
 def test_buy_product_basic(sql_session: Session) -> None:
     user, product = insert_test_data(sql_session)
 
-    transaction = buy_product(
-        sql_session=sql_session,
+    transaction = Transaction.buy_product(
         time=datetime(2023, 10, 1, 12, 0, 0),
-        user=user,
-        product=product,
+        user_id=user.id,
+        product_id=product.id,
         product_count=1,
     )
 
@@ -73,11 +71,10 @@ def test_buy_product_with_penalty(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    transaction = buy_product(
-        sql_session=sql_session,
+    transaction = Transaction.buy_product(
         time=datetime(2023, 10, 1, 12, 0, 0),
-        user=user,
-        product=product,
+        user_id=user.id,
+        product_id=product.id,
         product_count=1,
     )
     sql_session.add(transaction)
@@ -99,11 +96,10 @@ def test_buy_product_with_interest(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    transaction = buy_product(
-        sql_session=sql_session,
+    transaction = Transaction.buy_product(
         time=datetime(2023, 10, 1, 12, 0, 0),
-        user=user,
-        product=product,
+        user_id=user.id,
+        product_id=product.id,
         product_count=1,
     )
     sql_session.add(transaction)
@@ -125,11 +121,10 @@ def test_buy_product_with_changing_penalty(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    transaction = buy_product(
-        sql_session=sql_session,
+    transaction = Transaction.buy_product(
         time=datetime(2023, 10, 1, 12, 0, 0),
-        user=user,
-        product=product,
+        user_id=user.id,
+        product_id=product.id,
         product_count=1,
     )
     sql_session.add(transaction)
@@ -146,11 +141,10 @@ def test_buy_product_with_changing_penalty(sql_session: Session) -> None:
     sql_session.add(adjust_penalty)
     sql_session.commit()
 
-    transaction = buy_product(
-        sql_session=sql_session,
+    transaction = Transaction.buy_product(
         time=datetime(2023, 10, 1, 14, 0, 0),
-        user=user,
-        product=product,
+        user_id=user.id,
+        product_id=product.id,
         product_count=1,
     )
     sql_session.add(transaction)
@@ -170,12 +164,11 @@ def test_buy_product_with_penalty_interest_combined(sql_session: Session) -> Non
 def test_buy_product_more_than_stock(sql_session: Session) -> None:
     user, product = insert_test_data(sql_session)
 
-    transaction = buy_product(
-        sql_session=sql_session,
+    transaction = Transaction.buy_product(
         time=datetime(2023, 10, 1, 13, 0, 0),
         product_count=10,
-        user=user,
-        product=product,
+        user_id=user.id,
+        product_id=product.id,
     )
 
     sql_session.add(transaction)
