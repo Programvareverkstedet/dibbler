@@ -2,7 +2,7 @@ from datetime import datetime
 from pathlib import Path
 
 from dibbler.db import Session
-from dibbler.models import Product, Transaction, TransactionType, User
+from dibbler.models import Product, Transaction, User
 
 JSON_FILE = Path(__file__).parent.parent.parent / "mock_data.json"
 
@@ -10,6 +10,7 @@ JSON_FILE = Path(__file__).parent.parent.parent / "mock_data.json"
 # TODO: integrate this as a part of create-db, either asking interactively
 #       whether to seed test data, or by using command line arguments for
 #       automatating the answer.
+
 
 def clear_db(sql_session):
     sql_session.query(Product).delete()
@@ -41,37 +42,31 @@ def main():
 
     # Add transactions
     transactions = [
-        Transaction(
+        Transaction.adjust_balance(
             time=datetime(2023, 10, 1, 10, 0, 0),
-            type_=TransactionType.ADJUST_BALANCE,
             amount=100,
             user_id=user1.id,
         ),
-        Transaction(
+        Transaction.adjust_balance(
             time=datetime(2023, 10, 1, 10, 0, 1),
-            type_=TransactionType.ADJUST_BALANCE,
             amount=50,
             user_id=user2.id,
         ),
-        Transaction(
+        Transaction.adjust_balance(
             time=datetime(2023, 10, 1, 10, 0, 2),
-            type_=TransactionType.ADJUST_BALANCE,
             amount=-50,
             user_id=user1.id,
         ),
-        Transaction(
+        Transaction.add_product(
             time=datetime(2023, 10, 1, 12, 0, 0),
-            type_=TransactionType.ADD_PRODUCT,
             amount=27 * 2,
             per_product=27,
             product_count=2,
             user_id=user1.id,
             product_id=product1.id,
         ),
-        Transaction(
+        Transaction.buy_product(
             time=datetime(2023, 10, 1, 12, 0, 1),
-            type_=TransactionType.BUY_PRODUCT,
-            amount=27,
             product_count=1,
             user_id=user2.id,
             product_id=product1.id,

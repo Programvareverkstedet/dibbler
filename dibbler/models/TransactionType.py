@@ -1,15 +1,26 @@
-from enum import Enum
+from enum import StrEnum, auto
+
+from sqlalchemy import Enum as SQLEnum
 
 
-class TransactionType(Enum):
+class TransactionType(StrEnum):
     """
     Enum for transaction types.
     """
 
-    ADD_PRODUCT = "add_product"
-    ADJUST_BALANCE = "adjust_balance"
-    ADJUST_INTEREST = "adjust_interest"
-    ADJUST_PENALTY = "adjust_penalty"
-    ADJUST_STOCK = "adjust_stock"
-    BUY_PRODUCT = "buy_product"
-    TRANSFER = "transfer"
+    ADD_PRODUCT = auto()
+    ADJUST_BALANCE = auto()
+    ADJUST_INTEREST = auto()
+    ADJUST_PENALTY = auto()
+    ADJUST_STOCK = auto()
+    BUY_PRODUCT = auto()
+    TRANSFER = auto()
+
+
+TransactionTypeSQL = SQLEnum(
+    TransactionType,
+    native_enum=True,
+    create_constraint=True,
+    validate_strings=True,
+    values_callable=lambda x: [i.value for i in x],
+)

@@ -9,27 +9,32 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Text,
-)
-from sqlalchemy import (
-    Enum as SQLEnum,
+    and_,
+    column,
+    or_,
 )
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
     relationship,
 )
+from sqlalchemy.orm.collections import (
+    InstrumentedDict,
+    InstrumentedList,
+    InstrumentedSet,
+)
 from sqlalchemy.sql.schema import Index
 
 from .Base import Base
-from .TransactionType import TransactionType
+from .TransactionType import TransactionType, TransactionTypeSQL
 
 if TYPE_CHECKING:
     from .Product import Product
     from .User import User
 
+# TODO: rename to *_PERCENT
 
 # NOTE: these only matter when there are no adjustments made in the database.
-
 DEFAULT_INTEREST_RATE_PERCENTAGE = 100
 DEFAULT_PENALTY_THRESHOLD = -100
 DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE = 200
@@ -64,7 +69,6 @@ assert all(x <= _DYNAMIC_FIELDS for x in _EXPECTED_FIELDS.values()), (
     "All expected fields must be part of _DYNAMIC_FIELDS."
 )
 
-# TODO: ensure that the transaction types are not prefixed with 'TransactionType.' in the database
 
 def _transaction_type_field_constraints(
     transaction_type: TransactionType,
@@ -72,14 +76,14 @@ def _transaction_type_field_constraints(
 ) -> CheckConstraint:
     unexpected_fields = _DYNAMIC_FIELDS - expected_fields
 
-    expected_constraints = ["{} IS NOT NULL".format(field) for field in expected_fields]
-    unexpected_constraints = ["{} IS NULL".format(field) for field in unexpected_fields]
-
-    constraints = expected_constraints + unexpected_constraints
-
-    # TODO: use sqlalchemy's `and_` and `or_` to build the constraints
     return CheckConstraint(
-        f"type <> '{transaction_type}' OR ({' AND '.join(constraints)})",
+        or_(
+            column("type") != transaction_type.value,
+            and_(
+                *[column(field) != None for field in expected_fields],
+                *[column(field) == None for field in unexpected_fields],
+            ),
+        ),
         name=f"trx_type_{transaction_type.value}_expected_fields",
     )
 
@@ -91,7 +95,10 @@ class Transaction(Base):
             for transaction_type, expected_fields in _EXPECTED_FIELDS.items()
         ],
         CheckConstraint(
-            f"type <> '{TransactionType.TRANSFER}' OR user_id <> transfer_user_id",
+            or_(
+                column("type") != TransactionType.TRANSFER.value,
+                column("user_id") != column("transfer_user_id"),
+            ),
             name="trx_type_transfer_no_self_transfers",
         ),
         # Speed up product count calculation
@@ -125,7 +132,7 @@ class Transaction(Base):
         This is not used for any calculations, but can be useful for debugging.
     """
 
-    type_: Mapped[TransactionType] = mapped_column(SQLEnum(TransactionType), name="type")
+    type_: Mapped[TransactionType] = mapped_column(TransactionTypeSQL, name="type")
     """
         Which type of transaction this is.
 
@@ -291,6 +298,39 @@ class Transaction(Base):
             raise ValueError(
                 "The real amount of the transaction must be less than the total value of the products."
             )
+
+    # TODO: improve printing further
+
+    def __repr__(self) -> str:
+        sort_order = [
+            "id",
+            "time",
+        ]
+
+        columns = ", ".join(
+            f"{k}={repr(v)}"
+            for k, v in sorted(
+                self.__dict__.items(),
+                key=lambda item: chr(sort_order.index(item[0]))
+                if item[0] in sort_order
+                else item[0],
+            )
+            if not any(
+                [
+                    k == "type_",
+                    (k == "message" and v is None),
+                    k.startswith("_"),
+                    # Ensure that we don't try to print out the entire list of
+                    # relationships, which could create an infinite loop
+                    isinstance(v, Base),
+                    isinstance(v, InstrumentedList),
+                    isinstance(v, InstrumentedSet),
+                    isinstance(v, InstrumentedDict),
+                    *[k in (_DYNAMIC_FIELDS - _EXPECTED_FIELDS[self.type_])],
+                ]
+            )
+        )
+        return f"{self.type_.upper()}({columns})"
 
     ###################
     # FACTORY METHODS #
