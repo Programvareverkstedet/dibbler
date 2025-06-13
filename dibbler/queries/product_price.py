@@ -1,7 +1,11 @@
+import math
+from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import (
+    ColumnElement,
     Integer,
+    SQLColumnExpression,
     asc,
     case,
     cast,
@@ -16,13 +20,14 @@ from dibbler.models import (
     Transaction,
     TransactionType,
 )
+from dibbler.models.Transaction import DEFAULT_INTEREST_RATE_PERCENTAGE
 
-# TODO: include the transaction id in the log for easier debugging
 
 def _product_price_query(
-    product_id: int,
+    product_id: int | ColumnElement[int],
     use_cache: bool = True,
-    until: datetime | None = None,
+    until: datetime | SQLColumnExpression[datetime] | None = None,
+    until_including: bool = True,
     cte_name: str = "rec_cte",
 ):
     """
@@ -35,6 +40,7 @@ def _product_price_query(
     initial_element = select(
         literal(0).label("i"),
         literal(0).label("time"),
+        literal(None).label("transaction_id"),
         literal(0).label("price"),
         literal(0).label("product_count"),
     )
@@ -45,6 +51,7 @@ def _product_price_query(
     trx_subset = (
         select(
             func.row_number().over(order_by=asc(Transaction.time)).label("i"),
+            Transaction.id,
             Transaction.time,
             Transaction.type_,
             Transaction.product_count,
@@ -59,7 +66,12 @@ def _product_price_query(
                 ]
             ),
             Transaction.product_id == product_id,
-            Transaction.time <= until if until is not None else 1 == 1,
+            case(
+                (literal(until_including), Transaction.time <= until),
+                else_=Transaction.time < until,
+            )
+            if until is not None
+            else literal(True),
         )
         .order_by(Transaction.time.asc())
         .alias("trx_subset")
@@ -69,6 +81,7 @@ def _product_price_query(
         select(
             trx_subset.c.i,
             trx_subset.c.time,
+            trx_subset.c.id.label("transaction_id"),
             case(
                 # Someone buys the product -> price remains the same.
                 (trx_subset.c.type_ == TransactionType.BUY_PRODUCT, recursive_cte.c.price),
@@ -78,7 +91,10 @@ def _product_price_query(
                     trx_subset.c.type_ == TransactionType.ADD_PRODUCT,
                     cast(
                         func.ceil(
-                            (trx_subset.c.per_product * trx_subset.c.product_count)
+                            (
+                                recursive_cte.c.price * func.max(recursive_cte.c.product_count, 0)
+                                + trx_subset.c.per_product * trx_subset.c.product_count
+                            )
                             / (
                                 # The running product count can be negative if the accounting is bad.
                                 # This ensures that we never end up with negative prices or zero divisions
@@ -122,19 +138,23 @@ def _product_price_query(
     return recursive_cte.union_all(recursive_elements)
 
 
-
 # TODO: create a function for the log that pretty prints the log entries
 #       for debugging purposes
 
 
-# TODO: wrap the log entries in a dataclass, the don't cost that much
+@dataclass
+class ProductPriceLogEntry:
+    transaction: Transaction
+    price: int
+    product_count: int
+
 
 def product_price_log(
     sql_session: Session,
     product: Product,
     use_cache: bool = True,
     until: Transaction | None = None,
-) -> list[tuple[int, datetime, int, int]]:
+) -> list[ProductPriceLogEntry]:
     """
     Calculates the price of a product and returns a log of the price changes.
     """
@@ -147,20 +167,32 @@ def product_price_log(
 
     result = sql_session.execute(
         select(
-            recursive_cte.c.i,
-            recursive_cte.c.time,
+            Transaction,
             recursive_cte.c.price,
             recursive_cte.c.product_count,
-        ).order_by(recursive_cte.c.i.asc())
+        )
+        .select_from(recursive_cte)
+        .join(
+            Transaction,
+            onclause=Transaction.id == recursive_cte.c.transaction_id,
+        )
+        .order_by(recursive_cte.c.i.asc())
     ).all()
 
-    if not result:
+    if result is None:
         # If there are no transactions for this product, the query should return an empty list, not None.
         raise RuntimeError(
             f"Something went wrong while calculating the price log for product {product.name} (ID: {product.id})."
         )
 
-    return [(row.i, row.time, row.price, row.product_count) for row in result]
+    return [
+        ProductPriceLogEntry(
+            transaction=row[0],
+            price=row.price,
+            product_count=row.product_count,
+        )
+        for row in result
+    ]
 
 
 @staticmethod
@@ -169,6 +201,7 @@ def product_price(
     product: Product,
     use_cache: bool = True,
     until: Transaction | None = None,
+    include_interest: bool = False,
 ) -> int:
     """
     Calculates the price of a product.
@@ -184,14 +217,29 @@ def product_price(
     #   - product_count should never be negative (but this happens sometimes, so just a warning)
     #   - price should never be negative
 
-    result = sql_session.scalar(
+    result = sql_session.scalars(
         select(recursive_cte.c.price).order_by(recursive_cte.c.i.desc()).limit(1)
-    )
+    ).one_or_none()
 
     if result is None:
         # If there are no transactions for this product, the query should return 0, not None.
         raise RuntimeError(
             f"Something went wrong while calculating the price for product {product.name} (ID: {product.id})."
         )
+
+    if include_interest:
+        interest_rate = (
+            sql_session.scalar(
+                select(Transaction.interest_rate_percent)
+                .where(
+                    Transaction.type_ == TransactionType.ADJUST_INTEREST,
+                    literal(True) if until is None else Transaction.time <= until.time,
+                )
+                .order_by(Transaction.time.desc())
+                .limit(1)
+            )
+            or DEFAULT_INTEREST_RATE_PERCENTAGE
+        )
+        result = math.ceil(result * interest_rate / 100)
 
     return result

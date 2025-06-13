@@ -45,20 +45,3 @@ class User(Base):
 
     # def is_anonymous(self):
     #     return self.card == "11122233"
-
-    # TODO: move to 'queries'
-    # TODO: allow filtering out 'special transactions' like 'ADJUST_INTEREST' and 'ADJUST_PENALTY'
-    def transactions(self, sql_session: Session) -> list[Transaction]:
-        """
-        Returns the transactions of the user in chronological order.
-        """
-
-        from .Transaction import Transaction  # Import here to avoid circular import
-
-        return list(
-            sql_session.scalars(
-                select(Transaction)
-                .where(Transaction.user_id == self.id)
-                .order_by(Transaction.time.asc())
-            ).all()
-        )

@@ -27,7 +27,7 @@ class Product(Base):
         EAN-13 code.
     """
 
-    name: Mapped[str] = mapped_column(String(45))
+    name: Mapped[str] = mapped_column(String(45), unique=True)
     """
         The name of the product.
 

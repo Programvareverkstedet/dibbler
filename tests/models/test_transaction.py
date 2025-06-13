@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
+from dibbler.queries.product_stock import product_stock
 
 
 def insert_test_data(sql_session: Session) -> tuple[User, Product]:
@@ -118,3 +119,81 @@ def test_user_foreign_key_constraint(sql_session: Session) -> None:
 
     with pytest.raises(IntegrityError):
         sql_session.commit()
+
+
+def test_transaction_buy_product_more_than_stock(sql_session: Session) -> None:
+    user, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 12, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27,
+            per_product=27,
+            product_count=1,
+        ),
+        Transaction.buy_product(
+            time=datetime(2023, 10, 1, 13, 0, 0),
+            product_count=10,
+            user_id=user.id,
+            product_id=product.id,
+        ),
+    ]
+
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    assert product_stock(sql_session, product) == 1 - 10
+
+
+def test_transaction_buy_product_dont_allow_no_add_product_transactions(
+    sql_session: Session,
+) -> None:
+    user, product = insert_test_data(sql_session)
+
+    transaction = Transaction.buy_product(
+        time=datetime(2023, 10, 1, 12, 0, 0),
+        product_count=1,
+        user_id=user.id,
+        product_id=product.id,
+    )
+
+    sql_session.add(transaction)
+
+    with pytest.raises(ValueError):
+        sql_session.commit()
+
+
+def test_transaction_add_product_deny_amount_over_per_product_times_product_count(
+    sql_session: Session,
+) -> None:
+    user, product = insert_test_data(sql_session)
+
+    with pytest.raises(ValueError):
+        _transaction = Transaction.add_product(
+            time=datetime(2023, 10, 1, 12, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27 * 2 + 1,  # Invalid amount
+            per_product=27,
+            product_count=2,
+        )
+
+
+def test_transaction_add_product_allow_amount_under_per_product_times_product_count(
+    sql_session: Session,
+) -> None:
+    user, product = insert_test_data(sql_session)
+
+    transaction = Transaction.add_product(
+        time=datetime(2023, 10, 1, 12, 0, 0),
+        user_id=user.id,
+        product_id=product.id,
+        amount=27 * 2 - 1,  # Valid amount
+        per_product=27,
+        product_count=2,
+    )
+
+    sql_session.add(transaction)
+    sql_session.commit()

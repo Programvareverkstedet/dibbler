@@ -16,6 +16,4 @@ def current_interest(sql_session: Session) -> int:
     if result is None:
         return DEFAULT_INTEREST_RATE_PERCENTAGE
 
-    assert result.interest_rate_percent is not None, "Interest rate percent must be set"
-
     return result.interest_rate_percent
