@@ -32,6 +32,9 @@ jobs:
           --cov=dibbler.queries
           --cov-report=html
           --cov-branch
+
+          --self-contained-html
+          --html=./test-report/index.html
         )
 
         if [ "${{ inputs.debug_sqlalchemy }}" == "true" ]; then
@@ -44,6 +47,16 @@ jobs:
 
     - name: Generate badge
       run: uv run -- coverage-badge -o htmlcov/badge.svg
+
+    - name: Upload test report
+      uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+      with:
+        source: ./test-report/
+        target: ${{ gitea.ref_name }}/test-report/
+        username: gitea-web
+        ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+        host: pages.pvv.ntnu.no
+        known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
 
     - name: Upload coverage report
       uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1

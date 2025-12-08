@@ -18,6 +18,7 @@ mkShell {
 
       pytest
       pytest-cov
+      pytest-html
     ]))
   ];
 }

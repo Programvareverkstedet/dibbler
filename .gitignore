@@ -9,3 +9,5 @@ test.db
 .ruff_cache
 
 .coverage
+htmlcov
+test-report
