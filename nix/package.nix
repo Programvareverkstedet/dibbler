@@ -24,7 +24,7 @@ python3Packages.buildPythonApplication {
   propagatedBuildInputs = with python3Packages; [
     brother-ql
     matplotlib
-    psycopg2
+    psycopg2-binary
     python-barcode
     sqlalchemy
   ];

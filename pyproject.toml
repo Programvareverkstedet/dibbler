@@ -18,7 +18,7 @@ dependencies = [
     "SQLAlchemy >= 2.0, <2.1",
     "brother-ql",
     "matplotlib",
-    "psycopg2 >= 2.8, <2.10",
+    "psycopg2-binary >= 2.8, <2.10",
     "python-barcode",
 ]
 
