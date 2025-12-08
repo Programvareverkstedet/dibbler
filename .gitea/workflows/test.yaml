@@ -2,6 +2,12 @@ name: Run tests
 on:
   pull_request:
   push:
+  workflow_dispatch:
+    inputs:
+      debug_sqlalchemy:
+        description: "Print SQL statements executed by SQLAlchemy during tests"
+        type: boolean
+        default: false
 jobs:
   run-tests:
     runs-on: debian-latest
@@ -15,7 +21,20 @@ jobs:
       run: uv sync --locked
 
     - name: Run tests
-      run: uv tool run pytest --cov=dibbler --cov-report=html
+      run: |
+        PYTEST_ARGS=(
+          --cov=dibbler
+          --cov-report=html
+          --cov-branch
+        )
+
+        if [ "${{ inputs.debug_sqlalchemy }}" == "true" ]; then
+          PYTEST_ARGS+=(
+            --echo
+          )
+        fi
+
+        uv run -- pytest --cov=dibbler --cov-report=html
 
     - name: Generate badge
       run: uvx coverage-badge -o htmlcov/badge.svg
