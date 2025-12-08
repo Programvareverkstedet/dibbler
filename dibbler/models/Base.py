@@ -29,6 +29,10 @@ class Base(DeclarativeBase):
     def __tablename__(cls) -> str:
         return _pascal_case_to_snake_case(cls.__name__)
 
+    # NOTE: This is the default implementation of __repr__ for all tables,
+    #       but it is preferable to override it for each table to get a nicer
+    #       looking representation. This trades a bit of messiness for a complete
+    #       output of all relevant fields.
     def __repr__(self) -> str:
         columns = ", ".join(
             f"{k}={repr(v)}"
