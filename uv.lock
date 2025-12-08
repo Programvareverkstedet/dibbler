@@ -256,8 +256,8 @@ dependencies = [
     { name = "sqlalchemy" },
 ]
 
-[package.optional-dependencies]
-dev = [
+[package.dev-dependencies]
+test = [
     { name = "coverage-badge" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -268,17 +268,20 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "brother-ql" },
-    { name = "coverage-badge", marker = "extra == 'dev'", specifier = ">=1.1.2" },
     { name = "matplotlib" },
     { name = "psycopg2-binary", specifier = ">=2.8,<2.10" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
-    { name = "pytest-html", marker = "extra == 'dev'", specifier = ">=4.1.1" },
     { name = "python-barcode" },
     { name = "sqlalchemy", specifier = ">=2.0,<2.1" },
-    { name = "sqlparse", marker = "extra == 'dev'", specifier = ">=0.5.4" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+test = [
+    { name = "coverage-badge", specifier = ">=1.1.2" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-html", specifier = ">=4.1.1" },
+    { name = "sqlparse", specifier = ">=0.5.4" },
+]
 
 [[package]]
 name = "fonttools"

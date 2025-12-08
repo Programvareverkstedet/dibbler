@@ -22,8 +22,8 @@ dependencies = [
     "python-barcode",
 ]
 
-[project.optional-dependencies]
-dev = [
+[dependency-groups]
+test = [
     "pytest",
     "pytest-cov",
     "coverage-badge>=1.1.2",
