@@ -18,7 +18,7 @@ jobs:
       uses: astral-sh/setup-uv@v7
 
     - name: Install dependencies
-      run: uv sync --locked
+      run: uv sync --locked --group test
 
     - name: Run tests
       run: |
@@ -40,7 +40,7 @@ jobs:
         uv run -- pytest "${PYTEST_ARGS[@]}"
 
     - name: Generate badge
-      run: uvx coverage-badge -o htmlcov/badge.svg
+      run: uv run -- coverage-badge -o htmlcov/badge.svg
 
     - name: Upload coverage report
       uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1

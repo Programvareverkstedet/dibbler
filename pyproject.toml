@@ -20,10 +20,11 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[project.optional-dependencies]
-dev = [
+[dependency-groups]
+test = [
     "pytest",
     "pytest-cov",
+    "coverage-badge>=1.1.2",
 ]
 
 [tool.setuptools.packages.find]
