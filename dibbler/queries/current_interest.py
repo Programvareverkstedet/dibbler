@@ -15,5 +15,7 @@ def current_interest(sql_session: Session) -> int:
 
     if result is None:
         return DEFAULT_INTEREST_RATE_PERCENTAGE
-
-    return result.interest_rate_percent
+    elif result.interest_rate_percent is None:
+        return DEFAULT_INTEREST_RATE_PERCENTAGE
+    else:
+        return result.interest_rate_percent

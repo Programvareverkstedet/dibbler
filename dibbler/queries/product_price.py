@@ -195,7 +195,6 @@ def product_price_log(
     ]
 
 
-@staticmethod
 def product_price(
     sql_session: Session,
     product: Product,
