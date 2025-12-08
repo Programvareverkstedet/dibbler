@@ -2,6 +2,7 @@ __all__ = [
     "Base",
     "Product",
     "Transaction",
+    "TransactionType",
     "User",
 ]
 
