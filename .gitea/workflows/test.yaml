@@ -1,0 +1,31 @@
+name: Run tests
+on:
+  pull_request:
+  push:
+jobs:
+  run-tests:
+    runs-on: debian-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+
+    - name: Install dependencies
+      run: uv sync --locked
+
+    - name: Run tests
+      run: uv tool run pytest --cov=dibbler --cov-report=html
+
+    - name: Generate badge
+      run: uvx coverage-badge -o htmlcov/badge.svg
+
+    - name: Upload coverage report
+      uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+      with:
+        source: ./htmlcov/
+        target: ${{ gitea.ref_name }}/coverage/
+        username: gitea-web
+        ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+        host: pages.pvv.ntnu.no
+        known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
