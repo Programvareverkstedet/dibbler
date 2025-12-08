@@ -1,0 +1,86 @@
+name: Run tests
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+    inputs:
+      debug_sql:
+        description: "Print SQL statements executed by SQLAlchemy during tests"
+        type: boolean
+        default: True
+
+env:
+  DEBUG_SQL: ${{ inputs.debug_sql || true }}
+
+jobs:
+  run-tests:
+    runs-on: debian-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --locked --group test
+
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          set -x
+
+        PYTEST_ARGS=(
+          -vv
+
+          --cov=dibbler.lib
+          --cov=dibbler.models
+          --cov=dibbler.queries
+          --cov-report=html
+          --cov-branch
+
+          --self-contained-html
+          --html=./test-report/index.html
+        )
+
+        if [ "$DEBUG_SQL" == "true" ]; then
+          PYTEST_ARGS+=(
+            --debug-sql
+          )
+
+          if [ "$DEBUG_SQL" == "true" ]; then
+            PYTEST_ARGS+=(
+              --debug-sql
+            )
+          fi
+
+          uv run -- pytest "${PYTEST_ARGS[@]}"
+
+      - name: Generate badge
+        run: uv run -- coverage-badge -o htmlcov/badge.svg
+
+      - name: Upload test report
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+        with:
+          source: ./test-report/
+          target: ${{ gitea.ref_name }}/test-report/
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+
+      - name: Upload coverage report
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+        with:
+          source: ./htmlcov/
+          target: ${{ gitea.ref_name }}/coverage/
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+
+      - name: Check failure
+        if: failure()
+        run: |
+          echo "Tests failed"
+          exit 1
