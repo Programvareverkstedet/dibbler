@@ -5,6 +5,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from dibbler.models import Base
 
+
 class ProductCache(Base):
     product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
 

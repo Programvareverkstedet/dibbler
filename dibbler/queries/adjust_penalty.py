@@ -6,6 +6,7 @@ from dibbler.queries.current_penalty import current_penalty
 # TODO: this type of transaction should be password protected.
 #       the password can be set as a string literal in the config file.
 
+
 def adjust_penalty(
     sql_session: Session,
     user_id: int,
