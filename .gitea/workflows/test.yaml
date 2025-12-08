@@ -52,3 +52,9 @@ jobs:
         ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
         host: pages.pvv.ntnu.no
         known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+
+    - name: Check failure
+      if: failure()
+      run: |
+        echo "Tests failed"
+        exit 1
