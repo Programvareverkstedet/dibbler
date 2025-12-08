@@ -1,4 +1,5 @@
 [![Coverage](https://pages.pvv.ntnu.no/Projects/dibbler/event-sourcing/coverage/badge.svg)](https://pages.pvv.ntnu.no/Projects/dibbler/event-sourcing/coverage)
+[![Test report](https://img.shields.io/badge/status-grab_the_latest_test_report-blue)](https://pages.pvv.ntnu.no/Projects/dibbler/event-sourcing/test-report)
 
 # Dibbler
 
