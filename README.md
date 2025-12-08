@@ -24,6 +24,38 @@ python -m dibbler -c example-config.ini create-db
 python -m dibbler -c example-config.ini loop
 ```
 
+## Prosjektstruktur
+
+Her er en oversikt over prosjektstrukturen og hva de forskjellige mappene og filene gjør.
+
+### `dibbler/models`
+
+I denne mappen ligger databasemodellene. Med få unntak så er hver fil i denne mappen en modell.
+
+Vi bruker for tiden moderne deklarativ SQLAlchemy syntaks for å definere modellene (see [SQLAlchemy - Declarative Mapping Styles](https://docs.sqlalchemy.org/en/20/orm/declarative_styles.html)).
+
+Pass på å ikke putte for mye logikk i modellene, de skal helst bare definere dataene. Konstruktører, hjelpefunksjoner og statisk validering er anbefalt, men unngå dynamisk validering mot databasen - det hører hjemme i `dibbler/queries`.
+
+### `dibbler/queries`
+
+I denne mappen ligger databasespørringer. Disse databasespørringene har etter hvert blitt ganske komplekse da vi ikke lagrer tilstand, men heller deriverer den ut ifra en gående logg av transaksjoner. Her gjøres det også en del validering, både statisk validering av argumenter, men også dynamisk validering mot databasen.
+
+### `dibbler/menus`
+
+Her ligger menydefinisjonene for terminalgrensesnittet. Menyene håndterer brukerinteraksjon og navigasjon.
+
+### `dibbler/lib`
+
+Her finner du hjelpefunksjoner og verktøy som brukes på tvers av prosjektet. Ting som ikke passet inn andre steder.
+
+### `dibbler/subcommands`
+
+Her ligger inngangspunktet for kommandolinjegrensesnittet. Dette er ikke noe vanlige brukere vanligvis vil se da vi har låst dibbler-terminalen til å kjøre terminalgrensesnittet i en evig loop. Det er nyttig for å legge ved ekstra konfigurasjon eller å legge ved vedlikeholdsoppgaver og testverktøy.
+
+### `tests`
+
+Her ligger enhetstester for prosjektet. Testene bruker `pytest` som testløper. Vi tester i all hovedsak databasespørringer og modelllogikk her, da "korrekthet" av terminalgrensesnittet er vanskelig å definere og teste automatisk.
+
 ## Nix
 
 ### Bygge nytt image
