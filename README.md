@@ -1,3 +1,5 @@
+[![Coverage](https://pages.pvv.ntnu.no/Projects/dibbler/event-sourcing/coverage/badge.svg)](https://pages.pvv.ntnu.no/Projects/dibbler/event-sourcing/coverage)
+
 # Dibbler
 
 EDB-system for PVVVV
@@ -73,6 +75,7 @@ Du kan også endre hvilken config-fil som blir brukt direkte i pakken eller i mo
 Se eksempelet for hvordan skrot er satt opp i `flake.nix` og `nix/skrott.nix`
 
 ### Bygge image for skrot
+
 Skrot har et image definert i flake.nix:
 
 1. endre `example-config.ini`
