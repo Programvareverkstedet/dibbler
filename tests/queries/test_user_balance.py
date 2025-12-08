@@ -299,8 +299,4 @@ def test_user_balance_penalty_interest_combined(sql_session: Session) -> None:
 
     pprint(user_balance_log(sql_session, user))
 
-    assert user_balance(sql_session, user) == (
-        27
-        - 200
-        - math.ceil(27 * 2 * 1.1)
-    )
+    assert user_balance(sql_session, user) == (27 - 200 - math.ceil(27 * 2 * 1.1))
