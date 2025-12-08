@@ -26,8 +26,8 @@ dependencies = [
 ]
 scripts.dibbler = "dibbler.main:main"
 
-[project.optional-dependencies]
-dev = [
+[dependency-groups]
+test = [
     "pytest",
     "pytest-cov",
     "coverage-badge>=1.1.2",
