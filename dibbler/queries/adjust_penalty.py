@@ -9,21 +9,15 @@ from dibbler.queries.current_penalty import current_penalty
 def adjust_penalty(
     sql_session: Session,
     user_id: int,
-    new_penalty: int | None,
-    new_penalty_multiplier: int | None,
+    new_penalty: int | None = None,
+    new_penalty_multiplier: int | None = None,
     message: str | None = None,
 ) -> None:
-    """
-    Adjust the penalty rate and/or penalty multiplier.
-    """
     if new_penalty is None and new_penalty_multiplier is None:
         raise ValueError("At least one of new_penalty or new_penalty_multiplier must be provided")
 
-    if new_penalty is not None and new_penalty < 0:
-        raise ValueError("Penalty rate cannot be negative")
-
-    if new_penalty_multiplier is not None and new_penalty_multiplier < 0:
-        raise ValueError("Penalty multiplier cannot be negative")
+    if new_penalty_multiplier is not None and new_penalty_multiplier < 100:
+        raise ValueError("Penalty multiplier cannot be less than 100%")
 
     if new_penalty is None or new_penalty_multiplier is None:
         existing_penalty, existing_penalty_multiplier = current_penalty(sql_session)
