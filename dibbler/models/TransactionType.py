@@ -16,6 +16,7 @@ class TransactionType(StrEnum):
     BUY_PRODUCT = auto()
     JOINT = auto()
     JOINT_BUY_PRODUCT = auto()
+    THROW_PRODUCT = auto()
     TRANSFER = auto()
 
 

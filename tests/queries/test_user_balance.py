@@ -324,3 +324,6 @@ def test_user_balance_joint_transactions_changing_penalty(sql_session: Session):
 
 def test_user_balance_joint_transactions_penalty_interest_combined(sql_session: Session):
     pass
+
+def test_user_balance_throw_away_products(sql_session: Session):
+    pass

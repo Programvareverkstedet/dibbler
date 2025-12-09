@@ -30,15 +30,19 @@ def _product_stock_query(
                     Transaction.product_count,
                 ),
                 (
-                    Transaction.type_ == TransactionType.BUY_PRODUCT,
-                    -Transaction.product_count,
-                ),
-                (
                     Transaction.type_ == TransactionType.ADJUST_STOCK,
                     Transaction.product_count,
                 ),
                 (
+                    Transaction.type_ == TransactionType.BUY_PRODUCT,
+                    -Transaction.product_count,
+                ),
+                (
                     Transaction.type_ == TransactionType.JOINT,
+                    -Transaction.product_count,
+                ),
+                (
+                    Transaction.type_ == TransactionType.THROW_PRODUCT,
                     -Transaction.product_count,
                 ),
                 else_=0,
@@ -47,10 +51,11 @@ def _product_stock_query(
     ).where(
         Transaction.type_.in_(
             [
-                TransactionType.BUY_PRODUCT,
                 TransactionType.ADD_PRODUCT,
                 TransactionType.ADJUST_STOCK,
+                TransactionType.BUY_PRODUCT,
                 TransactionType.JOINT,
+                TransactionType.THROW_PRODUCT,
             ]
         ),
         Transaction.product_id == product_id,

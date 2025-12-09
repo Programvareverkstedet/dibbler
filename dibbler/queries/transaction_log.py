@@ -9,6 +9,8 @@ from dibbler.models import (
 )
 
 
+# TODO: should this include full joint transactions that involve a user?
+# TODO: should this involve throw-away transactions that affects a user?
 def transaction_log(
     sql_session: Session,
     user: User | None = None,

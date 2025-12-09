@@ -177,3 +177,7 @@ def test_product_stock_joint_transaction(sql_session: Session) -> None:
     )
 
     assert product_stock(sql_session, product) == 5 - 3
+
+
+def test_product_stock_throw_away(sql_session: Session) -> None:
+  ...

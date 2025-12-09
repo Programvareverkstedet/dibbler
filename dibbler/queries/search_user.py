@@ -7,7 +7,6 @@ from dibbler.models import User
 def search_user(
     string: str,
     sql_session: Session,
-    ignorethisflag=None,
 ) -> User | list[User]:
     string = string.lower()
 

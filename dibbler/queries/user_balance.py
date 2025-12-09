@@ -92,6 +92,7 @@ def _user_balance_query(
                 ),
                 Transaction.type_.in_(
                     [
+                        TransactionType.THROW_PRODUCT,
                         TransactionType.ADJUST_INTEREST,
                         TransactionType.ADJUST_PENALTY,
                     ]
@@ -155,10 +156,10 @@ def _user_balance_query(
                                 #       at the moment of writing, after sound right, but maybe ask someone?
                                 # Interest
                                 * (cast(recursive_cte.c.interest_rate_percent, Float) / 100)
+                                # TODO: these should be added together, not multiplied, see specification
                                 # Penalty
                                 * case(
                                     (
-                                        # TODO: should this be <= or <?
                                         recursive_cte.c.balance < recursive_cte.c.penalty_threshold,
                                         (
                                             cast(recursive_cte.c.penalty_multiplier_percent, Float)
@@ -188,6 +189,13 @@ def _user_balance_query(
                     ),
                     recursive_cte.c.balance - trx_subset.c.amount,
                 ),
+                # Throws a product -> if the user is considered to have bought it, balance increases
+                # TODO:
+                # (
+                #     trx_subset.c.type_ == TransactionType.THROW_PRODUCT,
+                #     recursive_cte.c.balance + trx_subset.c.amount,
+                # ),
+
                 # Interest adjustment -> balance stays the same
                 # Penalty adjustment -> balance stays the same
                 else_=recursive_cte.c.balance,

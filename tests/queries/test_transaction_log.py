@@ -563,6 +563,7 @@ def test_transaction_log_combined_filter_product_transaction_id_transaction_type
 
     assert len(result) == 2
 
+# NOTE: see the corresponding TODO's above the function definition
 
-# NOTE: how should this work? Do we includ the entire JOINT transaction, or only the part relevant to the user?
 def test_transaction_log_filtered_by_user_joint_transactions(sql_session: Session) -> None: ...
+def test_transaction_log_filtered_by_user_throw_away_transactions(sql_session: Session) -> None: ...

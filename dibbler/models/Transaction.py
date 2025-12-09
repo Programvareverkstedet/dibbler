@@ -66,6 +66,7 @@ EXPECTED_FIELDS: dict[TransactionType, set[str]] = {
     TransactionType.BUY_PRODUCT: {"product_count", "product_id"},
     TransactionType.JOINT: {"product_count", "product_id"},
     TransactionType.JOINT_BUY_PRODUCT: {"joint_transaction_id"},
+    TransactionType.THROW_PRODUCT: {"product_count", "product_id"},
     TransactionType.TRANSFER: {"amount", "transfer_user_id"},
 }
 
