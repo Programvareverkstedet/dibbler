@@ -196,7 +196,6 @@ def _user_balance_query(
                 #     trx_subset.c.type_ == TransactionType.THROW_PRODUCT,
                 #     recursive_cte.c.balance + trx_subset.c.amount,
                 # ),
-
                 # Interest adjustment -> balance stays the same
                 # Penalty adjustment -> balance stays the same
                 else_=recursive_cte.c.balance,
