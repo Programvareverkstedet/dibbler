@@ -1,4 +1,4 @@
-from sqlalchemy import and_, literal, or_, select
+from sqlalchemy import and_, literal, not_, or_, select
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product
@@ -7,7 +7,7 @@ from dibbler.models import Product
 def search_product(
     string: str,
     sql_session: Session,
-    find_hidden_products=True,
+    find_hidden_products=False,
 ) -> Product | list[Product]:
     exact_match = sql_session.scalars(
         select(Product).where(
@@ -15,7 +15,7 @@ def search_product(
                 Product.bar_code == string,
                 and_(
                     Product.name == string,
-                    literal(True) if find_hidden_products else not Product.hidden,
+                    literal(True) if find_hidden_products else not_(Product.hidden),
                 ),
             )
         )
@@ -30,7 +30,7 @@ def search_product(
                 Product.bar_code.ilike(f"%{string}%"),
                 and_(
                     Product.name.ilike(f"%{string}%"),
-                    literal(True) if find_hidden_products else not Product.hidden,
+                    literal(True) if find_hidden_products else not_(Product.hidden),
                 ),
             )
         )

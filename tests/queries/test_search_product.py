@@ -37,7 +37,7 @@ def test_search_product_name_exact_match(sql_session: Session) -> None:
 def test_search_product_name_partial_match(sql_session: Session) -> None:
     insert_test_data(sql_session)
 
-    result = search_product("Product", sql_session)
+    result = search_product("Test Product", sql_session)
     assert isinstance(result, list)
     assert len(result) == 2
     names = {product.name for product in result}
