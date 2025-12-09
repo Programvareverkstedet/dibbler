@@ -1,8 +1,10 @@
+from pprint import pprint
+
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
 from dibbler.models.Transaction import Transaction
-from dibbler.queries import product_owners
+from dibbler.queries import product_owners, product_owners_log
 
 
 def insert_test_data(sql_session: Session) -> tuple[Product, User]:
@@ -20,8 +22,9 @@ def insert_test_data(sql_session: Session) -> tuple[Product, User]:
 def test_product_owners_no_transactions(sql_session: Session) -> None:
     product, _ = insert_test_data(sql_session)
 
-    owners = product_owners(sql_session, product)
+    pprint(product_owners_log(sql_session, product))
 
+    owners = product_owners(sql_session, product)
     assert owners == []
 
 
@@ -40,8 +43,9 @@ def test_product_owners_add_products(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    owners = product_owners(sql_session, product)
+    pprint(product_owners_log(sql_session, product))
 
+    owners = product_owners(sql_session, product)
     assert owners == [user, user, user]
 
 
@@ -64,6 +68,8 @@ def test_product_owners_add_and_buy_products(sql_session: Session) -> None:
 
     sql_session.add_all(transactions)
     sql_session.commit()
+
+    pprint(product_owners_log(sql_session, product))
 
     owners = product_owners(sql_session, product)
     assert owners == [user, user]
@@ -88,6 +94,8 @@ def test_product_owners_add_and_throw_products(sql_session: Session) -> None:
 
     sql_session.add_all(transactions)
     sql_session.commit()
+
+    pprint(product_owners_log(sql_session, product))
 
     owners = product_owners(sql_session, product)
     assert owners == [user, user]
@@ -118,6 +126,8 @@ def test_product_owners_multiple_users(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
+    pprint(product_owners_log(sql_session, product))
+
     owners = product_owners(sql_session, product)
     assert owners == [user2, user2, user2, user1, user1]
 
@@ -142,8 +152,9 @@ def test_product_owners_adjust_stock_down(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    owners = product_owners(sql_session, product)
+    pprint(product_owners_log(sql_session, product))
 
+    owners = product_owners(sql_session, product)
     assert owners == [user, user, user]
 
 
@@ -167,8 +178,9 @@ def test_product_owners_adjust_stock_up(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    owners = product_owners(sql_session, product)
+    pprint(product_owners_log(sql_session, product))
 
+    owners = product_owners(sql_session, product)
     assert owners == [user, user, None, None, None]
 
 
@@ -193,8 +205,8 @@ def test_product_owners_negative_stock(sql_session: Session) -> None:
     sql_session.commit()
 
     owners = product_owners(sql_session, product)
-
     assert owners == []
+
 
 def test_product_owners_add_products_from_negative_stock(sql_session: Session) -> None:
     product, user = insert_test_data(sql_session)
@@ -216,9 +228,11 @@ def test_product_owners_add_products_from_negative_stock(sql_session: Session) -
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    owners = product_owners(sql_session, product)
+    pprint(product_owners_log(sql_session, product))
 
+    owners = product_owners(sql_session, product)
     assert owners == [user]
+
 
 def test_product_owners_interleaved_users(sql_session: Session) -> None:
     product, user1 = insert_test_data(sql_session)
@@ -256,6 +270,8 @@ def test_product_owners_interleaved_users(sql_session: Session) -> None:
     ]
     sql_session.add_all(transactions)
     sql_session.commit()
+
+    pprint(product_owners_log(sql_session, product))
 
     owners = product_owners(sql_session, product)
     assert owners == [user1, user2, user2, user1, user1]

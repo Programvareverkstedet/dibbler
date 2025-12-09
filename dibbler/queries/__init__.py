@@ -7,6 +7,7 @@ __all__ = [
     "current_penalty",
     "joint_buy_product",
     "product_owners",
+    "product_owners_log",
     "product_price",
     "product_price_log",
     "product_stock",
@@ -25,7 +26,7 @@ from .adjust_penalty import adjust_penalty
 from .current_interest import current_interest
 from .current_penalty import current_penalty
 from .joint_buy_product import joint_buy_product
-from .product_owners import product_owners
+from .product_owners import product_owners, product_owners_log
 from .product_price import product_price, product_price_log
 from .product_stock import product_stock
 
