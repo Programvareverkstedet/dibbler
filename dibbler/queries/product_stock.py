@@ -1,6 +1,12 @@
 from datetime import datetime
 
-from sqlalchemy import case, func, literal, select
+from sqlalchemy import (
+    Select,
+    case,
+    func,
+    literal,
+    select,
+)
 from sqlalchemy.orm import Session
 
 from dibbler.models import (
@@ -14,7 +20,7 @@ def _product_stock_query(
     product_id: int,
     use_cache: bool = True,
     until: datetime | None = None,
-):
+) -> Select:
     """
     The inner query for calculating the product stock.
     """
@@ -73,6 +79,8 @@ def product_stock(
 ) -> int:
     """
     Returns the number of products in stock.
+
+    If 'until' is given, only transactions up to that time are considered.
     """
 
     query = _product_stock_query(

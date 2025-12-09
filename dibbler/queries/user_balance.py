@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import (
+    CTE,
     Float,
     Integer,
     and_,
@@ -35,7 +36,7 @@ def _user_balance_query(
     until: datetime | None = None,
     until_including: bool = True,
     cte_name: str = "rec_cte",
-):
+) -> CTE:
     """
     The inner query for calculating the user's balance.
     """
@@ -259,6 +260,8 @@ def user_balance_log(
 ) -> list[UserBalanceLogEntry]:
     """
     Returns a log of the user's balance over time, including interest and penalty adjustments.
+
+    If 'until' is given, only transactions up to that time are considered.
     """
 
     recursive_cte = _user_balance_query(
@@ -309,6 +312,8 @@ def user_balance(
 ) -> int:
     """
     Calculates the balance of a user.
+
+    If 'until' is given, only transactions up to that time are considered.
     """
 
     recursive_cte = _user_balance_query(
