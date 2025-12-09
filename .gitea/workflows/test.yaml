@@ -27,6 +27,8 @@ jobs:
         set -x
 
         PYTEST_ARGS=(
+          -vv
+
           --cov=dibbler.lib
           --cov=dibbler.models
           --cov=dibbler.queries
