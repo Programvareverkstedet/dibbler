@@ -8,6 +8,8 @@ It is a sort of semi-formal specification for how dibbler's economy is intended 
 
 - All calculations involving money are done in whole numbers (integers). There are no fractional krs.
 - All rounding is done by rounding up to the nearest integer, in favor of the system economy - not the users.
+- The system allows negative stock counts, but acts a bit weirdly and potentially unfairly when that happens.
+  The system should generally warn you about this, and recommend recounting the stock whenever it happens.
 
 ## Adding products - product stock and product price
 
@@ -39,7 +41,10 @@ new_product_price = math.ceil((total_value_of_existing_products + total_value_of
 
 When the product count is less than `0`, adding more of that product increases the product count by the amount added. The product price will be recalculated with an assumption that the existing negative stock has a total value of `0`, plus the total value of all newly added products.
 
-Note that this means that if you add products to a negative stock and the stock is still negative, the product price will be completely recalculated the next time someone adds the same product. There will also be a noticable effect if the stock goes from negative to positive.
+> [!WARN]
+> Note that this means that if you add products to a negative stock and the stock is still negative,
+> the product price will be completely recalculated the next time someone adds the same product.
+> There will also be a noticable effect if the stock goes from negative to positive.
 
 ```python
 new_product_count = product_count + products_added
@@ -69,7 +74,8 @@ When the product count is positive and a user buys an amount greater than the cu
 new_product_count = product_count - products_bought
 ```
 
-This should also yield a warning, recommending the user to adjust the stock count for the product in question.
+> [!NOTE]
+> This should also yield a warning, recommending the user to adjust the stock count for the product in question.
 
 ### Buying from negative stock
 
@@ -79,7 +85,8 @@ When the product count is negative, buying more of that product will further dec
 new_product_count = product_count - products_bought
 ```
 
-This should also yield a warning, recommending the user to adjust the stock count for the product in question.
+> [!NOTE]
+> This should also yield a warning, recommending the user to adjust the stock count for the product in question.
 
 ### Buying items with joint transactions.
 
@@ -98,14 +105,18 @@ We have had some issues with the economy going in the negative, most likely due 
 
 To readjust the economy over time, there is an interest rate that will increase the amount you pay for each product by a certain percentage (the interest rate). This percentage can be adjusted by administrators when they see that the economy needs fixing. By default, the interest rate is set to `0%`.
 
-You can not go below `0%` interest rate.
+> [!NOTE]
+> You can not go below `0%` interest rate.
 
 ### What is penalty, and why do we need it
 
 We currently allow users to go into negative balance when buying products. This is useful when you're having a great time at hacking night or similar, and don't want to be stopped by a low balance. However, to avoid users going too deep into negative balance, we make the cost of the product multiply by a penalty multiplier once the user's balance goes below a certain threshold. This penalty multiplier and threshold can be adjusted by administrators. By default, the threshold is set to `-100` krs, and the penalty multiplier is set to `200%` (i.e. you pay double the amount of money for products once your balance goes below `-100` krs).
 
-You can not set the penalty multiplier to below `100%` (that would be a rebate, not a penalty), and you can not set the penalty threshold to above `0` krs (we do not punish people for having money).
+The penalty starts counting as soon as your balance goes below the threshold, not when it is equal to the threshold.
 
+> [!NOTE]
+> You can not set the penalty multiplier to below `100%` (that would be a rebate, not a penalty),
+> and you can not set the penalty threshold to above `0` krs (we do not punish people for having money).
 
 ## Adding products - user balance
 
@@ -161,7 +172,7 @@ TODO: how does rounding work here, does one user pay more than the other?
 
 TODO: ordering the purchases in favor of the user.
 
-When performing joing purchases (multiple users
+When performing joint purchases (multiple users
 
 
 ### Joint purchases when one or more users are below the penalty threshold
@@ -178,11 +189,11 @@ When throwing away products, it can be useful to know who added the products in 
 
 The algorithm is based on FIFO (first in, first out), meaning that the products that were added first are the ones that will be considered thrown away first. This might not always be accurate in real life (someone could buy a newer product and add it to the shelf before an older product is added and then considered newer by the system), but it is an overall reasonable approximation.
 
-### When adding a product
+When adjusting the product count upwards manually, the system will consider the new products to not be owned by anyone. When adjusting the product count downwards manually, the system will let go of ownership of the products being removed according to the FIFO queue, without adjusting their balance.
 
-### When buying a product
+If the stock count of a product goes negative, the system will consider that the products being bought are owned by no one, and will not adjust any balances. The system should warn about the negative stock count, and recommend recounting the stock. As mentioned above, the manual adjustment made when recounting the stock will not assign ownership to anyone.
 
-### When adjusting the product count
+Upon throwing away products (not manual adjustment), the system will pull money from the balances of the users who added the products being thrown away, according to the FIFO queue. In the case where the systemd decides that no one own the products due to manual adjustments, the system will not pull any money from anyone's balance and let the economy absorb the loss.
 
 ## Other actions
 
