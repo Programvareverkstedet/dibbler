@@ -5,7 +5,7 @@ from pprint import pprint
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries import product_price, product_price_log
+from dibbler.queries import product_price, product_price_log, joint_buy_product
 
 # TODO: see if we can use pytest_runtest_makereport to print the "product_price_log"s
 #       only on failures instead of inlining it in every test function
@@ -367,20 +367,26 @@ def test_product_price_joint_transactions(sql_session: Session) -> None:
         ),
     ]
 
-    transactions += Transaction.buy_joint_product(
-        time=datetime(2023, 10, 1, 12, 0, 2),
-        product_count=2,
-        user_ids=[user1.id, user2.id],
-        product_id=product.id,
-    )
-
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    pprint(product_price_log(sql_session, product))
-
     product_price_ = product_price(sql_session, product)
     assert product_price_ == math.ceil((30 * 3 + 20 * 2) / (3 + 2))
+
+    joint_buy_product(
+        sql_session,
+        time=datetime(2023, 10, 1, 12, 0, 2),
+        instigator=user1,
+        users=[user1, user2],
+        product=product,
+        product_count=2,
+    )
+
+    pprint(product_price_log(sql_session, product))
+
+    old_product_price = product_price_
+    product_price_ = product_price(sql_session, product)
+    assert product_price_ == old_product_price, "Joint buy transactions should not affect product price"
 
     transactions = [
         Transaction.add_product(
@@ -399,7 +405,12 @@ def test_product_price_joint_transactions(sql_session: Session) -> None:
     pprint(product_price_log(sql_session, product))
     product_price_ = product_price(sql_session, product)
 
-    expected_product_price = (30 * 3 + 20 * 2) / (3 + 2)
-    expected_product_price = (expected_product_price * (3 + 2) + 25 * 4) / (3 + 4)
+    # Expected state:
+    # Added products:
+    #   Count: 3 + 2 = 5, Price: (30 * 3 + 20 * 2) / 5 = 26
+    # Joint bought products:
+    #   Count: 5 - 2 = 3, Price: n/a (should not affect price)
+    # Added products:
+    #   Count: 3 + 4 = 7, Price: (26 * 3 + 25 * 4) / (3 + 4) = 25.57 -> 26
 
-    assert product_price_ == math.ceil(expected_product_price)
+    assert product_price_ == math.ceil((26 * 3 + 25 * 4) / (3 + 4))

@@ -37,6 +37,10 @@ def _product_stock_query(
                     Transaction.type_ == TransactionType.ADJUST_STOCK,
                     Transaction.product_count,
                 ),
+                (
+                    Transaction.type_ == TransactionType.JOINT,
+                    -Transaction.product_count,
+                ),
                 else_=0,
             )
         )
@@ -46,6 +50,7 @@ def _product_stock_query(
                 TransactionType.BUY_PRODUCT,
                 TransactionType.ADD_PRODUCT,
                 TransactionType.ADJUST_STOCK,
+                TransactionType.JOINT,
             ]
         ),
         Transaction.product_id == product_id,

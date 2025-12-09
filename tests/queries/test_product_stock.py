@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries import product_stock
+from dibbler.queries import product_stock, joint_buy_product
 
 
 def insert_test_data(sql_session: Session) -> None:
@@ -139,3 +139,40 @@ def test_negative_product_stock(sql_session: Session) -> None:
 
     # The stock should be negative because we added and bought the product
     assert product_stock(sql_session, product) == 1 - 2 - 1
+
+def test_product_stock_joint_transaction(sql_session: Session) -> None:
+    insert_test_data(sql_session)
+
+    user1 = sql_session.scalars(select(User).where(User.name == "Test User 1")).one()
+    user2 = User("Test User 2")
+    sql_session.add(user2)
+    sql_session.commit()
+
+    product = Product("1234567890123", "Test Product")
+    sql_session.add(product)
+    sql_session.commit()
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 17, 0, 0),
+            amount=100,
+            per_product=100,
+            user_id=user1.id,
+            product_id=product.id,
+            product_count=5,
+        ),
+    ]
+
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        time=datetime(2023, 10, 1, 17, 0, 1),
+        instigator=user1,
+        users=[user1, user2],
+        product=product,
+        product_count=3,
+    )
+
+    assert product_stock(sql_session, product) == 5 - 3

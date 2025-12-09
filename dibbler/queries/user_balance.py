@@ -80,6 +80,10 @@ def _user_balance_query(
                             TransactionType.ADJUST_BALANCE,
                             TransactionType.BUY_PRODUCT,
                             TransactionType.TRANSFER,
+
+                            # TODO: join this with the JOINT transactions, and determine
+                            #       how much the current user paid for the product.
+                            TransactionType.JOINT_BUY_PRODUCT,
                         ]
                     ),
                 ),

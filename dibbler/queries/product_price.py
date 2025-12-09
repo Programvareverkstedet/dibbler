@@ -63,6 +63,7 @@ def _product_price_query(
                     TransactionType.BUY_PRODUCT,
                     TransactionType.ADD_PRODUCT,
                     TransactionType.ADJUST_STOCK,
+                    TransactionType.JOINT,
                 ]
             ),
             Transaction.product_id == product_id,
@@ -115,6 +116,10 @@ def _product_price_query(
                 # Someone buys the product -> product count is reduced.
                 (
                     trx_subset.c.type_ == TransactionType.BUY_PRODUCT,
+                    recursive_cte.c.product_count - trx_subset.c.product_count,
+                ),
+                (
+                    trx_subset.c.type_ == TransactionType.JOINT,
                     recursive_cte.c.product_count - trx_subset.c.product_count,
                 ),
                 # Someone adds the product -> product count is increased.
