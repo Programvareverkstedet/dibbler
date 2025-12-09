@@ -83,7 +83,7 @@ def insert_default_test_transactions(
     return transactions
 
 
-def test_user_transactions_no_transactions(sql_session: Session):
+def test_user_transactions_no_transactions(sql_session: Session) -> None:
     insert_test_data(sql_session)
 
     transactions = transaction_log(sql_session)
@@ -91,7 +91,7 @@ def test_user_transactions_no_transactions(sql_session: Session):
     assert len(transactions) == 0
 
 
-def test_transaction_log_filtered_by_user(sql_session: Session):
+def test_transaction_log_filtered_by_user(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -99,7 +99,7 @@ def test_transaction_log_filtered_by_user(sql_session: Session):
     assert len(transaction_log(sql_session, user=user2)) == 3
 
 
-def test_transaction_log_filtered_by_product(sql_session: Session):
+def test_transaction_log_filtered_by_product(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -107,7 +107,7 @@ def test_transaction_log_filtered_by_product(sql_session: Session):
     assert len(transaction_log(sql_session, product=product2)) == 2
 
 
-def test_transaction_log_after_datetime(sql_session: Session):
+def test_transaction_log_after_datetime(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -122,7 +122,7 @@ def test_transaction_log_after_datetime(sql_session: Session):
     )
 
 
-def test_transaction_log_after_datetime_no_transactions(sql_session: Session):
+def test_transaction_log_after_datetime_no_transactions(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
     assert (
@@ -136,7 +136,7 @@ def test_transaction_log_after_datetime_no_transactions(sql_session: Session):
     )
 
 
-def test_transaction_log_after_datetime_exclusive(sql_session: Session):
+def test_transaction_log_after_datetime_exclusive(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -152,7 +152,7 @@ def test_transaction_log_after_datetime_exclusive(sql_session: Session):
     )
 
 
-def test_transaction_log_after_transaction_id(sql_session: Session):
+def test_transaction_log_after_transaction_id(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -166,7 +166,7 @@ def test_transaction_log_after_transaction_id(sql_session: Session):
     ) == len(transactions)
 
 
-def test_transaction_log_after_transaction_id_one_transaction(sql_session: Session):
+def test_transaction_log_after_transaction_id_one_transaction(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -183,7 +183,7 @@ def test_transaction_log_after_transaction_id_one_transaction(sql_session: Sessi
     )
 
 
-def test_transaction_log_after_transaction_id_exclusive(sql_session: Session):
+def test_transaction_log_after_transaction_id_exclusive(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -201,7 +201,7 @@ def test_transaction_log_after_transaction_id_exclusive(sql_session: Session):
     )
 
 
-def test_transaction_log_before_datetime(sql_session: Session):
+def test_transaction_log_before_datetime(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -216,7 +216,7 @@ def test_transaction_log_before_datetime(sql_session: Session):
     )
 
 
-def test_transaction_log_before_datetime_no_transactions(sql_session: Session):
+def test_transaction_log_before_datetime_no_transactions(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -231,7 +231,7 @@ def test_transaction_log_before_datetime_no_transactions(sql_session: Session):
     )
 
 
-def test_transaction_log_before_datetime_exclusive(sql_session: Session):
+def test_transaction_log_before_datetime_exclusive(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -247,7 +247,7 @@ def test_transaction_log_before_datetime_exclusive(sql_session: Session):
     )
 
 
-def test_transaction_log_before_transaction_id(sql_session: Session):
+def test_transaction_log_before_transaction_id(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -264,7 +264,7 @@ def test_transaction_log_before_transaction_id(sql_session: Session):
     )
 
 
-def test_transaction_log_before_transaction_id_one_transaction(sql_session: Session):
+def test_transaction_log_before_transaction_id_one_transaction(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -281,7 +281,7 @@ def test_transaction_log_before_transaction_id_one_transaction(sql_session: Sess
     )
 
 
-def test_transaction_log_before_transaction_id_exclusive(sql_session: Session):
+def test_transaction_log_before_transaction_id_exclusive(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -299,7 +299,7 @@ def test_transaction_log_before_transaction_id_exclusive(sql_session: Session):
     )
 
 
-def test_transaction_log_before_after_datetime_combined(sql_session: Session):
+def test_transaction_log_before_after_datetime_combined(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -318,7 +318,7 @@ def test_transaction_log_before_after_datetime_combined(sql_session: Session):
     )
 
 
-def test_transaction_log_before_after_transaction_id_combined(sql_session: Session):
+def test_transaction_log_before_after_transaction_id_combined(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -337,7 +337,7 @@ def test_transaction_log_before_after_transaction_id_combined(sql_session: Sessi
     )
 
 
-def test_transaction_log_before_date_after_transaction_id(sql_session: Session):
+def test_transaction_log_before_date_after_transaction_id(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -356,7 +356,7 @@ def test_transaction_log_before_date_after_transaction_id(sql_session: Session):
     )
 
 
-def test_transaction_log_before_transaction_id_after_date(sql_session: Session):
+def test_transaction_log_before_transaction_id_after_date(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -375,7 +375,7 @@ def test_transaction_log_before_transaction_id_after_date(sql_session: Session):
     )
 
 
-def test_transaction_log_after_product_and_user_not_allowed(sql_session: Session):
+def test_transaction_log_after_product_and_user_not_allowed(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -388,7 +388,9 @@ def test_transaction_log_after_product_and_user_not_allowed(sql_session: Session
         )
 
 
-def test_transaction_log_after_datetime_and_transaction_id_not_allowed(sql_session: Session):
+def test_transaction_log_after_datetime_and_transaction_id_not_allowed(
+    sql_session: Session,
+) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -401,7 +403,7 @@ def test_transaction_log_after_datetime_and_transaction_id_not_allowed(sql_sessi
         )
 
 
-def test_transaction_log_limit(sql_session: Session):
+def test_transaction_log_limit(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -409,7 +411,7 @@ def test_transaction_log_limit(sql_session: Session):
     assert len(transaction_log(sql_session, limit=len(transactions) + 3)) == len(transactions)
 
 
-def test_transaction_log_filtered_by_transaction_type(sql_session: Session):
+def test_transaction_log_filtered_by_transaction_type(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -442,7 +444,7 @@ def test_transaction_log_filtered_by_transaction_type(sql_session: Session):
     )
 
 
-def test_transaction_log_filtered_by_transaction_type_negated(sql_session: Session):
+def test_transaction_log_filtered_by_transaction_type_negated(sql_session: Session) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -480,7 +482,7 @@ def test_transaction_log_filtered_by_transaction_type_negated(sql_session: Sessi
 
 def test_transaction_log_combined_filter_user_datetime_transaction_type_limit(
     sql_session: Session,
-):
+) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -501,7 +503,7 @@ def test_transaction_log_combined_filter_user_datetime_transaction_type_limit(
 
 def test_transaction_log_combined_filter_user_transaction_id_transaction_type_limit(
     sql_session: Session,
-):
+) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -522,7 +524,7 @@ def test_transaction_log_combined_filter_user_transaction_id_transaction_type_li
 
 def test_transaction_log_combined_filter_product_datetime_transaction_type_limit(
     sql_session: Session,
-):
+) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -543,7 +545,7 @@ def test_transaction_log_combined_filter_product_datetime_transaction_type_limit
 
 def test_transaction_log_combined_filter_product_transaction_id_transaction_type_limit(
     sql_session: Session,
-):
+) -> None:
     user, user2, product, product2 = insert_test_data(sql_session)
     transactions = insert_default_test_transactions(sql_session, user, user2, product, product2)
 
@@ -562,4 +564,5 @@ def test_transaction_log_combined_filter_product_transaction_id_transaction_type
     assert len(result) == 2
 
 
-def test_transaction_log_filtered_by_user_joint_transactions(sql_session: Session): ...
+# NOTE: how should this work? Do we includ the entire JOINT transaction, or only the part relevant to the user?
+def test_transaction_log_filtered_by_user_joint_transactions(sql_session: Session) -> None: ...

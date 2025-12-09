@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self
+from typing import Self
 
 from sqlalchemy import (
     Integer,
@@ -19,12 +19,13 @@ class User(Base):
     """Internal database ID"""
 
     name: Mapped[str] = mapped_column(String(20), unique=True)
-    """
-        The PVV username of the user.
-    """
+    """The PVV username of the user."""
 
     card: Mapped[str | None] = mapped_column(String(20))
+    """The NTNU card number of the user."""
+
     rfid: Mapped[str | None] = mapped_column(String(20))
+    """The RFID tag of the user (if they have any, rare these days)."""
 
     # name_re = r"[a-z]+"
     # card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"

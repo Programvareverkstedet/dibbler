@@ -21,6 +21,13 @@ def joint_buy_product(
     """
     Create buy product transactions for multiple users at once.
     """
+
+    if instigator not in users:
+        raise ValueError("Instigator must be in the list of users buying the product.")
+
+    if product_count <= 0:
+        raise ValueError("Product count must be positive.")
+
     joint_transaction = Transaction.joint(
         user_id=instigator.id,
         product_id=product.id,

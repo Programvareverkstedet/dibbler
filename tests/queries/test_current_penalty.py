@@ -25,13 +25,13 @@ def test_current_penalty_with_history(sql_session: Session) -> None:
     transactions = [
         Transaction.adjust_penalty(
             time=datetime(2023, 10, 1, 10, 0, 0),
-            penalty_threshold=200,
+            penalty_threshold=-200,
             penalty_multiplier_percent=150,
             user_id=user.id,
         ),
         Transaction.adjust_penalty(
             time=datetime(2023, 10, 2, 10, 0, 0),
-            penalty_threshold=300,
+            penalty_threshold=-300,
             penalty_multiplier_percent=200,
             user_id=user.id,
         ),
@@ -39,4 +39,4 @@ def test_current_penalty_with_history(sql_session: Session) -> None:
     sql_session.add_all(transactions)
     sql_session.commit()
 
-    assert current_penalty(sql_session) == (300, 200)
+    assert current_penalty(sql_session) == (-300, 200)

@@ -11,6 +11,7 @@ from sqlalchemy import (
     Text,
     and_,
     column,
+    func,
     or_,
 )
 from sqlalchemy.orm import (
@@ -103,6 +104,37 @@ class Transaction(Base):
                 column("user_id") != column("transfer_user_id"),
             ),
             name="trx_type_transfer_no_self_transfers",
+        ),
+        CheckConstraint(
+            func.coalesce(column("product_count"), 1) != 0,
+            name="trx_product_count_non_zero",
+        ),
+        CheckConstraint(
+            func.coalesce(column("penalty_multiplier_percent"), 100) >= 100,
+            name="trx_penalty_multiplier_percent_min_100",
+        ),
+        CheckConstraint(
+            func.coalesce(column("interest_rate_percent"), 0) >= 0,
+            name="trx_interest_rate_percent_non_negative",
+        ),
+        CheckConstraint(
+            func.coalesce(column("amount"), 1) != 0,
+            name="trx_amount_non_zero",
+        ),
+        CheckConstraint(
+            func.coalesce(column("per_product"), 1) > 0,
+            name="trx_per_product_positive",
+        ),
+        CheckConstraint(
+            func.coalesce(column("penalty_threshold"), 0) <= 0,
+            name="trx_penalty_threshold_max_0",
+        ),
+        CheckConstraint(
+            or_(
+                column("joint_transaction_id").is_(None),
+                column("joint_transaction_id") != column("id"),
+            ),
+            name="trx_joint_transaction_id_not_self",
         ),
         # Speed up product count calculation
         Index("product_user_time", "product_id", "user_id", "time"),
