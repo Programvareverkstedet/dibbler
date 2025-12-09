@@ -18,7 +18,7 @@ This section covers what happens to the stock count and price of a product when 
 When the product count is `0`, adding more of that product sets the product count to the amount added, and the product price will be set to the price of all products added divided by the number of products added, rounded up to the nearest integer.
 
 ```python
-new_product_count += products_added
+new_product_count = products_added
 new_product_price = math.ceil(total_value_of_products_added / products_added)
 ```
 
@@ -174,11 +174,15 @@ TODO
 
 ## Who owns a product
 
-When adding a product
+When throwing away products, it can be useful to know who added the products in the first place. Dibbler will look back at its event log to determine who added the products that are being thrown away, and pull the money from their balance in order for the economy to stay sane.
 
-When buying a product
+The algorithm is based on FIFO (first in, first out), meaning that the products that were added first are the ones that will be considered thrown away first. This might not always be accurate in real life (someone could buy a newer product and add it to the shelf before an older product is added and then considered newer by the system), but it is an overall reasonable approximation.
 
-When adjusting the product count
+### When adding a product
+
+### When buying a product
+
+### When adjusting the product count
 
 ## Other actions
 
