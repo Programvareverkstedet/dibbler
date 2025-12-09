@@ -5,7 +5,7 @@ from pprint import pprint
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries.product_price import product_price, product_price_log
+from dibbler.queries import product_price, product_price_log
 
 # TODO: see if we can use pytest_runtest_makereport to print the "product_price_log"s
 #       only on failures instead of inlining it in every test function

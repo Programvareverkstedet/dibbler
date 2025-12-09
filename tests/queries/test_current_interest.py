@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.models.Transaction import DEFAULT_INTEREST_RATE_PERCENTAGE
 from dibbler.models import Transaction, User
-from dibbler.queries.current_interest import current_interest
+from dibbler.queries import current_interest
 
 
 def test_current_interest_no_history(sql_session: Session) -> None:

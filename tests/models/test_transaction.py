@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries.product_stock import product_stock
+from dibbler.queries import product_stock
 
 
 def insert_test_data(sql_session: Session) -> tuple[User, Product]:

@@ -8,8 +8,7 @@ from dibbler.models.Transaction import (
     DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE,
     DEFAULT_PENALTY_THRESHOLD,
 )
-from dibbler.queries.adjust_penalty import adjust_penalty
-from dibbler.queries.current_penalty import current_penalty
+from dibbler.queries import adjust_penalty, current_penalty
 
 
 def test_adjust_penalty_no_history(sql_session: Session) -> None:

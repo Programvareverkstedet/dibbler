@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
 from dibbler.models import User
-from dibbler.queries.search_user import search_user
+from dibbler.queries import search_user
 
 USER = [
     ("alice", 123),

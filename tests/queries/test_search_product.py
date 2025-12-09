@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product
-from dibbler.queries.search_product import search_product
+from dibbler.queries import search_product
 
 
 def test_search_product_no_products(sql_session: Session) -> None:

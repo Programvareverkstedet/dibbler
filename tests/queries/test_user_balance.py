@@ -5,7 +5,7 @@ from pprint import pprint
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries.user_balance import user_balance, user_balance_log
+from dibbler.queries import user_balance, user_balance_log
 
 # TODO: see if we can use pytest_runtest_makereport to print the "user_balance_log"s
 #       only on failures instead of inlining it in every test function

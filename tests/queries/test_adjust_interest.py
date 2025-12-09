@@ -5,8 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from dibbler.models import Transaction, User
-from dibbler.queries.adjust_interest import adjust_interest
-from dibbler.queries.current_interest import current_interest
+from dibbler.queries import adjust_interest, current_interest
 
 
 def test_adjust_interest_no_history(sql_session: Session) -> None:

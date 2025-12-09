@@ -9,7 +9,7 @@ from dibbler.models import (
     TransactionType,
     User,
 )
-from dibbler.queries.transaction_log import transaction_log
+from dibbler.queries import transaction_log
 
 
 def insert_test_data(sql_session: Session) -> tuple[User, User, Product, Product]:
