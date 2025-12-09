@@ -18,14 +18,14 @@ from dibbler.models import (
 from dibbler.queries.product_stock import _product_stock_query
 
 
-def _users_owning_product_query(
+def _product_owners_query(
     product_id: int,
     use_cache: bool = True,
     until: datetime | None = None,
     cte_name: str = "rec_cte",
 ) -> CTE:
     """
-    The inner query for calculating the users owning a given product.
+    The inner query for inferring the owners of a given product.
     """
 
     if use_cache:
@@ -134,7 +134,7 @@ def _users_owning_product_query(
     return recursive_cte.union_all(recursive_elements)
 
 
-def users_owning_product(
+def product_owners(
     sql_session: Session,
     product: Product,
     use_cache: bool = True,
@@ -146,12 +146,11 @@ def users_owning_product(
     If 'until' is given, only transactions up to that time are considered.
     """
 
-    recursive_cte = _users_owning_product_query(
+    recursive_cte = _product_owners_query(
         product_id=product.id,
         use_cache=use_cache,
         until=until,
     )
-
     result = sql_session.scalars(
         select(
             recursive_cte.c.user_id,
