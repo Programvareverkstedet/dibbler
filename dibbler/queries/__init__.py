@@ -27,6 +27,7 @@ from .current_penalty import current_penalty
 from .joint_buy_product import joint_buy_product
 from .product_price import product_price, product_price_log
 from .product_stock import product_stock
+
 # from .products_owned_by_user import products_owned_by_user
 from .search_product import search_product
 from .search_user import search_user

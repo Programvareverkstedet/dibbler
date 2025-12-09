@@ -140,6 +140,7 @@ def test_negative_product_stock(sql_session: Session) -> None:
     # The stock should be negative because we added and bought the product
     assert product_stock(sql_session, product) == 1 - 2 - 1
 
+
 def test_product_stock_joint_transaction(sql_session: Session) -> None:
     insert_test_data(sql_session)
 

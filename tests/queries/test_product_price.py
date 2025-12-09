@@ -386,7 +386,9 @@ def test_product_price_joint_transactions(sql_session: Session) -> None:
 
     old_product_price = product_price_
     product_price_ = product_price(sql_session, product)
-    assert product_price_ == old_product_price, "Joint buy transactions should not affect product price"
+    assert product_price_ == old_product_price, (
+        "Joint buy transactions should not affect product price"
+    )
 
     transactions = [
         Transaction.add_product(

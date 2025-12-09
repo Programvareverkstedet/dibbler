@@ -83,8 +83,8 @@ def _transaction_type_field_constraints(
         or_(
             column("type") != transaction_type.value,
             and_(
-                *[column(field) != None for field in expected_fields],
-                *[column(field) == None for field in unexpected_fields],
+                *[column(field).is_not(None) for field in expected_fields],
+                *[column(field).is_(None) for field in unexpected_fields],
             ),
         ),
         name=f"trx_type_{transaction_type.value}_expected_fields",

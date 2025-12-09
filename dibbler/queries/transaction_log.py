@@ -13,15 +13,12 @@ def transaction_log(
     sql_session: Session,
     user: User | None = None,
     product: Product | None = None,
-
     exclusive_after: bool = False,
     after_time=None,
     after_transaction_id: int | None = None,
-
     exclusive_before: bool = False,
     before_time=None,
     before_transaction_id: int | None = None,
-
     transaction_type: list[TransactionType] | None = None,
     negate_transaction_type_filter: bool = False,
     limit: int | None = None,

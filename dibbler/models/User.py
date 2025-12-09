@@ -5,18 +5,13 @@ from typing import TYPE_CHECKING, Self
 from sqlalchemy import (
     Integer,
     String,
-    select,
 )
 from sqlalchemy.orm import (
     Mapped,
-    Session,
     mapped_column,
 )
 
 from .Base import Base
-
-if TYPE_CHECKING:
-    from .Transaction import Transaction
 
 
 class User(Base):
