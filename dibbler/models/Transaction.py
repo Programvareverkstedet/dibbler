@@ -56,7 +56,7 @@ _DYNAMIC_FIELDS: set[str] = {
     "transfer_user_id",
 }
 
-_EXPECTED_FIELDS: dict[TransactionType, set[str]] = {
+EXPECTED_FIELDS: dict[TransactionType, set[str]] = {
     TransactionType.ADD_PRODUCT: {"amount", "per_product", "product_count", "product_id"},
     TransactionType.ADJUST_BALANCE: {"amount"},
     TransactionType.ADJUST_INTEREST: {"interest_rate_percent"},
@@ -68,7 +68,7 @@ _EXPECTED_FIELDS: dict[TransactionType, set[str]] = {
     TransactionType.TRANSFER: {"amount", "transfer_user_id"},
 }
 
-assert all(x <= _DYNAMIC_FIELDS for x in _EXPECTED_FIELDS.values()), (
+assert all(x <= _DYNAMIC_FIELDS for x in EXPECTED_FIELDS.values()), (
     "All expected fields must be part of _DYNAMIC_FIELDS."
 )
 
@@ -95,7 +95,7 @@ class Transaction(Base):
     __table_args__ = (
         *[
             _transaction_type_field_constraints(transaction_type, expected_fields)
-            for transaction_type, expected_fields in _EXPECTED_FIELDS.items()
+            for transaction_type, expected_fields in EXPECTED_FIELDS.items()
         ],
         CheckConstraint(
             or_(
@@ -119,7 +119,7 @@ class Transaction(Base):
         Not used for anything else than identifying the transaction in the database.
     """
 
-    time: Mapped[datetime] = mapped_column(DateTime, unique=True)
+    time: Mapped[datetime] = mapped_column(DateTime)
     """
         The time when the transaction took place.
 
@@ -296,11 +296,11 @@ class Transaction(Base):
         if self.amount == 0:
             raise ValueError("Amount must not be zero.")
 
-        for field in _EXPECTED_FIELDS[self.type_]:
+        for field in EXPECTED_FIELDS[self.type_]:
             if getattr(self, field) is None:
                 raise ValueError(f"{field} must not be None for {self.type_.value} transactions.")
 
-        for field in _DYNAMIC_FIELDS - _EXPECTED_FIELDS[self.type_]:
+        for field in _DYNAMIC_FIELDS - EXPECTED_FIELDS[self.type_]:
             if getattr(self, field) is not None:
                 raise ValueError(f"{field} must be None for {self.type_.value} transactions.")
 
@@ -344,7 +344,7 @@ class Transaction(Base):
                     isinstance(v, InstrumentedList),
                     isinstance(v, InstrumentedSet),
                     isinstance(v, InstrumentedDict),
-                    *[k in (_DYNAMIC_FIELDS - _EXPECTED_FIELDS[self.type_])],
+                    *[k in (_DYNAMIC_FIELDS - EXPECTED_FIELDS[self.type_])],
                 ]
             )
         )

@@ -3,6 +3,7 @@ from pathlib import Path
 
 from dibbler.db import Session
 from dibbler.models import Product, Transaction, User
+from dibbler.queries import joint_buy_product
 
 JSON_FILE = Path(__file__).parent.parent.parent / "mock_data.json"
 
@@ -28,9 +29,11 @@ def main():
     # Add users
     user1 = User("Test User 1")
     user2 = User("Test User 2")
+    user3 = User("Test User 3")
 
     sql_session.add(user1)
     sql_session.add(user2)
+    sql_session.add(user3)
     sql_session.commit()
 
     # Add products
@@ -70,6 +73,42 @@ def main():
             product_count=1,
             user_id=user2.id,
             product_id=product1.id,
+        ),
+    ]
+
+    sql_session.add_all(transactions)
+    sql_session.flush()
+
+    joint_buy_product(
+        sql_session,
+        time=datetime(2023, 10, 1, 12, 0, 2),
+        instigator=user1,
+        product_count=1,
+        users=[user1, user2, user3],
+        product=product2,
+    )
+
+    joint_buy_product(
+        sql_session,
+        time=datetime(2023, 10, 1, 13, 0, 2),
+        instigator=user3,
+        product_count=2,
+        users=[user2, user3],
+        product=product2,
+    )
+
+    transactions = [
+        Transaction.buy_product(
+            time=datetime(2023, 10, 2, 14, 0, 0),
+            product_count=1,
+            user_id=user1.id,
+            product_id=product1.id,
+        ),
+        Transaction.buy_product(
+            time=datetime(2023, 10, 2, 14, 0, 1),
+            product_count=1,
+            user_id=user2.id,
+            product_id=product2.id,
         ),
     ]
 
