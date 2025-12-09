@@ -247,6 +247,15 @@ class Transaction(Base):
     product_count: Mapped[int | None] = mapped_column(Integer)
     """
         The amount of products being added or bought.
+
+        This is always relative to the existing stock.
+
+        - `ADD_PRODUCT` increases the stock by this amount.
+
+        - `BUY_PRODUCT` decreases the stock by this amount.
+
+        - `ADJUST_STOCK` increases or decreases the stock by this amount,
+          depending on whether the amount is positive or negative.
     """
 
     penalty_threshold: Mapped[int | None] = mapped_column(Integer, nullable=True)
@@ -544,5 +553,23 @@ class Transaction(Base):
             amount=amount,
             user_id=user_id,
             transfer_user_id=transfer_user_id,
+            message=message,
+        )
+
+    @classmethod
+    def throw_product(
+        cls: type[Self],
+        user_id: int,
+        product_id: int,
+        product_count: int,
+        time: datetime | None = None,
+        message: str | None = None,
+    ) -> Self:
+        return cls(
+            time=time,
+            type_=TransactionType.THROW_PRODUCT,
+            user_id=user_id,
+            product_id=product_id,
+            product_count=product_count,
             message=message,
         )
