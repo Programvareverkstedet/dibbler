@@ -15,6 +15,10 @@ def insert_test_data(sql_session: Session) -> User:
     return user
 
 
+def test_user_transactions_no_transactions(sql_session: Session):
+    pass
+
+
 def test_user_transactions(sql_session: Session):
     user = insert_test_data(sql_session)
 
@@ -145,3 +149,7 @@ def test_filtered_user_transactions(sql_session: Session):
         )
         == 1
     )
+
+
+def test_user_transactions_joint_transactions(sql_session: Session):
+    pass

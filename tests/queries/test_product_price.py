@@ -340,3 +340,66 @@ def test_product_price_with_negative_stock_multiple_additions(sql_session: Sessi
     # Stock went subzero, price should be the ceiled average of the last added products
     product1_price = product_price(sql_session, product)
     assert product1_price == math.ceil((22 + 29 * 2) / (1 + 2))
+
+
+def test_product_price_joint_transactions(sql_session: Session) -> None:
+    user1, product = insert_test_data(sql_session)
+    user2 = User("Test User 2")
+    sql_session.add(user2)
+    sql_session.commit()
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 12, 0, 0),
+            amount=30 * 3,
+            per_product=30,
+            product_count=3,
+            user_id=user1.id,
+            product_id=product.id,
+        ),
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 12, 0, 1),
+            amount=20 * 2,
+            per_product=20,
+            product_count=2,
+            user_id=user2.id,
+            product_id=product.id,
+        ),
+    ]
+
+    transactions += Transaction.buy_joint_product(
+        time=datetime(2023, 10, 1, 12, 0, 2),
+        product_count=2,
+        user_ids=[user1.id, user2.id],
+        product_id=product.id,
+    )
+
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    pprint(product_price_log(sql_session, product))
+
+    product_price_ = product_price(sql_session, product)
+    assert product_price_ == math.ceil((30 * 3 + 20 * 2) / (3 + 2))
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 12, 0, 3),
+            amount=25 * 4,
+            per_product=25,
+            product_count=4,
+            user_id=user1.id,
+            product_id=product.id,
+        ),
+    ]
+
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    pprint(product_price_log(sql_session, product))
+    product_price_ = product_price(sql_session, product)
+
+    expected_product_price = (30 * 3 + 20 * 2) / (3 + 2)
+    expected_product_price = (expected_product_price * (3 + 2) + 25 * 4) / (3 + 4)
+
+    assert product_price_ == math.ceil(expected_product_price)

@@ -14,6 +14,8 @@ class TransactionType(StrEnum):
     ADJUST_PENALTY = auto()
     ADJUST_STOCK = auto()
     BUY_PRODUCT = auto()
+    JOINT = auto()
+    JOINT_BUY_PRODUCT = auto()
     TRANSFER = auto()
 
 

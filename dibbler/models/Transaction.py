@@ -47,6 +47,7 @@ DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE = 200
 _DYNAMIC_FIELDS: set[str] = {
     "amount",
     "interest_rate_percent",
+    "joint_transaction_id",
     "penalty_multiplier_percent",
     "penalty_threshold",
     "per_product",
@@ -62,6 +63,8 @@ _EXPECTED_FIELDS: dict[TransactionType, set[str]] = {
     TransactionType.ADJUST_PENALTY: {"penalty_multiplier_percent", "penalty_threshold"},
     TransactionType.ADJUST_STOCK: {"product_count", "product_id"},
     TransactionType.BUY_PRODUCT: {"product_count", "product_id"},
+    TransactionType.JOINT: {"product_count", "product_id"},
+    TransactionType.JOINT_BUY_PRODUCT: {"joint_transaction_id"},
     TransactionType.TRANSFER: {"amount", "transfer_user_id"},
 }
 
@@ -147,10 +150,6 @@ class Transaction(Base):
 
          - `ADJUST_BALANCE`: The amount of credit to add or subtract from the user's balance.
 
-         - `BUY_PRODUCT`: The amount of credit spent on the product.
-                         Note that this includes any penalties and interest that the user
-                         had to pay as well.
-
          - `TRANSFER`: The amount of balance to transfer to another user.
     """
 
@@ -177,6 +176,23 @@ class Transaction(Base):
 
         For others, like `ADJUST_PENALTY` and `ADJUST_STOCK`, this is just a record of who
         performed the transaction, and does not affect any state calculations.
+
+        In the case of `JOINT` transactions, this is the user who initiated the joint transaction.
+    """
+
+    joint_transaction_id: Mapped[int | None] = mapped_column(ForeignKey("transaction.id"))
+    """
+    An optional ID to group multiple transactions together as part of a joint transaction.
+
+    This is used for `JOINT` and `JOINT_BUY_PRODUCT` transactions, where multiple users
+    are involved in a single transaction.
+    """
+    joint_transaction: Mapped[Transaction | None] = relationship(
+        lazy="joined",
+        foreign_keys=[joint_transaction_id],
+    )
+    """
+    The joint transaction that this transaction is part of, if any.
     """
 
     # Receiving user when moving credit from one user to another
@@ -238,15 +254,16 @@ class Transaction(Base):
         type_: TransactionType,
         user_id: int,
         amount: int | None = None,
-        time: datetime | None = None,
+        interest_rate_percent: int | None = None,
+        joint_transaction_id: int | None = None,
         message: str | None = None,
-        product_id: int | None = None,
-        transfer_user_id: int | None = None,
+        penalty_multiplier_percent: int | None = None,
+        penalty_threshold: int | None = None,
         per_product: int | None = None,
         product_count: int | None = None,
-        penalty_threshold: int | None = None,
-        penalty_multiplier_percent: int | None = None,
-        interest_rate_percent: int | None = None,
+        product_id: int | None = None,
+        time: datetime | None = None,
+        transfer_user_id: int | None = None,
     ) -> None:
         """
         Please do not call this constructor directly, use the factory methods instead.
@@ -254,18 +271,19 @@ class Transaction(Base):
         if time is None:
             time = datetime.now()
 
-        self.time = time
-        self.message = message
-        self.type_ = type_
         self.amount = amount
-        self.user_id = user_id
-        self.product_id = product_id
-        self.transfer_user_id = transfer_user_id
+        self.interest_rate_percent = interest_rate_percent
+        self.joint_transaction_id = joint_transaction_id
+        self.message = message
+        self.penalty_multiplier_percent = penalty_multiplier_percent
+        self.penalty_threshold = penalty_threshold
         self.per_product = per_product
         self.product_count = product_count
-        self.penalty_threshold = penalty_threshold
-        self.penalty_multiplier_percent = penalty_multiplier_percent
-        self.interest_rate_percent = interest_rate_percent
+        self.product_id = product_id
+        self.time = time
+        self.transfer_user_id = transfer_user_id
+        self.type_ = type_
+        self.user_id = user_id
 
         self._validate_by_transaction_type()
 
@@ -343,7 +361,7 @@ class Transaction(Base):
         user_id: int,
         time: datetime | None = None,
         message: str | None = None,
-    ) -> Transaction:
+    ) -> Self:
         return cls(
             time=time,
             type_=TransactionType.ADJUST_BALANCE,
@@ -359,7 +377,7 @@ class Transaction(Base):
         user_id: int,
         time: datetime | None = None,
         message: str | None = None,
-    ) -> Transaction:
+    ) -> Self:
         return cls(
             time=time,
             type_=TransactionType.ADJUST_INTEREST,
@@ -376,7 +394,7 @@ class Transaction(Base):
         user_id: int,
         time: datetime | None = None,
         message: str | None = None,
-    ) -> Transaction:
+    ) -> Self:
         return cls(
             time=time,
             type_=TransactionType.ADJUST_PENALTY,
@@ -394,7 +412,7 @@ class Transaction(Base):
         product_count: int,
         time: datetime | None = None,
         message: str | None = None,
-    ) -> Transaction:
+    ) -> Self:
         return cls(
             time=time,
             type_=TransactionType.ADJUST_STOCK,
@@ -414,7 +432,7 @@ class Transaction(Base):
         product_count: int,
         time: datetime | None = None,
         message: str | None = None,
-    ) -> Transaction:
+    ) -> Self:
         return cls(
             time=time,
             type_=TransactionType.ADD_PRODUCT,
@@ -434,13 +452,47 @@ class Transaction(Base):
         product_count: int,
         time: datetime | None = None,
         message: str | None = None,
-    ) -> Transaction:
+    ) -> Self:
         return cls(
             time=time,
             type_=TransactionType.BUY_PRODUCT,
             user_id=user_id,
             product_id=product_id,
             product_count=product_count,
+            message=message,
+        )
+
+    @classmethod
+    def joint(
+        cls: type[Self],
+        user_id: int,
+        product_id: int,
+        product_count: int,
+        time: datetime | None = None,
+        message: str | None = None,
+    ) -> Self:
+        return cls(
+            time=time,
+            type_=TransactionType.JOINT,
+            user_id=user_id,
+            product_id=product_id,
+            product_count=product_count,
+            message=message,
+        )
+
+    @classmethod
+    def joint_buy_product(
+        cls: type[Self],
+        joint_transaction_id: int,
+        user_id: int,
+        time: datetime | None = None,
+        message: str | None = None,
+    ) -> Self:
+        return cls(
+            time=time,
+            type_=TransactionType.JOINT_BUY_PRODUCT,
+            joint_transaction_id=joint_transaction_id,
+            user_id=user_id,
             message=message,
         )
 
@@ -452,7 +504,7 @@ class Transaction(Base):
         transfer_user_id: int,
         time: datetime | None = None,
         message: str | None = None,
-    ) -> Transaction:
+    ) -> Self:
         return cls(
             time=time,
             type_=TransactionType.TRANSFER,

@@ -1,0 +1,43 @@
+from datetime import datetime
+
+from sqlalchemy.orm import Session
+
+from dibbler.models import (
+    Product,
+    Transaction,
+    User,
+)
+
+
+def joint_buy_product(
+    sql_session: Session,
+    product: Product,
+    product_count: int,
+    instigator: User,
+    users: list[User],
+    time: datetime | None = None,
+    message: str | None = None,
+) -> None:
+    """
+    Create buy product transactions for multiple users at once.
+    """
+    joint_transaction = Transaction.joint(
+        user_id=instigator.id,
+        product_id=product.id,
+        product_count=product_count,
+        time=time,
+        message=message,
+    )
+    sql_session.add(joint_transaction)
+    sql_session.flush()  # Ensure joint_transaction gets an ID
+
+    for user in users:
+        buy_transaction = Transaction.joint_buy_product(
+            user_id=user.id,
+            joint_transaction_id=joint_transaction.id,
+            time=time,
+            message=message,
+        )
+        sql_session.add(buy_transaction)
+
+    sql_session.commit()
