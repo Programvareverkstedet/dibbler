@@ -154,6 +154,7 @@ def _product_owners_query(
 class ProductOwnersLogEntry:
     transaction: Transaction
     user: User | None
+    products_left_to_account_for: int
 
 
 def product_owners_log(
@@ -178,6 +179,7 @@ def product_owners_log(
         select(
             Transaction,
             User,
+            recursive_cte.c.products_left_to_account_for,
         )
         .select_from(recursive_cte)
         .join(
@@ -202,6 +204,7 @@ def product_owners_log(
         ProductOwnersLogEntry(
             transaction=row[0],
             user=row[1],
+            products_left_to_account_for=row[2],
         )
         for row in result
     ]
