@@ -34,16 +34,10 @@ if TYPE_CHECKING:
     from .User import User
 
 # TODO: rename to *_PERCENT
-
 # NOTE: these only matter when there are no adjustments made in the database.
 DEFAULT_INTEREST_RATE_PERCENTAGE = 100
 DEFAULT_PENALTY_THRESHOLD = -100
 DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE = 200
-
-# TODO: allow for joint transactions?
-#       dibbler allows joint transactions (e.g. buying more than one product at once, several people buying the same product, etc.)
-#       instead of having the software split the transactions up, making them hard to reconnect,
-#       maybe we should add some sort of joint transaction id field to allow multiple transactions to be grouped together?
 
 _DYNAMIC_FIELDS: set[str] = {
     "amount",
@@ -277,11 +271,6 @@ class Transaction(Base):
         See also `penalty_threshold`.
     """
 
-    # TODO: this should be inferred
-    # Assuming this is a BUY_PRODUCT transaction, was the user penalized for having
-    # too low credit in this transaction?
-    # is_penalized: Mapped[Boolean] = mapped_column(Boolean, default=False)
-
     interest_rate_percent: Mapped[int | None] = mapped_column(Integer, nullable=True)
     """
         On `ADJUST_INTEREST` transactions, this is the interest rate in percent
@@ -289,6 +278,13 @@ class Transaction(Base):
 
         The interest rate is a percentage, so `100` means the user has to pay the full
         price of the product, `200` means they have to pay double, etc.
+    """
+
+    economy_spec_version: Mapped[int] = mapped_column(Integer, default=1)
+    """
+        The version of the economy specification that this transaction adheres to.
+
+        This is used to handle changes in the economy rules over time.
     """
 
     def __init__(
