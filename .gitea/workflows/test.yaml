@@ -7,7 +7,7 @@ on:
       debug_sqlalchemy:
         description: "Print SQL statements executed by SQLAlchemy during tests"
         type: boolean
-        default: false
+        default: True
 jobs:
   run-tests:
     runs-on: debian-latest
