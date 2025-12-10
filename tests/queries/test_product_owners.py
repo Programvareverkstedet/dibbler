@@ -1,10 +1,11 @@
+from datetime import datetime
 from pprint import pprint
 
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
 from dibbler.models.Transaction import Transaction
-from dibbler.queries import product_owners, product_owners_log
+from dibbler.queries import product_owners, product_owners_log, product_stock
 
 
 def insert_test_data(sql_session: Session) -> tuple[Product, User]:
@@ -38,6 +39,7 @@ def test_product_owners_add_products(sql_session: Session) -> None:
             amount=30,
             per_product=10,
             product_count=3,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         )
     ]
     sql_session.add_all(transactions)
@@ -58,11 +60,13 @@ def test_product_owners_add_and_buy_products(sql_session: Session) -> None:
             amount=30,
             per_product=10,
             product_count=3,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.buy_product(
             user_id=user.id,
             product_id=product.id,
             product_count=1,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
     ]
 
@@ -84,11 +88,13 @@ def test_product_owners_add_and_throw_products(sql_session: Session) -> None:
             amount=40,
             per_product=10,
             product_count=4,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.throw_product(
             user_id=user.id,
             product_id=product.id,
             product_count=2,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
     ]
 
@@ -113,6 +119,7 @@ def test_product_owners_multiple_users(sql_session: Session) -> None:
             amount=20,
             per_product=10,
             product_count=2,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.add_product(
             user_id=user2.id,
@@ -120,6 +127,7 @@ def test_product_owners_multiple_users(sql_session: Session) -> None:
             amount=30,
             per_product=10,
             product_count=3,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
     ]
 
@@ -142,17 +150,21 @@ def test_product_owners_adjust_stock_down(sql_session: Session) -> None:
             amount=50,
             per_product=10,
             product_count=5,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.adjust_stock(
             user_id=user.id,
             product_id=product.id,
             product_count=-2,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
     ]
     sql_session.add_all(transactions)
     sql_session.commit()
 
     pprint(product_owners_log(sql_session, product))
+
+    assert product_stock(sql_session, product) == 3
 
     owners = product_owners(sql_session, product)
     assert owners == [user, user, user]
@@ -168,11 +180,13 @@ def test_product_owners_adjust_stock_up(sql_session: Session) -> None:
             amount=20,
             per_product=10,
             product_count=2,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.adjust_stock(
             user_id=user.id,
             product_id=product.id,
             product_count=3,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
     ]
     sql_session.add_all(transactions)
@@ -194,11 +208,13 @@ def test_product_owners_negative_stock(sql_session: Session) -> None:
             amount=10,
             per_product=10,
             product_count=1,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.buy_product(
             user_id=user.id,
             product_id=product.id,
             product_count=2,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
     ]
     sql_session.add_all(transactions)
@@ -216,6 +232,7 @@ def test_product_owners_add_products_from_negative_stock(sql_session: Session) -
             user_id=user.id,
             product_id=product.id,
             product_count=2,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.add_product(
             user_id=user.id,
@@ -223,6 +240,7 @@ def test_product_owners_add_products_from_negative_stock(sql_session: Session) -
             amount=30,
             per_product=10,
             product_count=3,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
     ]
     sql_session.add_all(transactions)
@@ -247,6 +265,7 @@ def test_product_owners_interleaved_users(sql_session: Session) -> None:
             amount=20,
             per_product=10,
             product_count=2,
+            time=datetime(2024, 1, 1, 10, 0, 0),
         ),
         Transaction.add_product(
             user_id=user2.id,
@@ -254,11 +273,13 @@ def test_product_owners_interleaved_users(sql_session: Session) -> None:
             amount=30,
             per_product=10,
             product_count=3,
+            time=datetime(2024, 1, 2, 10, 0, 0),
         ),
         Transaction.buy_product(
             user_id=user1.id,
             product_id=product.id,
             product_count=1,
+            time=datetime(2024, 1, 3, 10, 0, 0),
         ),
         Transaction.add_product(
             user_id=user1.id,
@@ -266,6 +287,7 @@ def test_product_owners_interleaved_users(sql_session: Session) -> None:
             amount=10,
             per_product=10,
             product_count=1,
+            time=datetime(2024, 1, 4, 10, 0, 0),
         ),
     ]
     sql_session.add_all(transactions)
@@ -274,4 +296,4 @@ def test_product_owners_interleaved_users(sql_session: Session) -> None:
     pprint(product_owners_log(sql_session, product))
 
     owners = product_owners(sql_session, product)
-    assert owners == [user1, user2, user2, user1, user1]
+    assert owners == [user1, user2, user2, user2, user1]

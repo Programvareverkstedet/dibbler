@@ -1,17 +1,22 @@
-import pytest
-
 from datetime import datetime
 
+import pytest
 from sqlalchemy.orm import Session
 
 from dibbler.models import Transaction, User
 from dibbler.queries import adjust_interest, current_interest
 
 
-def test_adjust_interest_no_history(sql_session: Session) -> None:
+def insert_test_data(sql_session: Session) -> User:
     user = User("Test User")
     sql_session.add(user)
     sql_session.commit()
+
+    return user
+
+
+def test_adjust_interest_no_history(sql_session: Session) -> None:
+    user = insert_test_data(sql_session)
 
     adjust_interest(
         sql_session,
@@ -27,9 +32,7 @@ def test_adjust_interest_no_history(sql_session: Session) -> None:
 
 
 def test_adjust_interest_existing_history(sql_session: Session) -> None:
-    user = User("Test User")
-    sql_session.add(user)
-    sql_session.commit()
+    user = insert_test_data(sql_session)
 
     transactions = [
         Transaction.adjust_interest(
@@ -58,9 +61,7 @@ def test_adjust_interest_existing_history(sql_session: Session) -> None:
 
 
 def test_adjust_interest_negative_failure(sql_session: Session) -> None:
-    user = User("Test User")
-    sql_session.add(user)
-    sql_session.commit()
+    user = insert_test_data(sql_session)
 
     with pytest.raises(ValueError, match="Interest rate cannot be negative"):
         adjust_interest(

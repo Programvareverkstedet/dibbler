@@ -2,6 +2,8 @@ import math
 from datetime import datetime
 from pprint import pprint
 
+import pytest
+
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
@@ -302,29 +304,33 @@ def test_user_balance_penalty_interest_combined(sql_session: Session) -> None:
     assert user_balance(sql_session, user) == (27 - 200 - math.ceil(27 * 2 * 1.1))
 
 
-def test_user_balance_joint_transactions(sql_session: Session):
-    pass
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_joint_transactions(sql_session: Session): ...
 
 
-def test_user_balance_joint_transactions_interest(sql_session: Session):
-    pass
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_joint_transactions_interest(sql_session: Session): ...
 
 
-def test_user_balance_joint_transactions_changing_interest(sql_session: Session):
-    pass
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_joint_transactions_changing_interest(sql_session: Session): ...
 
 
-def test_user_balance_joint_transactions_penalty(sql_session: Session):
-    pass
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_joint_transactions_penalty(sql_session: Session): ...
 
 
-def test_user_balance_joint_transactions_changing_penalty(sql_session: Session):
-    pass
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_joint_transactions_changing_penalty(sql_session: Session): ...
 
 
-def test_user_balance_joint_transactions_penalty_interest_combined(sql_session: Session):
-    pass
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_joint_transactions_penalty_interest_combined(sql_session: Session): ...
 
 
-def test_user_balance_throw_away_products(sql_session: Session):
-    pass
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_until(sql_session: Session): ...
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_throw_away_products(sql_session: Session): ...

@@ -26,6 +26,7 @@ test = [
     "pytest-cov",
     "coverage-badge>=1.1.2",
     "pytest-html>=4.1.1",
+    "sqlparse>=0.5.4",
 ]
 
 [tool.setuptools.packages.find]

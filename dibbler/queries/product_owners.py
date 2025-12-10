@@ -43,21 +43,22 @@ def _product_owners_query(
     # Subset of transactions that we'll want to iterate over.
     trx_subset = (
         select(
-            func.row_number().over(order_by=asc(Transaction.time)).label("i"),
+            func.row_number().over(order_by=Transaction.time.desc()).label("i"),
             Transaction.time,
             Transaction.id,
             Transaction.type_,
             Transaction.user_id,
             Transaction.product_count,
         )
+        # TODO: maybe add value constraint on ADJUST_STOCK?
         .where(
             Transaction.type_.in_(
                 [
                     TransactionType.ADD_PRODUCT,
-                    TransactionType.BUY_PRODUCT,
+                    # TransactionType.BUY_PRODUCT,
                     TransactionType.ADJUST_STOCK,
-                    TransactionType.JOINT,
-                    TransactionType.THROW_PRODUCT,
+                    # TransactionType.JOINT,
+                    # TransactionType.THROW_PRODUCT,
                 ]
             ),
             Transaction.product_id == product_id,
@@ -112,16 +113,16 @@ def _product_owners_query(
                     recursive_cte.c.products_left_to_account_for - trx_subset.c.product_count,
                 ),
                 # Someone buys/joins/throws the product -> decrease the number of products left to account for
-                (
-                    trx_subset.c.type_.in_(
-                        [
-                            TransactionType.BUY_PRODUCT,
-                            TransactionType.JOINT,
-                            TransactionType.THROW_PRODUCT,
-                        ]
-                    ),
-                    recursive_cte.c.products_left_to_account_for - trx_subset.c.product_count,
-                ),
+                # (
+                #     trx_subset.c.type_.in_(
+                #         [
+                #             TransactionType.BUY_PRODUCT,
+                #             TransactionType.JOINT,
+                #             TransactionType.THROW_PRODUCT,
+                #         ]
+                #     ),
+                #     recursive_cte.c.products_left_to_account_for - trx_subset.c.product_count,
+                # ),
                 # Someone adjusts the stock ->
                 #   If adjusted upwards -> products owned by nobody, decrease products left to account for
                 #   If adjusted downwards -> products taken away from owners, decrease products left to account for
@@ -130,11 +131,11 @@ def _product_owners_query(
                     and (trx_subset.c.product_count > 0),
                     recursive_cte.c.products_left_to_account_for - trx_subset.c.product_count,
                 ),
-                (
-                    (trx_subset.c.type_ == TransactionType.ADJUST_STOCK)
-                    and (trx_subset.c.product_count < 0),
-                    recursive_cte.c.products_left_to_account_for + trx_subset.c.product_count,
-                ),
+                # (
+                #     (trx_subset.c.type_ == TransactionType.ADJUST_STOCK)
+                #     and (trx_subset.c.product_count < 0),
+                #     recursive_cte.c.products_left_to_account_for + trx_subset.c.product_count,
+                # ),
                 else_=recursive_cte.c.products_left_to_account_for,
             ).label("products_left_to_account_for"),
         )
@@ -191,7 +192,7 @@ def product_owners_log(
             onclause=User.id == recursive_cte.c.user_id,
             isouter=True,
         )
-        .order_by(recursive_cte.c.i.desc())
+        .order_by(recursive_cte.c.time.desc())
     ).all()
 
     if result is None:
@@ -235,7 +236,7 @@ def product_owners(
             User,
         )
         .join(User, User.id == recursive_cte.c.user_id, isouter=True)
-        .order_by(recursive_cte.c.i.desc())
+        .order_by(recursive_cte.c.time.desc())
     ).all()
 
     print(db_result)
@@ -249,6 +250,7 @@ def product_owners(
     # User is none, and product_count is not 0 -> add None product_count times
     # User is none, and product_count is 0 -> check how much products are left to account for,
 
+    # TODO: embed this into the query itself?
     for products_left_to_account_for, product_count, user in db_result:
         if user is not None:
             if products_left_to_account_for < 0:

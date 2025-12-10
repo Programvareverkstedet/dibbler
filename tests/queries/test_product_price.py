@@ -416,3 +416,6 @@ def test_product_price_joint_transactions(sql_session: Session) -> None:
     #   Count: 3 + 4 = 7, Price: (26 * 3 + 25 * 4) / (3 + 4) = 25.57 -> 26
 
     assert product_price_ == math.ceil((26 * 3 + 25 * 4) / (3 + 4))
+
+
+def test_product_price_until(sql_session: Session) -> None: ...

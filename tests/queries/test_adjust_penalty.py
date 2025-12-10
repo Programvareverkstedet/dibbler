@@ -11,10 +11,16 @@ from dibbler.models.Transaction import (
 from dibbler.queries import adjust_penalty, current_penalty
 
 
-def test_adjust_penalty_no_history(sql_session: Session) -> None:
+def insert_test_data(sql_session: Session) -> User:
     user = User("Test User")
     sql_session.add(user)
     sql_session.commit()
+
+    return user
+
+
+def test_adjust_penalty_no_history(sql_session: Session) -> None:
+    user = insert_test_data(sql_session)
 
     adjust_penalty(
         sql_session,
@@ -31,9 +37,7 @@ def test_adjust_penalty_no_history(sql_session: Session) -> None:
 
 
 def test_adjust_penalty_multiplier_no_history(sql_session: Session) -> None:
-    user = User("Test User")
-    sql_session.add(user)
-    sql_session.commit()
+    user = insert_test_data(sql_session)
 
     adjust_penalty(
         sql_session,
@@ -50,9 +54,7 @@ def test_adjust_penalty_multiplier_no_history(sql_session: Session) -> None:
 
 
 def test_adjust_penalty_multiplier_less_than_100_fail(sql_session: Session) -> None:
-    user = User("Test User")
-    sql_session.add(user)
-    sql_session.commit()
+    user = insert_test_data(sql_session)
 
     adjust_penalty(
         sql_session,
@@ -76,9 +78,7 @@ def test_adjust_penalty_multiplier_less_than_100_fail(sql_session: Session) -> N
 
 
 def test_adjust_penalty_existing_history(sql_session: Session) -> None:
-    user = User("Test User")
-    sql_session.add(user)
-    sql_session.commit()
+    user = insert_test_data(sql_session)
 
     transactions = [
         Transaction.adjust_penalty(
@@ -108,9 +108,7 @@ def test_adjust_penalty_existing_history(sql_session: Session) -> None:
 
 
 def test_adjust_penalty_multiplier_existing_history(sql_session: Session) -> None:
-    user = User("Test User")
-    sql_session.add(user)
-    sql_session.commit()
+    user = insert_test_data(sql_session)
 
     transactions = [
         Transaction.adjust_penalty(
@@ -139,9 +137,7 @@ def test_adjust_penalty_multiplier_existing_history(sql_session: Session) -> Non
 
 
 def test_adjust_penalty_and_multiplier(sql_session: Session) -> None:
-    user = User("Test User")
-    sql_session.add(user)
-    sql_session.commit()
+    user = insert_test_data(sql_session)
 
     adjust_penalty(
         sql_session,

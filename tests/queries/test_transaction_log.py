@@ -567,5 +567,9 @@ def test_transaction_log_combined_filter_product_transaction_id_transaction_type
 # NOTE: see the corresponding TODO's above the function definition
 
 
+@pytest.mark.skip(reason="Not yet implemented")
 def test_transaction_log_filtered_by_user_joint_transactions(sql_session: Session) -> None: ...
+
+
+@pytest.mark.skip(reason="Not yet implemented")
 def test_transaction_log_filtered_by_user_throw_away_transactions(sql_session: Session) -> None: ...
