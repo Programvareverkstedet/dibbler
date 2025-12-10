@@ -10,21 +10,29 @@ from sqlalchemy.orm.collections import (
 )
 
 
+def _pascal_case_to_snake_case(name: str) -> str:
+    return "".join(["_" + i.lower() if i.isupper() else i for i in name]).lstrip("_")
+
+
 class Base(DeclarativeBase):
     metadata = MetaData(
         naming_convention={
-            "ix": "ix_%(column_0_label)s",
-            "uq": "uq_%(table_name)s_%(column_0_name)s",
-            "ck": "ck_%(table_name)s_`%(constraint_name)s`",
-            "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-            "pk": "pk_%(table_name)s",
+            "ix": "ix__%(table_name)s__%(column_0_label)s",
+            "uq": "uq__%(table_name)s__%(column_0_name)s",
+            "ck": "ck__%(table_name)s__%(constraint_name)s",
+            "fk": "fk__%(table_name)s__%(column_0_name)s_%(referred_table_name)s",
+            "pk": "pk__%(table_name)s",
         },
     )
 
     @declared_attr.directive
     def __tablename__(cls) -> str:
-        return cls.__name__
+        return _pascal_case_to_snake_case(cls.__name__)
 
+    # NOTE: This is the default implementation of __repr__ for all tables,
+    #       but it is preferable to override it for each table to get a nicer
+    #       looking representation. This trades a bit of messiness for a complete
+    #       output of all relevant fields.
     def __repr__(self) -> str:
         columns = ", ".join(
             f"{k}={repr(v)}"

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Self
 
 from sqlalchemy import (
     Integer,
@@ -9,51 +9,35 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
-    relationship,
 )
 
 from .Base import Base
 
-if TYPE_CHECKING:
-    from .Transaction import Transaction
-    from .UserProducts import UserProducts
-
 
 class User(Base):
-    __tablename__ = "users"
-    name: Mapped[str] = mapped_column(String(10), primary_key=True)
-    credit: Mapped[int] = mapped_column(Integer)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    """Internal database ID"""
+
+    name: Mapped[str] = mapped_column(String(20), unique=True)
+    """The PVV username of the user."""
+
     card: Mapped[str | None] = mapped_column(String(20))
+    """The NTNU card number of the user."""
+
     rfid: Mapped[str | None] = mapped_column(String(20))
+    """The RFID tag of the user (if they have any, rare these days)."""
 
-    products: Mapped[list[UserProducts]] = relationship(back_populates="user")
-    transactions: Mapped[list[Transaction]] = relationship(
-        back_populates="user",
-        order_by="Transaction.time",
-    )
+    # name_re = r"[a-z]+"
+    # card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
+    # rfid_re = r"[0-9a-fA-F]*"
 
-    name_re = r"[a-z]+"
-    card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
-    rfid_re = r"[0-9a-fA-F]*"
-
-    def __init__(
-        self,
-        name: str,
-        card: str | None,
-        rfid: str | None = None,
-        credit: int = 0,
-    ) -> None:
+    def __init__(self: Self, name: str, card: str | None = None, rfid: str | None = None) -> None:
         self.name = name
-        if card == "":
-            card = None
         self.card = card
-        if rfid == "":
-            rfid = None
         self.rfid = rfid
-        self.credit = credit
 
-    def __str__(self) -> str:
-        return self.name
+    # def __str__(self):
+    #     return self.name
 
-    def is_anonymous(self) -> bool:
-        return self.card == "11122233"
+    # def is_anonymous(self):
+    #     return self.card == "11122233"

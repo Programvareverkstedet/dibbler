@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from sqlalchemy import (
     Boolean,
@@ -10,46 +10,45 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
-    relationship,
 )
 
 from .Base import Base
 
-if TYPE_CHECKING:
-    from .PurchaseEntry import PurchaseEntry
-    from .UserProducts import UserProducts
-
 
 class Product(Base):
-    __tablename__ = "products"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    """Internal database ID"""
 
-    product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    bar_code: Mapped[str] = mapped_column(String(13))
-    name: Mapped[str] = mapped_column(String(45))
-    price: Mapped[int] = mapped_column(Integer)
-    stock: Mapped[int] = mapped_column(Integer)
-    hidden: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # TODO: add more validation for barcode
+    bar_code: Mapped[str] = mapped_column(String(13), unique=True)
+    """
+        The bar code of the product.
 
-    purchases: Mapped[set[PurchaseEntry]] = relationship(back_populates="product")
-    users: Mapped[set[UserProducts]] = relationship(back_populates="product")
+        This is a unique identifier for the product, typically a 13-digit
+        EAN-13 code.
+    """
 
-    bar_code_re = r"[0-9]+"
-    name_re = r".+"
-    name_length = 45
+    name: Mapped[str] = mapped_column(String(45), unique=True)
+    """
+        The name of the product.
+
+        Please don't write fanfics here, this is not a place for that.
+    """
+
+    hidden: Mapped[bool] = mapped_column(Boolean, default=False)
+    """
+        Whether the product is hidden from the user interface.
+
+        Hidden products are not shown in the product list, but can still be
+        used in transactions.
+    """
 
     def __init__(
-        self,
+        self: Self,
         bar_code: str,
         name: str,
-        price: int,
-        stock: int = 0,
         hidden: bool = False,
     ) -> None:
-        self.name = name
         self.bar_code = bar_code
-        self.price = price
-        self.stock = stock
+        self.name = name
         self.hidden = hidden
-
-    def __str__(self) -> str:
-        return self.name
