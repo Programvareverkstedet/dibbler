@@ -5,6 +5,9 @@ from dibbler.models import Transaction, TransactionType
 from dibbler.models.Transaction import DEFAULT_INTEREST_RATE_PERCENTAGE
 
 
+# TODO: add until transaction parameter
+# TODO: add until datetime parameter
+
 def current_interest(sql_session: Session) -> int:
     result = sql_session.scalars(
         select(Transaction)

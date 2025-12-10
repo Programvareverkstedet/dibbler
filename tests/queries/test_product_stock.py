@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import pytest
-
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -215,9 +214,28 @@ def test_product_stock_joint_transaction(sql_session: Session) -> None:
     assert product_stock(sql_session, product) == 5 - 3
 
 
-@pytest.mark.skip(reason="Not yet implemented")
-def test_product_stock_until(sql_session: Session) -> None: ...
+def test_product_stock_until(sql_session: Session) -> None:
+    user, product = insert_test_data(sql_session)
 
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 12, 0, 0),
+            amount=10,
+            per_product=10,
+            user_id=user.id,
+            product_id=product.id,
+            product_count=1,
+        ),
+        Transaction.add_product(
+            time=datetime(2023, 10, 2, 12, 0, 0),
+            amount=20,
+            per_product=10,
+            user_id=user.id,
+            product_id=product.id,
+            product_count=2,
+        ),
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
 
-@pytest.mark.skip(reason="Not yet implemented")
-def test_product_stock_throw_away(sql_session: Session) -> None: ...
+    assert product_stock(sql_session, product, until=datetime(2023, 10, 1, 23, 59, 59)) == 1

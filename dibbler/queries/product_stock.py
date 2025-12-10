@@ -78,6 +78,8 @@ def _product_stock_query(
     return query
 
 
+# TODO: add until transaction parameter
+
 def product_stock(
     sql_session: Session,
     product: Product,
@@ -89,6 +91,9 @@ def product_stock(
 
     If 'until' is given, only transactions up to that time are considered.
     """
+
+    if product.id is None:
+        raise ValueError("Product must be persisted in the database.")
 
     query = _product_stock_query(
         product_id=product.id,

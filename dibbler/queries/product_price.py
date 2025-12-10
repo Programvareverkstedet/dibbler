@@ -10,12 +10,11 @@ from sqlalchemy import (
     case,
     cast,
     func,
-    literal,
     select,
 )
 from sqlalchemy.orm import Session
 
-from dibbler.lib.query_helpers import CONST_NONE, CONST_ONE, CONST_TRUE, CONST_ZERO, const
+from dibbler.lib.query_helpers import CONST_NONE, CONST_ONE, CONST_TRUE, CONST_ZERO
 from dibbler.models import (
     Product,
     Transaction,
@@ -171,6 +170,8 @@ class ProductPriceLogEntry:
     product_count: int
 
 
+# TODO: add until datetime parameter
+
 def product_price_log(
     sql_session: Session,
     product: Product,
@@ -180,6 +181,12 @@ def product_price_log(
     """
     Calculates the price of a product and returns a log of the price changes.
     """
+
+    if product.id is None:
+        raise ValueError("Product must be persisted in the database.")
+
+    if until is not None and until.id is None:
+        raise ValueError("'until' transaction must be persisted in the database.")
 
     recursive_cte = _product_price_query(
         product.id,
@@ -217,6 +224,8 @@ def product_price_log(
     ]
 
 
+# TODO: add until datetime parameter
+
 def product_price(
     sql_session: Session,
     product: Product,
@@ -227,6 +236,12 @@ def product_price(
     """
     Calculates the price of a product.
     """
+
+    if product.id is None:
+        raise ValueError("Product must be persisted in the database.")
+
+    if until is not None and until.id is None:
+        raise ValueError("'until' transaction must be persisted in the database.")
 
     recursive_cte = _product_price_query(
         product.id,

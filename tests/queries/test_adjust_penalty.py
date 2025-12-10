@@ -24,7 +24,7 @@ def test_adjust_penalty_no_history(sql_session: Session) -> None:
 
     adjust_penalty(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_penalty=-200,
         message="Setting initial interest rate",
     )
@@ -41,7 +41,7 @@ def test_adjust_penalty_multiplier_no_history(sql_session: Session) -> None:
 
     adjust_penalty(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_penalty_multiplier=125,
         message="Setting initial interest rate",
     )
@@ -58,7 +58,7 @@ def test_adjust_penalty_multiplier_less_than_100_fail(sql_session: Session) -> N
 
     adjust_penalty(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_penalty_multiplier=100,
         message="Setting initial interest rate",
     )
@@ -71,7 +71,7 @@ def test_adjust_penalty_multiplier_less_than_100_fail(sql_session: Session) -> N
     with pytest.raises(ValueError, match="Penalty multiplier cannot be less than 100%"):
         adjust_penalty(
             sql_session,
-            user_id=user.id,
+            user=user,
             new_penalty_multiplier=99,
             message="Setting initial interest rate",
         )
@@ -97,7 +97,7 @@ def test_adjust_penalty_existing_history(sql_session: Session) -> None:
 
     adjust_penalty(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_penalty=-250,
         message="Adjusting penalty threshold",
     )
@@ -127,7 +127,7 @@ def test_adjust_penalty_multiplier_existing_history(sql_session: Session) -> Non
 
     adjust_penalty(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_penalty_multiplier=130,
         message="Adjusting penalty multiplier",
     )
@@ -141,7 +141,7 @@ def test_adjust_penalty_and_multiplier(sql_session: Session) -> None:
 
     adjust_penalty(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_penalty=-300,
         new_penalty_multiplier=150,
         message="Setting both penalty and multiplier",

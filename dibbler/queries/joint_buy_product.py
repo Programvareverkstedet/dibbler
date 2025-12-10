@@ -22,8 +22,14 @@ def joint_buy_product(
     Create buy product transactions for multiple users at once.
     """
 
+    if product.id is None:
+        raise ValueError("Product must be persisted in the database.")
+
     if instigator not in users:
         raise ValueError("Instigator must be in the list of users buying the product.")
+
+    if any(user.id is None for user in users):
+        raise ValueError("All users must be persisted in the database.")
 
     if product_count <= 0:
         raise ValueError("Product count must be positive.")

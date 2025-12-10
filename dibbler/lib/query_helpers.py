@@ -3,6 +3,7 @@ from sqlalchemy import BindParameter, literal
 
 T = TypeVar("T")
 
+
 def const(value: T) -> BindParameter[T]:
     """
     Create a constant SQL literal bind parameter.
@@ -12,6 +13,7 @@ def const(value: T) -> BindParameter[T]:
     """
 
     return literal(value, literal_execute=True)
+
 
 CONST_ZERO: BindParameter[int] = const(0)
 CONST_ONE: BindParameter[int] = const(1)

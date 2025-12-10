@@ -38,6 +38,12 @@ def transaction_log(
     if not (user is None or product is None):
         raise ValueError("Cannot filter by both user and product.")
 
+    if user is not None and user.id is None:
+        raise ValueError("User must be persisted in the database.")
+
+    if product is not None and product.id is None:
+        raise ValueError("Product must be persisted in the database.")
+
     if not (after_time is None or after_transaction_id is None):
         raise ValueError("Cannot filter by both from_time and from_transaction_id.")
 

@@ -11,7 +11,6 @@ from sqlalchemy import (
     cast,
     column,
     func,
-    literal,
     or_,
     select,
 )
@@ -260,6 +259,7 @@ class UserBalanceLogEntry:
 
         # return self.transaction.type_ == TransactionType.BUY_PRODUCT and prev?
 
+# TODO: add until datetime parameter
 
 def user_balance_log(
     sql_session: Session,
@@ -272,6 +272,12 @@ def user_balance_log(
 
     If 'until' is given, only transactions up to that time are considered.
     """
+
+    if user.id is None:
+        raise ValueError("User must be persisted in the database.")
+
+    if until is not None and until.id is None:
+        raise ValueError("'until' transaction must be persisted in the database.")
 
     recursive_cte = _user_balance_query(
         user.id,
@@ -313,6 +319,8 @@ def user_balance_log(
     ]
 
 
+# TODO: add until datetime parameter
+
 def user_balance(
     sql_session: Session,
     user: User,
@@ -324,6 +332,9 @@ def user_balance(
 
     If 'until' is given, only transactions up to that time are considered.
     """
+
+    if user.id is None:
+        raise ValueError("User must be persisted in the database.")
 
     recursive_cte = _user_balance_query(
         user.id,

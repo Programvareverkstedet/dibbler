@@ -6,25 +6,27 @@ import pytest
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
-from dibbler.queries import user_balance, user_balance_log
+from dibbler.models.Transaction import DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE
+from dibbler.queries import joint_buy_product, user_balance, user_balance_log
 
 # TODO: see if we can use pytest_runtest_makereport to print the "user_balance_log"s
 #       only on failures instead of inlining it in every test function
 
 
-def insert_test_data(sql_session: Session) -> tuple[User, Product]:
+def insert_test_data(sql_session: Session) -> tuple[User, User, User, Product]:
     user = User("Test User")
+    user2 = User("Test User 2")
+    user3 = User("Test User 3")
     product = Product("1234567890123", "Test Product")
 
-    sql_session.add(user)
-    sql_session.add(product)
+    sql_session.add_all([user, user2, user3, product])
     sql_session.commit()
 
-    return user, product
+    return user, user2, user3, product
 
 
 def test_user_balance_no_transactions(sql_session: Session) -> None:
-    user, _ = insert_test_data(sql_session)
+    user, *_ = insert_test_data(sql_session)
 
     pprint(user_balance_log(sql_session, user))
 
@@ -34,7 +36,7 @@ def test_user_balance_no_transactions(sql_session: Session) -> None:
 
 
 def test_user_balance_basic_history(sql_session: Session) -> None:
-    user, product = insert_test_data(sql_session)
+    user, _, _, product = insert_test_data(sql_session)
 
     transactions = [
         Transaction.adjust_balance(
@@ -63,11 +65,7 @@ def test_user_balance_basic_history(sql_session: Session) -> None:
 
 
 def test_user_balance_with_transfers(sql_session: Session) -> None:
-    user1, product = insert_test_data(sql_session)
-
-    user2 = User("Test User 2")
-    sql_session.add(user2)
-    sql_session.commit()
+    user1, user2, _, product = insert_test_data(sql_session)
 
     transactions = [
         Transaction.adjust_balance(
@@ -108,7 +106,7 @@ def test_user_balance_complex_history(sql_session: Session) -> None: ...
 
 
 def test_user_balance_penalty(sql_session: Session) -> None:
-    user, product = insert_test_data(sql_session)
+    user, _, _, product = insert_test_data(sql_session)
 
     transactions = [
         Transaction.add_product(
@@ -137,11 +135,13 @@ def test_user_balance_penalty(sql_session: Session) -> None:
 
     pprint(user_balance_log(sql_session, user))
 
-    assert user_balance(sql_session, user) == 27 - 200 - (27 * 2)
+    assert user_balance(sql_session, user) == 27 - 200 - (
+        27 * (DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE // 100)
+    )
 
 
 def test_user_balance_changing_penalty(sql_session: Session) -> None:
-    user, product = insert_test_data(sql_session)
+    user, _, _, product = insert_test_data(sql_session)
 
     transactions = [
         Transaction.add_product(
@@ -184,11 +184,13 @@ def test_user_balance_changing_penalty(sql_session: Session) -> None:
 
     pprint(user_balance_log(sql_session, user))
 
-    assert user_balance(sql_session, user) == 27 - 200 - (27 * 2) - (27 * 3)
+    assert user_balance(sql_session, user) == 27 - 200 - (
+        27 * (DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE // 100)
+    ) - (27 * 3)
 
 
 def test_user_balance_interest(sql_session: Session) -> None:
-    user, product = insert_test_data(sql_session)
+    user, _, _, product = insert_test_data(sql_session)
 
     transactions = [
         Transaction.add_product(
@@ -220,7 +222,7 @@ def test_user_balance_interest(sql_session: Session) -> None:
 
 
 def test_user_balance_changing_interest(sql_session: Session) -> None:
-    user, product = insert_test_data(sql_session)
+    user, _, _, product = insert_test_data(sql_session)
 
     transactions = [
         Transaction.add_product(
@@ -265,7 +267,7 @@ def test_user_balance_changing_interest(sql_session: Session) -> None:
 
 
 def test_user_balance_penalty_interest_combined(sql_session: Session) -> None:
-    user, product = insert_test_data(sql_session)
+    user, _, _, product = insert_test_data(sql_session)
 
     transactions = [
         Transaction.add_product(
@@ -300,36 +302,239 @@ def test_user_balance_penalty_interest_combined(sql_session: Session) -> None:
 
     pprint(user_balance_log(sql_session, user))
 
-    assert user_balance(sql_session, user) == (27 - 200 - math.ceil(27 * 2 * 1.1))
+    assert user_balance(sql_session, user) == (
+        27 - 200 - math.ceil(27 * (DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE // 100) * 1.1)
+    )
+
+
+def test_user_balance_joint_transaction_single_user(sql_session: Session) -> None:
+    user, _, _, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 10, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27 * 3,
+            per_product=27,
+            product_count=3,
+        ),
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        instigator=user,
+        users=[user],
+        product=product,
+        product_count=2,
+    )
+
+    pprint(user_balance_log(sql_session, user))
+
+    assert user_balance(sql_session, user) == (27 * 3) - (27 * 2)
+
+
+def test_user_balance_joint_transactions_multiple_users(sql_session: Session) -> None:
+    user, user2, user3, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 10, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27 * 3,
+            per_product=27,
+            product_count=3,
+        ),
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        instigator=user,
+        users=[user, user2, user3],
+        product=product,
+        product_count=2,
+    )
+
+    pprint(user_balance_log(sql_session, user))
+
+    assert user_balance(sql_session, user) == (27 * 3) - math.ceil((27 * 2) / 3)
+
+
+def test_user_balance_joint_transactions_multiple_times_self(sql_session: Session) -> None:
+    user, user2, _, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 10, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27 * 3,
+            per_product=27,
+            product_count=3,
+        ),
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        instigator=user,
+        users=[user, user, user2],
+        product=product,
+        product_count=2,
+    )
+
+    pprint(user_balance_log(sql_session, user))
+
+    assert user_balance(sql_session, user) == (27 * 3) - math.ceil((27 * 2) * (2 / 3))
+
+
+def test_user_balance_joint_transactions_interest(sql_session: Session) -> None:
+    user, user2, _, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 10, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27 * 3,
+            per_product=27,
+            product_count=3,
+        ),
+        Transaction.adjust_interest(
+            time=datetime(2023, 10, 1, 11, 0, 0),
+            user_id=user.id,
+            interest_rate_percent=110,
+        ),
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        instigator=user,
+        users=[user, user2],
+        product=product,
+        product_count=2,
+    )
+
+    pprint(user_balance_log(sql_session, user))
+
+    assert user_balance(sql_session, user) == (27 * 3) - math.ceil(math.ceil(27 * 2 / 2) * 1.1)
+
+
+def test_user_balance_joint_transactions_changing_interest(sql_session: Session) -> None:
+    user, user2, _, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 10, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27 * 4,
+            per_product=27,
+            product_count=4,
+        ),
+        # Pays 1.1x the price
+        Transaction.adjust_interest(
+            time=datetime(2023, 10, 1, 11, 0, 0),
+            user_id=user.id,
+            interest_rate_percent=110,
+        ),
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        instigator=user,
+        users=[user, user2],
+        product=product,
+        product_count=2,
+    )
+
+    transactions = [
+        # Pays 1.2x the price
+        Transaction.adjust_interest(
+            time=datetime(2023, 10, 1, 12, 0, 0),
+            user_id=user.id,
+            interest_rate_percent=120,
+        )
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        instigator=user,
+        users=[user, user2],
+        product=product,
+        product_count=1,
+    )
+
+    pprint(user_balance_log(sql_session, user))
+
+    assert user_balance(sql_session, user) == (
+        (27 * 4) - math.ceil(math.ceil(27 * 2 / 2) * 1.1) - math.ceil(math.ceil(27 * 1 / 2) * 1.2)
+    )
+
+
+def test_user_balance_joint_transactions_penalty(sql_session: Session) -> None:
+    user, user2, _, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            time=datetime(2023, 10, 1, 10, 0, 0),
+            user_id=user.id,
+            product_id=product.id,
+            amount=27 * 3,
+            per_product=27,
+            product_count=3,
+        ),
+        Transaction.adjust_balance(
+            time=datetime(2023, 10, 1, 11, 0, 0),
+            user_id=user.id,
+            amount=-200,
+        ),
+    ]
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    joint_buy_product(
+        sql_session,
+        instigator=user,
+        users=[user, user2],
+        product=product,
+        product_count=2,
+    )
+
+    pprint(user_balance_log(sql_session, user))
+
+    assert user_balance(sql_session, user) == (
+        (27 * 3)
+        - 200
+        - math.ceil(math.ceil(27 * 2 / 2) * (DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE // 100))
+    )
 
 
 @pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_joint_transactions(sql_session: Session): ...
+def test_user_balance_joint_transactions_changing_penalty(sql_session: Session) -> None: ...
 
 
 @pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_joint_transactions_interest(sql_session: Session): ...
+def test_user_balance_joint_transactions_penalty_interest_combined(
+    sql_session: Session,
+) -> None: ...
 
 
 @pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_joint_transactions_changing_interest(sql_session: Session): ...
+def test_user_balance_until(sql_session: Session) -> None: ...
 
 
 @pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_joint_transactions_penalty(sql_session: Session): ...
-
-
-@pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_joint_transactions_changing_penalty(sql_session: Session): ...
-
-
-@pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_joint_transactions_penalty_interest_combined(sql_session: Session): ...
-
-
-@pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_until(sql_session: Session): ...
-
-
-@pytest.mark.skip(reason="Not yet implemented")
-def test_user_balance_throw_away_products(sql_session: Session): ...
+def test_user_balance_throw_away_products(sql_session: Session) -> None: ...

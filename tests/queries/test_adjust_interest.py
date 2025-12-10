@@ -20,7 +20,7 @@ def test_adjust_interest_no_history(sql_session: Session) -> None:
 
     adjust_interest(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_interest=3,
         message="Setting initial interest rate",
     )
@@ -50,7 +50,7 @@ def test_adjust_interest_existing_history(sql_session: Session) -> None:
 
     adjust_interest(
         sql_session,
-        user_id=user.id,
+        user=user,
         new_interest=2,
         message="Adjusting interest rate",
     )
@@ -66,7 +66,7 @@ def test_adjust_interest_negative_failure(sql_session: Session) -> None:
     with pytest.raises(ValueError, match="Interest rate cannot be negative"):
         adjust_interest(
             sql_session,
-            user_id=user.id,
+            user=user,
             new_interest=-1,
             message="Attempting to set negative interest rate",
         )

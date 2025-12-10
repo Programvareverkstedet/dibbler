@@ -8,12 +8,11 @@ from sqlalchemy import (
     bindparam,
     case,
     func,
-    literal,
     select,
 )
 from sqlalchemy.orm import Session
 
-from dibbler.lib.query_helpers import CONST_NONE, CONST_ONE, CONST_TRUE, CONST_ZERO, const
+from dibbler.lib.query_helpers import CONST_NONE, CONST_ONE, CONST_TRUE, CONST_ZERO
 from dibbler.models import (
     Product,
     Transaction,
@@ -168,6 +167,7 @@ class ProductOwnersLogEntry:
     user: User | None
     products_left_to_account_for: int
 
+# TODO: add until datetime parameter
 
 def product_owners_log(
     sql_session: Session,
@@ -180,6 +180,12 @@ def product_owners_log(
 
     If 'until' is given, only transactions up to that time are considered.
     """
+
+    if product.id is None:
+        raise ValueError("Product must be persisted in the database.")
+
+    if until is not None and until.id is None:
+        raise ValueError("'until' transaction must be persisted in the database.")
 
     recursive_cte = _product_owners_query(
         product_id=product.id,
@@ -222,6 +228,8 @@ def product_owners_log(
     ]
 
 
+# TODO: add until transaction parameter
+
 def product_owners(
     sql_session: Session,
     product: Product,
@@ -233,6 +241,9 @@ def product_owners(
 
     If 'until' is given, only transactions up to that time are considered.
     """
+
+    if product.id is None:
+        raise ValueError("Product must be persisted in the database.")
 
     recursive_cte = _product_owners_query(
         product_id=product.id,

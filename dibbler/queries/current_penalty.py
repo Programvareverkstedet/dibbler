@@ -8,6 +8,9 @@ from dibbler.models.Transaction import (
 )
 
 
+# TODO: add until transaction parameter
+# TODO: add until datetime parameter
+
 def current_penalty(sql_session: Session) -> tuple[int, int]:
     result = sql_session.scalars(
         select(Transaction)
