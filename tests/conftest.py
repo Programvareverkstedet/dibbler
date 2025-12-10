@@ -11,9 +11,9 @@ from dibbler.models import Base
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--echo",
+        "--debug-sql",
         action="store_true",
-        help="Enable SQLAlchemy echo mode for debugging",
+        help="Enable SQLAlchemy 'echo' mode for debugging",
     )
 
 
@@ -37,7 +37,7 @@ class SqlParseFormatter(logging.Formatter):
 
 
 def pytest_configure(config):
-    """Setup pretty SQL logging if --echo is enabled."""
+    """Setup pretty SQL logging if --debug-sql is enabled."""
 
     logger = logging.getLogger("sqlalchemy.engine")
 
@@ -47,8 +47,7 @@ def pytest_configure(config):
     handler.setFormatter(SqlParseFormatter())
     logger.addHandler(handler)
 
-    echo = config.getoption("--echo")
-    if echo:
+    if config.getoption("--debug-sql"):
         logger.setLevel(logging.INFO)
 
 
