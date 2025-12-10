@@ -35,6 +35,7 @@ subparsers.add_parser("loop", help="Run the dibbler loop")
 subparsers.add_parser("create-db", help="Create the database")
 subparsers.add_parser("slabbedasker", help="Find out who is slabbedasker")
 subparsers.add_parser("seed-data", help="Fill with mock data")
+subparsers.add_parser("transaction-log", help="Print transaction log")
 
 
 def main() -> None:
@@ -86,6 +87,11 @@ def main() -> None:
         import dibbler.subcommands.seed_test_data as seed_test_data
 
         seed_test_data.main(sql_session)
+
+    elif args.subcommand == "transaction-log":
+        import dibbler.subcommands.transaction_log as transaction_log
+
+        transaction_log.main()
 
 
 if __name__ == "__main__":
