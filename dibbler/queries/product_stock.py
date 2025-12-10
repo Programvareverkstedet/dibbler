@@ -1,14 +1,15 @@
 from datetime import datetime
 
 from sqlalchemy import (
+    BindParameter,
     Select,
     case,
     func,
-    literal,
     select,
 )
 from sqlalchemy.orm import Session
 
+from dibbler.lib.query_helpers import CONST_TRUE
 from dibbler.models import (
     Product,
     Transaction,
@@ -17,9 +18,9 @@ from dibbler.models import (
 
 
 def _product_stock_query(
-    product_id: int,
+    product_id: BindParameter[int] | int,
     use_cache: bool = True,
-    until: datetime | None = None,
+    until: BindParameter[datetime] | datetime | None = None,
 ) -> Select:
     """
     The inner query for calculating the product stock.
@@ -28,27 +29,33 @@ def _product_stock_query(
     if use_cache:
         print("WARNING: Using cache for product stock query is not implemented yet.")
 
+    if isinstance(product_id, int):
+        product_id = BindParameter("product_id", value=product_id)
+
+    if isinstance(until, datetime):
+        until = BindParameter("until", value=until)
+
     query = select(
         func.sum(
             case(
                 (
-                    Transaction.type_ == TransactionType.ADD_PRODUCT,
+                    Transaction.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
                     Transaction.product_count,
                 ),
                 (
-                    Transaction.type_ == TransactionType.ADJUST_STOCK,
+                    Transaction.type_ == TransactionType.ADJUST_STOCK.as_literal_column(),
                     Transaction.product_count,
                 ),
                 (
-                    Transaction.type_ == TransactionType.BUY_PRODUCT,
+                    Transaction.type_ == TransactionType.BUY_PRODUCT.as_literal_column(),
                     -Transaction.product_count,
                 ),
                 (
-                    Transaction.type_ == TransactionType.JOINT,
+                    Transaction.type_ == TransactionType.JOINT.as_literal_column(),
                     -Transaction.product_count,
                 ),
                 (
-                    Transaction.type_ == TransactionType.THROW_PRODUCT,
+                    Transaction.type_ == TransactionType.THROW_PRODUCT.as_literal_column(),
                     -Transaction.product_count,
                 ),
                 else_=0,
@@ -57,15 +64,15 @@ def _product_stock_query(
     ).where(
         Transaction.type_.in_(
             [
-                TransactionType.ADD_PRODUCT,
-                TransactionType.ADJUST_STOCK,
-                TransactionType.BUY_PRODUCT,
-                TransactionType.JOINT,
-                TransactionType.THROW_PRODUCT,
+                TransactionType.ADD_PRODUCT.as_literal_column(),
+                TransactionType.ADJUST_STOCK.as_literal_column(),
+                TransactionType.BUY_PRODUCT.as_literal_column(),
+                TransactionType.JOINT.as_literal_column(),
+                TransactionType.THROW_PRODUCT.as_literal_column(),
             ]
         ),
         Transaction.product_id == product_id,
-        Transaction.time <= until if until is not None else literal(True),
+        Transaction.time <= until if until is not None else CONST_TRUE,
     )
 
     return query

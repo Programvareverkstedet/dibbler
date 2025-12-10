@@ -3,10 +3,10 @@ from datetime import datetime
 
 from sqlalchemy import (
     CTE,
+    BindParameter,
     Float,
     Integer,
     and_,
-    asc,
     case,
     cast,
     column,
@@ -17,6 +17,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
+from dibbler.lib.query_helpers import CONST_NONE, CONST_ONE, CONST_TRUE, CONST_ZERO, const
 from dibbler.models import (
     Transaction,
     TransactionType,
@@ -31,10 +32,10 @@ from dibbler.queries.product_price import _product_price_query
 
 
 def _user_balance_query(
-    user_id: int,
+    user_id: BindParameter[int] | int,
     use_cache: bool = True,
-    until: datetime | None = None,
-    until_including: bool = True,
+    until: BindParameter[datetime] | BindParameter[None] | datetime | None = None,
+    until_including: BindParameter[bool] | bool = True,
     cte_name: str = "rec_cte",
 ) -> CTE:
     """
@@ -44,14 +45,23 @@ def _user_balance_query(
     if use_cache:
         print("WARNING: Using cache for user balance query is not implemented yet.")
 
+    if isinstance(user_id, int):
+        user_id = BindParameter("user_id", value=user_id)
+
+    if isinstance(until, datetime):
+        until = BindParameter("until", value=until, type_=datetime)
+
+    if isinstance(until_including, bool):
+        until_including = BindParameter("until_including", value=until_including, type_=bool)
+
     initial_element = select(
-        literal(0).label("i"),
-        literal(0).label("time"),
-        literal(None).label("transaction_id"),
-        literal(0).label("balance"),
-        literal(DEFAULT_INTEREST_RATE_PERCENTAGE).label("interest_rate_percent"),
-        literal(DEFAULT_PENALTY_THRESHOLD).label("penalty_threshold"),
-        literal(DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE).label("penalty_multiplier_percent"),
+        CONST_ZERO.label("i"),
+        CONST_ZERO.label("time"),
+        CONST_NONE.label("transaction_id"),
+        CONST_ZERO.label("balance"),
+        const(DEFAULT_INTEREST_RATE_PERCENTAGE).label("interest_rate_percent"),
+        const(DEFAULT_PENALTY_THRESHOLD).label("penalty_threshold"),
+        const(DEFAULT_PENALTY_MULTIPLIER_PERCENTAGE).label("penalty_multiplier_percent"),
     )
 
     recursive_cte = initial_element.cte(name=cte_name, recursive=True)
@@ -59,7 +69,7 @@ def _user_balance_query(
     # Subset of transactions that we'll want to iterate over.
     trx_subset = (
         select(
-            func.row_number().over(order_by=asc(Transaction.time)).label("i"),
+            func.row_number().over(order_by=Transaction.time.asc()).label("i"),
             Transaction.amount,
             Transaction.id,
             Transaction.interest_rate_percent,
@@ -77,34 +87,34 @@ def _user_balance_query(
                     Transaction.user_id == user_id,
                     Transaction.type_.in_(
                         [
-                            TransactionType.ADD_PRODUCT,
-                            TransactionType.ADJUST_BALANCE,
-                            TransactionType.BUY_PRODUCT,
-                            TransactionType.TRANSFER,
+                            TransactionType.ADD_PRODUCT.as_literal_column(),
+                            TransactionType.ADJUST_BALANCE.as_literal_column(),
+                            TransactionType.BUY_PRODUCT.as_literal_column(),
+                            TransactionType.TRANSFER.as_literal_column(),
                             # TODO: join this with the JOINT transactions, and determine
                             #       how much the current user paid for the product.
-                            TransactionType.JOINT_BUY_PRODUCT,
+                            TransactionType.JOINT_BUY_PRODUCT.as_literal_column(),
                         ]
                     ),
                 ),
                 and_(
-                    Transaction.type_ == TransactionType.TRANSFER,
+                    Transaction.type_ == TransactionType.TRANSFER.as_literal_column(),
                     Transaction.transfer_user_id == user_id,
                 ),
                 Transaction.type_.in_(
                     [
-                        TransactionType.THROW_PRODUCT,
-                        TransactionType.ADJUST_INTEREST,
-                        TransactionType.ADJUST_PENALTY,
+                        TransactionType.THROW_PRODUCT.as_literal_column(),
+                        TransactionType.ADJUST_INTEREST.as_literal_column(),
+                        TransactionType.ADJUST_PENALTY.as_literal_column(),
                     ]
                 ),
             ),
             case(
-                (literal(until_including), Transaction.time <= until),
+                (until_including, Transaction.time <= until),
                 else_=Transaction.time < until,
             )
             if until is not None
-            else literal(True),
+            else CONST_TRUE,
         )
         .order_by(Transaction.time.asc())
         .alias("trx_subset")
@@ -118,17 +128,17 @@ def _user_balance_query(
             case(
                 # Adjusts balance -> balance gets adjusted
                 (
-                    trx_subset.c.type_ == TransactionType.ADJUST_BALANCE,
+                    trx_subset.c.type_ == TransactionType.ADJUST_BALANCE.as_literal_column(),
                     recursive_cte.c.balance + trx_subset.c.amount,
                 ),
                 # Adds a product -> balance increases
                 (
-                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT,
+                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
                     recursive_cte.c.balance + trx_subset.c.amount,
                 ),
                 # Buys a product -> balance decreases
                 (
-                    trx_subset.c.type_ == TransactionType.BUY_PRODUCT,
+                    trx_subset.c.type_ == TransactionType.BUY_PRODUCT.as_literal_column(),
                     recursive_cte.c.balance
                     - (
                         trx_subset.c.product_count
@@ -151,12 +161,12 @@ def _user_balance_query(
                                         )
                                     )
                                     .order_by(column("i").desc())
-                                    .limit(1)
+                                    .limit(CONST_ONE)
                                 ).scalar_subquery()
                                 # TODO: should interest be applied before or after the penalty multiplier?
                                 #       at the moment of writing, after sound right, but maybe ask someone?
                                 # Interest
-                                * (cast(recursive_cte.c.interest_rate_percent, Float) / 100)
+                                * (cast(recursive_cte.c.interest_rate_percent, Float) / const(100))
                                 # TODO: these should be added together, not multiplied, see specification
                                 # Penalty
                                 * case(
@@ -164,10 +174,10 @@ def _user_balance_query(
                                         recursive_cte.c.balance < recursive_cte.c.penalty_threshold,
                                         (
                                             cast(recursive_cte.c.penalty_multiplier_percent, Float)
-                                            / 100
+                                            / const(100)
                                         ),
                                     ),
-                                    else_=1.0,
+                                    else_=const(1.0),
                                 )
                             ),
                             Integer,
@@ -177,7 +187,7 @@ def _user_balance_query(
                 # Transfers money to self ->  balance increases
                 (
                     and_(
-                        trx_subset.c.type_ == TransactionType.TRANSFER,
+                        trx_subset.c.type_ == TransactionType.TRANSFER.as_literal_column(),
                         trx_subset.c.transfer_user_id == user_id,
                     ),
                     recursive_cte.c.balance + trx_subset.c.amount,
@@ -185,7 +195,7 @@ def _user_balance_query(
                 # Transfers money from self ->  balance decreases
                 (
                     and_(
-                        trx_subset.c.type_ == TransactionType.TRANSFER,
+                        trx_subset.c.type_ == TransactionType.TRANSFER.as_literal_column(),
                         trx_subset.c.transfer_user_id != user_id,
                     ),
                     recursive_cte.c.balance - trx_subset.c.amount,
@@ -202,28 +212,28 @@ def _user_balance_query(
             ).label("balance"),
             case(
                 (
-                    trx_subset.c.type_ == TransactionType.ADJUST_INTEREST,
+                    trx_subset.c.type_ == TransactionType.ADJUST_INTEREST.as_literal_column(),
                     trx_subset.c.interest_rate_percent,
                 ),
                 else_=recursive_cte.c.interest_rate_percent,
             ).label("interest_rate_percent"),
             case(
                 (
-                    trx_subset.c.type_ == TransactionType.ADJUST_PENALTY,
+                    trx_subset.c.type_ == TransactionType.ADJUST_PENALTY.as_literal_column(),
                     trx_subset.c.penalty_threshold,
                 ),
                 else_=recursive_cte.c.penalty_threshold,
             ).label("penalty_threshold"),
             case(
                 (
-                    trx_subset.c.type_ == TransactionType.ADJUST_PENALTY,
+                    trx_subset.c.type_ == TransactionType.ADJUST_PENALTY.as_literal_column(),
                     trx_subset.c.penalty_multiplier_percent,
                 ),
                 else_=recursive_cte.c.penalty_multiplier_percent,
             ).label("penalty_multiplier_percent"),
         )
         .select_from(trx_subset)
-        .where(trx_subset.c.i == recursive_cte.c.i + 1)
+        .where(trx_subset.c.i == recursive_cte.c.i + CONST_ONE)
     )
 
     return recursive_cte.union_all(recursive_elements)
@@ -322,7 +332,10 @@ def user_balance(
     )
 
     result = sql_session.scalar(
-        select(recursive_cte.c.balance).order_by(recursive_cte.c.i.desc()).limit(1)
+        select(recursive_cte.c.balance)
+        .order_by(recursive_cte.c.i.desc())
+        .limit(CONST_ONE)
+        .offset(CONST_ZERO)
     )
 
     if result is None:

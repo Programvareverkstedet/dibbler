@@ -3,9 +3,9 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from sqlalchemy import (
+    BindParameter,
     ColumnElement,
     Integer,
-    SQLColumnExpression,
     asc,
     case,
     cast,
@@ -15,6 +15,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
+from dibbler.lib.query_helpers import CONST_NONE, CONST_ONE, CONST_TRUE, CONST_ZERO, const
 from dibbler.models import (
     Product,
     Transaction,
@@ -26,8 +27,8 @@ from dibbler.models.Transaction import DEFAULT_INTEREST_RATE_PERCENTAGE
 def _product_price_query(
     product_id: int | ColumnElement[int],
     use_cache: bool = True,
-    until: datetime | SQLColumnExpression[datetime] | None = None,
-    until_including: bool = True,
+    until: BindParameter[datetime] | datetime | None = None,
+    until_including: BindParameter[bool] | bool = True,
     cte_name: str = "rec_cte",
 ):
     """
@@ -37,12 +38,21 @@ def _product_price_query(
     if use_cache:
         print("WARNING: Using cache for product price query is not implemented yet.")
 
+    if isinstance(product_id, int):
+        product_id = BindParameter("product_id", value=product_id)
+
+    if isinstance(until, datetime):
+        until = BindParameter("until", value=until)
+
+    if isinstance(until_including, bool):
+        until_including = BindParameter("until_including", value=until_including)
+
     initial_element = select(
-        literal(0).label("i"),
-        literal(0).label("time"),
-        literal(None).label("transaction_id"),
-        literal(0).label("price"),
-        literal(0).label("product_count"),
+        CONST_ZERO.label("i"),
+        CONST_ZERO.label("time"),
+        CONST_NONE.label("transaction_id"),
+        CONST_ZERO.label("price"),
+        CONST_ZERO.label("product_count"),
     )
 
     recursive_cte = initial_element.cte(name=cte_name, recursive=True)
@@ -60,19 +70,19 @@ def _product_price_query(
         .where(
             Transaction.type_.in_(
                 [
-                    TransactionType.BUY_PRODUCT,
-                    TransactionType.ADD_PRODUCT,
-                    TransactionType.ADJUST_STOCK,
-                    TransactionType.JOINT,
+                    TransactionType.BUY_PRODUCT.as_literal_column(),
+                    TransactionType.ADD_PRODUCT.as_literal_column(),
+                    TransactionType.ADJUST_STOCK.as_literal_column(),
+                    TransactionType.JOINT.as_literal_column(),
                 ]
             ),
             Transaction.product_id == product_id,
             case(
-                (literal(until_including), Transaction.time <= until),
+                (until_including, Transaction.time <= until),
                 else_=Transaction.time < until,
             )
             if until is not None
-            else literal(True),
+            else CONST_TRUE,
         )
         .order_by(Transaction.time.asc())
         .alias("trx_subset")
@@ -85,22 +95,26 @@ def _product_price_query(
             trx_subset.c.id.label("transaction_id"),
             case(
                 # Someone buys the product -> price remains the same.
-                (trx_subset.c.type_ == TransactionType.BUY_PRODUCT, recursive_cte.c.price),
+                (
+                    trx_subset.c.type_ == TransactionType.BUY_PRODUCT.as_literal_column(),
+                    recursive_cte.c.price,
+                ),
                 # Someone adds the product -> price is recalculated based on
                 #  product count, previous price, and new price.
                 (
-                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT,
+                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
                     cast(
                         func.ceil(
                             (
-                                recursive_cte.c.price * func.max(recursive_cte.c.product_count, 0)
+                                recursive_cte.c.price
+                                * func.max(recursive_cte.c.product_count, CONST_ZERO)
                                 + trx_subset.c.per_product * trx_subset.c.product_count
                             )
                             / (
                                 # The running product count can be negative if the accounting is bad.
                                 # This ensures that we never end up with negative prices or zero divisions
                                 # and other disastrous phenomena.
-                                func.max(recursive_cte.c.product_count, 0)
+                                func.max(recursive_cte.c.product_count, CONST_ZERO)
                                 + trx_subset.c.product_count
                             )
                         ),
@@ -108,28 +122,31 @@ def _product_price_query(
                     ),
                 ),
                 # Someone adjusts the stock -> price remains the same.
-                (trx_subset.c.type_ == TransactionType.ADJUST_STOCK, recursive_cte.c.price),
+                (
+                    trx_subset.c.type_ == TransactionType.ADJUST_STOCK.as_literal_column(),
+                    recursive_cte.c.price,
+                ),
                 # Should never happen
                 else_=recursive_cte.c.price,
             ).label("price"),
             case(
                 # Someone buys the product -> product count is reduced.
                 (
-                    trx_subset.c.type_ == TransactionType.BUY_PRODUCT,
+                    trx_subset.c.type_ == TransactionType.BUY_PRODUCT.as_literal_column(),
                     recursive_cte.c.product_count - trx_subset.c.product_count,
                 ),
                 (
-                    trx_subset.c.type_ == TransactionType.JOINT,
+                    trx_subset.c.type_ == TransactionType.JOINT.as_literal_column(),
                     recursive_cte.c.product_count - trx_subset.c.product_count,
                 ),
                 # Someone adds the product -> product count is increased.
                 (
-                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT,
+                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
                     recursive_cte.c.product_count + trx_subset.c.product_count,
                 ),
                 # Someone adjusts the stock -> product count is adjusted.
                 (
-                    trx_subset.c.type_ == TransactionType.ADJUST_STOCK,
+                    trx_subset.c.type_ == TransactionType.ADJUST_STOCK.as_literal_column(),
                     recursive_cte.c.product_count + trx_subset.c.product_count,
                 ),
                 # Should never happen
@@ -137,7 +154,7 @@ def _product_price_query(
             ).label("product_count"),
         )
         .select_from(trx_subset)
-        .where(trx_subset.c.i == recursive_cte.c.i + 1)
+        .where(trx_subset.c.i == recursive_cte.c.i + CONST_ONE)
     )
 
     return recursive_cte.union_all(recursive_elements)
@@ -222,7 +239,10 @@ def product_price(
     #   - price should never be negative
 
     result = sql_session.scalars(
-        select(recursive_cte.c.price).order_by(recursive_cte.c.i.desc()).limit(1)
+        select(recursive_cte.c.price)
+        .order_by(recursive_cte.c.i.desc())
+        .limit(CONST_ONE)
+        .offset(CONST_ZERO)
     ).one_or_none()
 
     if result is None:
@@ -237,10 +257,10 @@ def product_price(
                 select(Transaction.interest_rate_percent)
                 .where(
                     Transaction.type_ == TransactionType.ADJUST_INTEREST,
-                    literal(True) if until is None else Transaction.time <= until.time,
+                    CONST_TRUE if until is None else Transaction.time <= until.time,
                 )
                 .order_by(Transaction.time.desc())
-                .limit(1)
+                .limit(CONST_ONE)
             )
             or DEFAULT_INTEREST_RATE_PERCENTAGE
         )

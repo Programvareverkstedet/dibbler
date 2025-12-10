@@ -3,7 +3,6 @@ from datetime import datetime
 from pprint import pprint
 
 import pytest
-
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, Transaction, User
@@ -104,8 +103,8 @@ def test_user_balance_with_transfers(sql_session: Session) -> None:
     assert user2_balance == 50 - 30
 
 
-def test_user_balance_complex_history(sql_session: Session) -> None:
-    raise NotImplementedError("This test is not implemented yet.")
+@pytest.mark.skip(reason="Not yet implemented")
+def test_user_balance_complex_history(sql_session: Session) -> None: ...
 
 
 def test_user_balance_penalty(sql_session: Session) -> None:

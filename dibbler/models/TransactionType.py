@@ -19,6 +19,17 @@ class TransactionType(StrEnum):
     THROW_PRODUCT = auto()
     TRANSFER = auto()
 
+    def as_literal_column(self):
+        """
+        Return the transaction type as a SQL literal column.
+
+        This is useful to avoid too many `?` bind parameters in SQL queries,
+        when the input value is known to be safe.
+        """
+        from sqlalchemy import literal_column
+
+        return literal_column(f"'{self.value}'")
+
 
 TransactionTypeSQL = SQLEnum(
     TransactionType,

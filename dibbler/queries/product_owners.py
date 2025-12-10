@@ -1,10 +1,11 @@
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import (
     CTE,
+    BindParameter,
     and_,
-    asc,
+    bindparam,
     case,
     func,
     literal,
@@ -12,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
+from dibbler.lib.query_helpers import CONST_NONE, CONST_ONE, CONST_TRUE, CONST_ZERO, const
 from dibbler.models import (
     Product,
     Transaction,
@@ -22,9 +24,9 @@ from dibbler.queries.product_stock import _product_stock_query
 
 
 def _product_owners_query(
-    product_id: int,
+    product_id: BindParameter[int] | int,
     use_cache: bool = True,
-    until: datetime | None = None,
+    until: BindParameter[datetime] | datetime | None = None,
     cte_name: str = "rec_cte",
 ) -> CTE:
     """
@@ -33,6 +35,12 @@ def _product_owners_query(
 
     if use_cache:
         print("WARNING: Using cache for users owning product query is not implemented yet.")
+
+    if isinstance(product_id, int):
+        product_id = bindparam("product_id", value=product_id)
+
+    if isinstance(until, datetime):
+        until = BindParameter("until", value=until)
 
     product_stock = _product_stock_query(
         product_id=product_id,
@@ -54,26 +62,26 @@ def _product_owners_query(
         .where(
             Transaction.type_.in_(
                 [
-                    TransactionType.ADD_PRODUCT,
+                    TransactionType.ADD_PRODUCT.as_literal_column(),
                     # TransactionType.BUY_PRODUCT,
-                    TransactionType.ADJUST_STOCK,
+                    TransactionType.ADJUST_STOCK.as_literal_column(),
                     # TransactionType.JOINT,
                     # TransactionType.THROW_PRODUCT,
                 ]
             ),
             Transaction.product_id == product_id,
-            literal(True) if until is None else Transaction.time <= until,
+            CONST_TRUE if until is None else Transaction.time <= until,
         )
         .order_by(Transaction.time.desc())
         .subquery()
     )
 
     initial_element = select(
-        literal(0).label("i"),
-        literal(0).label("time"),
-        literal(None).label("transaction_id"),
-        literal(None).label("user_id"),
-        literal(0).label("product_count"),
+        CONST_ZERO.label("i"),
+        CONST_ZERO.label("time"),
+        CONST_NONE.label("transaction_id"),
+        CONST_NONE.label("user_id"),
+        CONST_ZERO.label("product_count"),
         product_stock.scalar_subquery().label("products_left_to_account_for"),
     )
 
@@ -88,28 +96,31 @@ def _product_owners_query(
             case(
                 # Someone adds the product -> they own it
                 (
-                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT,
+                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
                     trx_subset.c.user_id,
                 ),
-                else_=None,
+                else_=CONST_NONE,
             ).label("user_id"),
             # How many products did they add (if any)
             case(
                 # Someone adds the product -> they added a certain amount of products
-                (trx_subset.c.type_ == TransactionType.ADD_PRODUCT, trx_subset.c.product_count),
-                # Stock got adjusted upwards -> consider those products as added by nobody
                 (
-                    (trx_subset.c.type_ == TransactionType.ADJUST_STOCK)
-                    & (trx_subset.c.product_count > 0),
+                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
                     trx_subset.c.product_count,
                 ),
-                else_=0,
+                # Stock got adjusted upwards -> consider those products as added by nobody
+                (
+                    (trx_subset.c.type_ == TransactionType.ADJUST_STOCK.as_literal_column())
+                    and (trx_subset.c.product_count > CONST_ZERO),
+                    trx_subset.c.product_count,
+                ),
+                else_=CONST_ZERO,
             ).label("product_count"),
             # How many products left to account for
             case(
                 # Someone adds the product -> increase the number of products left to account for
                 (
-                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT,
+                    trx_subset.c.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
                     recursive_cte.c.products_left_to_account_for - trx_subset.c.product_count,
                 ),
                 # Someone buys/joins/throws the product -> decrease the number of products left to account for
@@ -127,8 +138,8 @@ def _product_owners_query(
                 #   If adjusted upwards -> products owned by nobody, decrease products left to account for
                 #   If adjusted downwards -> products taken away from owners, decrease products left to account for
                 (
-                    (trx_subset.c.type_ == TransactionType.ADJUST_STOCK)
-                    and (trx_subset.c.product_count > 0),
+                    (trx_subset.c.type_ == TransactionType.ADJUST_STOCK.as_literal_column())
+                    and (trx_subset.c.product_count > CONST_ZERO),
                     recursive_cte.c.products_left_to_account_for - trx_subset.c.product_count,
                 ),
                 # (
@@ -142,8 +153,8 @@ def _product_owners_query(
         .select_from(trx_subset)
         .where(
             and_(
-                trx_subset.c.i == recursive_cte.c.i + 1,
-                recursive_cte.c.products_left_to_account_for > 0,
+                trx_subset.c.i == recursive_cte.c.i + CONST_ONE,
+                recursive_cte.c.products_left_to_account_for > CONST_ZERO,
             )
         )
     )
