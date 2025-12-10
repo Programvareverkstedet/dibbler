@@ -10,7 +10,7 @@ on:
         default: True
 
 env:
-  DEBUG_SQLALCHEMY: ${{ inputs.debug_sqlalchemy || 'true' }}
+  DEBUG_SQLALCHEMY: ${{ inputs.debug_sqlalchemy || true }}
 
 jobs:
   run-tests:
