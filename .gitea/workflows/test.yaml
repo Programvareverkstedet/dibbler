@@ -4,13 +4,13 @@ on:
   push:
   workflow_dispatch:
     inputs:
-      debug_sqlalchemy:
+      debug_sql:
         description: "Print SQL statements executed by SQLAlchemy during tests"
         type: boolean
         default: True
 
 env:
-  DEBUG_SQLALCHEMY: ${{ inputs.debug_sqlalchemy || true }}
+  DEBUG_SQL: ${{ inputs.debug_sql || true }}
 
 jobs:
   run-tests:
@@ -43,9 +43,9 @@ jobs:
           --html=./test-report/index.html
         )
 
-        if [ "$DEBUG_SQLALCHEMY" == "true" ]; then
+        if [ "$DEBUG_SQL" == "true" ]; then
           PYTEST_ARGS+=(
-            --echo
+            --debug-sql
           )
         fi
 
