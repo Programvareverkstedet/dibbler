@@ -1,5 +1,6 @@
 import argparse
 import sys
+from pathlib import Path
 
 from dibbler.conf import DEFAULT_CONFIG_PATH, config, default_config_path_submissive_and_readable
 
@@ -9,8 +10,9 @@ parser.add_argument(
     "-c",
     "--config",
     help="Path to the config file",
-    type=str,
-    required=False,
+    type=Path,
+    metavar="FILE",
+    default="config.ini",
 )
 
 subparsers = parser.add_subparsers(
