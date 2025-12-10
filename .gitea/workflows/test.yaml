@@ -8,6 +8,10 @@ on:
         description: "Print SQL statements executed by SQLAlchemy during tests"
         type: boolean
         default: True
+
+env:
+  DEBUG_SQLALCHEMY: ${{ inputs.debug_sqlalchemy || 'true' }}
+
 jobs:
   run-tests:
     runs-on: debian-latest
@@ -39,7 +43,7 @@ jobs:
           --html=./test-report/index.html
         )
 
-        if [ "${{ inputs.debug_sqlalchemy }}" == "true" ]; then
+        if [ "$DEBUG_SQLALCHEMY" == "true" ]; then
           PYTEST_ARGS+=(
             --echo
           )
