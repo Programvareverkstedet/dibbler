@@ -1,97 +1,10 @@
+from typing import Literal, Callable, Any
+
 import os
 import pwd
 import signal
 import subprocess
-from typing import Any, Callable, Literal
 
-from sqlalchemy import and_, not_, or_
-from sqlalchemy.orm import Session
-
-from ..models import Product, User
-
-
-def search_user(
-    string: str,
-    sql_session: Session,
-    ignorethisflag=None,
-):
-    assert sql_session is not None
-    string = string.lower()
-    exact_match = (
-        sql_session.query(User)
-        .filter(or_(User.name == string, User.card == string, User.rfid == string))
-        .first()
-    )
-    if exact_match:
-        return exact_match
-    user_list = (
-        sql_session.query(User)
-        .filter(
-            or_(
-                User.name.ilike(f"%{string}%"),
-                User.card.ilike(f"%{string}%"),
-                User.rfid.ilike(f"%{string}%"),
-            )
-        )
-        .all()
-    )
-    return user_list
-
-
-def search_product(
-    string: str,
-    sql_session: Session,
-    find_hidden_products: bool = True,
-):
-    assert sql_session is not None
-    if find_hidden_products:
-        exact_match = (
-            sql_session.query(Product)
-            .filter(or_(Product.bar_code == string, Product.name == string))
-            .first()
-        )
-    else:
-        exact_match = (
-            sql_session.query(Product)
-            .filter(
-                or_(
-                    Product.bar_code == string,
-                    and_(
-                        Product.name == string,
-                        not_(Product.hidden),
-                    ),
-                )
-            )
-            .first()
-        )
-    if exact_match:
-        return exact_match
-    if find_hidden_products:
-        product_list = (
-            sql_session.query(Product)
-            .filter(
-                or_(
-                    Product.bar_code.ilike(f"%{string}%"),
-                    Product.name.ilike(f"%{string}%"),
-                )
-            )
-            .all()
-        )
-    else:
-        product_list = (
-            sql_session.query(Product)
-            .filter(
-                or_(
-                    Product.bar_code.ilike(f"%{string}%"),
-                    and_(
-                        Product.name.ilike(f"%{string}%"),
-                        not_(Product.hidden),
-                    ),
-                )
-            )
-            .all()
-        )
-    return product_list
 
 
 def system_user_exists(username: str) -> bool:
