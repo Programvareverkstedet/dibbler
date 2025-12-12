@@ -30,22 +30,8 @@ jobs:
           set -euo pipefail
           set -x
 
-        PYTEST_ARGS=(
-          -vv
-
-          --cov=dibbler.lib
-          --cov=dibbler.models
-          --cov=dibbler.queries
-          --cov-report=html
-          --cov-branch
-
-          --self-contained-html
-          --html=./test-report/index.html
-        )
-
-        if [ "$DEBUG_SQL" == "true" ]; then
-          PYTEST_ARGS+=(
-            --debug-sql
+          PYTEST_ARGS=(
+            -vv
           )
 
           if [ "$DEBUG_SQL" == "true" ]; then

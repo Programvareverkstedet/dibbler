@@ -11,5 +11,7 @@ test.db
 *.qcow2
 
 .coverage
+.coverage.*
 htmlcov
 test-report
+/benchmark

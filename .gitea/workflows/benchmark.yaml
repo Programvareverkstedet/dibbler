@@ -1,0 +1,71 @@
+name: Run benchmarks
+on:
+  workflow_dispatch:
+  # TODO: make this only workflow_dispatch when merged into main
+  push:
+
+jobs:
+  run-tests:
+    runs-on: debian-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --locked --group test
+
+      - name: Run benchmarks
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          set -x
+
+          PYTEST_ARGS=(
+            -vv
+
+            --benchmark-only
+            -k test_benchmark
+          )
+
+          uv run -- pytest "${PYTEST_ARGS[@]}"
+
+      - name: Upload benchmark JSON report
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v2
+        with:
+          source: ./benchmark/*/*.json
+          quote-source: false
+          target: ${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/benchmark.json
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+
+      - name: Upload histograms
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v2
+        with:
+          source: ./benchmark/*.svg
+          quote-source: false
+          target: ${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+
+      # NOTE: $GITHUB_STEP_SUMMARY when...
+      - name: Run information
+        run: |
+          echo "Benchmark run ID: ${{ github.run_id }}"
+          echo "Benchmark JSON: https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/benchmark.json"
+          echo "Histograms: https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/histogram-product_owners.svg"
+          echo "            https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/histogram-product_price.svg"
+          echo "            https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/histogram-product_stock.svg"
+          echo "            https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/histogram-transaction_log.svg"
+          echo "            https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/benchmark/${{ github.run_id }}/histogram-user_balance.svg"
+
+      - name: Check failure
+        if: failure()
+        run: |
+          echo "Tests failed"
+          exit 1
