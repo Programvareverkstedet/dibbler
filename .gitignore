@@ -13,5 +13,7 @@ test.db
 dibbler/_version.py
 
 .coverage
+.coverage.*
 htmlcov
 test-report
+/benchmark

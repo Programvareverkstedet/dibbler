@@ -33,6 +33,7 @@ test = [
     "coverage-badge>=1.1.2",
     "pytest-html>=4.1.1",
     "sqlparse>=0.5.4",
+    "pytest-benchmark[histogram]>=5.2.3",
 ]
 
 [tool.setuptools.packages.find]
@@ -78,3 +79,22 @@ ignore = [
 [tool.ruff.lint.flake8-annotations]
 suppress-dummy-args = true
 ignore-fully-untyped = true
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=dibbler.lib",
+    "--cov=dibbler.models",
+    "--cov=dibbler.queries",
+    "--cov-report=html",
+    "--cov-branch",
+
+    "--self-contained-html",
+    "--html=./test-report/index.html",
+
+    "--benchmark-skip",
+    "--benchmark-autosave",
+    "--benchmark-save=default",
+    "--benchmark-verbose",
+    "--benchmark-storage=benchmark",
+    "--benchmark-histogram=benchmark/histogram",
+]

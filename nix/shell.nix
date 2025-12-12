@@ -20,6 +20,8 @@ mkShell {
       pytest
       pytest-cov
       pytest-html
+      pytest-benchmark
+      pygal
     ]))
   ];
 }
