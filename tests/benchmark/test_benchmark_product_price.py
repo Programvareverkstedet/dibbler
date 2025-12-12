@@ -1,0 +1,92 @@
+import pytest
+from sqlalchemy.orm import Session
+
+from dibbler.models import Product, TransactionType
+from dibbler.queries import product_price, update_cache
+from tests.benchmark.benchmark_settings import BENCHMARK_ITERATIONS, BENCHMARK_ROUNDS
+from tests.benchmark.helpers import generate_random_transactions, insert_users_and_products
+
+# @pytest.mark.benchmark(group="product_price")
+# @pytest.mark.parametrize(
+#     "transaction_count",
+#     [
+#         100,
+#         500,
+#         1000,
+#         2000,
+#         5000,
+#         10000,
+#     ],
+# )
+# def test_benchmark_product_price(benchmark, sql_session: Session, transaction_count):
+#     _users, products = insert_users_and_products(sql_session)
+
+#     transactions = generate_random_transactions(
+#         sql_session,
+#         transaction_count,
+#         transaction_type_filter=[
+#             TransactionType.ADD_PRODUCT,
+#             TransactionType.ADJUST_STOCK,
+#             TransactionType.BUY_PRODUCT,
+#             TransactionType.JOINT,
+#             TransactionType.THROW_PRODUCT,
+#         ],
+#     )
+
+#     sql_session.add_all(transactions)
+#     sql_session.commit()
+
+#     benchmark.pedantic(
+#         query_all_products_price,
+#         args=(sql_session, products),
+#         iterations=BENCHMARK_ITERATIONS,
+#         rounds=BENCHMARK_ROUNDS,
+#     )
+
+
+@pytest.mark.benchmark(group="product_price")
+@pytest.mark.parametrize(
+    "transaction_count",
+    [
+        1000,
+        2000,
+        5000,
+        10000,
+    ],
+)
+def test_benchmark_product_price_cache_every_500(
+    benchmark,
+    sql_session: Session,
+    transaction_count: int,
+) -> None:
+    users, _products = insert_users_and_products(sql_session)
+
+    transactions = generate_random_transactions(
+        sql_session,
+        transaction_count,
+        transaction_type_filter=[
+            TransactionType.ADD_PRODUCT,
+            TransactionType.ADJUST_STOCK,
+            TransactionType.BUY_PRODUCT,
+            TransactionType.JOINT,
+            TransactionType.THROW_PRODUCT,
+        ],
+    )
+
+    for i in range(0, len(transactions), 500):
+        update_cache(sql_session)
+
+        sql_session.add_all(transactions[i : i + 500])
+        sql_session.commit()
+
+    benchmark.pedantic(
+        query_all_products_price,
+        args=(sql_session, users),
+        iterations=BENCHMARK_ITERATIONS,
+        rounds=BENCHMARK_ROUNDS,
+    )
+
+
+def query_all_products_price(sql_session: Session, products: list[Product]) -> None:
+    for product in products:
+        product_price(sql_session, product, use_cache=False)
