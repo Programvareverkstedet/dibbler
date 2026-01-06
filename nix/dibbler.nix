@@ -2,9 +2,12 @@
 , python3Packages
 , fetchFromGitHub
 }:
+let
+  pyproject = builtins.fromTOML (builtins.readFile ../pyproject.toml);
+in
 python3Packages.buildPythonApplication {
-  pname = "dibbler";
-  version = "unstable";
+  pname = pyproject.project.name;
+  version = pyproject.project.version;
   src = lib.cleanSource ../.;
 
   format = "pyproject";

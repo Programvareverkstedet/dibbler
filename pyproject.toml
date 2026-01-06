@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dibbler"
+version = "1.0.0"
 authors = []
 description = "EDB-system for PVV"
 readme = "README.md"
@@ -18,7 +19,6 @@ dependencies = [
     "psycopg2 >= 2.8, <2.10",
     "python-barcode",
 ]
-dynamic = ["version"]
 
 [tool.setuptools.packages.find]
 include = ["dibbler*"]
