@@ -5,7 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "dibbler"
 version = "1.0.0"
-authors = []
+authors = [
+  { name = "Programvareverkstedet", email = "projects@pvv.ntnu.no" }
+]
 description = "EDB-system for PVV"
 readme = "README.md"
 requires-python = ">=3.11"
