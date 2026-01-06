@@ -1,6 +1,7 @@
 import argparse
+import sys
 
-from dibbler.conf import config
+from dibbler.conf import DEFAULT_CONFIG_PATH, config, default_config_path_submissive_and_readable
 
 parser = argparse.ArgumentParser()
 
@@ -25,7 +26,13 @@ subparsers.add_parser("seed-data", help="Fill with mock data")
 
 def main():
     args = parser.parse_args()
-    config.read(args.config)
+
+    if args.config is not None:
+        config.read(args.config)
+    elif default_config_path_submissive_and_readable():
+        config.read(DEFAULT_CONFIG_PATH)
+    else:
+        print("Could not read config file, it was neither provided nor readable in default location", file=sys.stderr)
 
     if args.subcommand == "loop":
         import dibbler.subcommands.loop as loop
