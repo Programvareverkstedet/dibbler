@@ -43,6 +43,10 @@ python3Packages.buildPythonApplication {
   nativeCheckInputs = with python3Packages; [
     pytest
     pytestCheckHook
+    sqlparse
+    pytest-html
+    pytest-cov
+    pytest-benchmark
   ];
 
   postInstall = ''
