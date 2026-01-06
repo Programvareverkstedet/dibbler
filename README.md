@@ -21,29 +21,27 @@ Deretter kan du kjøre programmet med
 
 ```console
 python -m dibbler -c example-config.ini create-db
+python -m dibbler -c example-config.ini seed-data
 python -m dibbler -c example-config.ini loop
 ```
 
 ## Nix
 
-### Bygge nytt image
+Du kan enklest komme i gang med nix-utvikling ved å kjøre VM-en:
 
-For å bygge et image trenger du en builder som takler å bygge for arkitekturen du skal lage et image for.
+```console
+nix run .#vm
 
-(Eller be til gudene om at cross compile funker)
+# Eller hvis du trenger tilgang til terminalen i VM-en også:
+nix run .#vm-non-kiosk
+```
 
-Flaket exposer en modul som autologger inn med en bruker som automatisk kjører dibbler, og setter opp et minimalistisk miljø.
+Du kan også bygge pakken manuelt, eller kjøre den direkte:
 
-Før du bygger imaget burde du kopiere og endre `example-config.ini` lokalt til å inneholde instillingene dine. **NB: Denne kommer til å ligge i nix storen, ikke si noe her som du ikke vil at moren din skal høre.**
+```console
+nix build .#dibbler
 
-Du kan også endre hvilken config-fil som blir brukt direkte i pakken eller i modulen.
-
-Se eksempelet for hvordan skrot er satt opp i `flake.nix` og `nix/skrott.nix`
-
-### Bygge image for skrot
-Skrot har et image definert i flake.nix:
-
-1. endre `example-config.ini`
-2. `nix build .#images.skrot`
-3. ???
-4. non-profit
+nix run .# -- --config example-config.ini create-db
+nix run .# -- --config example-config.ini seed-data
+nix run .# -- --config example-config.ini loop
+```

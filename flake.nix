@@ -17,20 +17,30 @@
       pkgs = nixpkgs.legacyPackages.${system};
     in f system pkgs);
   in {
-      packages = forAllSystems (system: pkgs: {
-        default = self.packages.${system}.dibbler;
-        dibbler = pkgs.callPackage ./nix/dibbler.nix {
-          python3Packages = pkgs.python312Packages;
+      apps = let
+        mkApp = program: description: {
+          type = "app";
+          program = toString program;
+          meta = {
+            inherit description;
+          };
         };
-        skrot = self.nixosConfigurations.skrot.config.system.build.sdImage;
-      });
-
-      apps = forAllSystems (system: pkgs: {
+        mkVm = name: mkApp "${self.nixosConfigurations.${name}.config.system.build.vm}/bin/run-nixos-vm";
+      in forAllSystems (system: pkgs: {
         default = self.apps.${system}.dibbler;
         dibbler = flake-utils.lib.mkApp {
           drv = self.packages.${system}.dibbler;
         };
+        vm = mkVm "vm" "Start a NixOS VM with dibbler installed in kiosk-mode";
+        vm-non-kiosk = mkVm "vm-non-kiosk" "Start a NixOS VM with dibbler installed in nonkiosk-mode";
       });
+
+      nixosModules.default = import ./nix/module.nix;
+
+      nixosConfigurations = {
+        vm = import ./nix/nixos-configurations/vm.nix { inherit self nixpkgs; };
+        vm-non-kiosk = import ./nix/nixos-configurations/vm-non-kiosk.nix { inherit self nixpkgs; };
+      };
 
       overlays = {
         default = self.overlays.dibbler;
@@ -46,20 +56,11 @@
         };
       });
 
-      # Note: using the module requires that you have applied the overlay first
-      nixosModules.default = import ./nix/module.nix;
-
-      nixosConfigurations.skrot = nixpkgs.lib.nixosSystem (rec {
-        system = "aarch64-linux";
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [ self.overlays.dibbler ];
+      packages = forAllSystems (system: pkgs: {
+        default = self.packages.${system}.dibbler;
+        dibbler = pkgs.callPackage ./nix/package.nix {
+          python3Packages = pkgs.python312Packages;
         };
-        modules = [
-          (nixpkgs + "/nixos/modules/installer/sd-card/sd-image-aarch64.nix")
-          self.nixosModules.default
-          ./nix/skrott.nix
-        ];
       });
     };
 }

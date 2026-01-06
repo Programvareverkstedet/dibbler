@@ -1,6 +1,7 @@
 { lib
 , python3Packages
-, fetchFromGitHub
+, makeWrapper
+, less
 }:
 let
   pyproject = builtins.fromTOML (builtins.readFile ../pyproject.toml);
@@ -16,7 +17,10 @@ python3Packages.buildPythonApplication {
   # https://github.com/NixOS/nixpkgs/issues/285234
   dontCheckRuntimeDeps = true;
 
-  nativeBuildInputs = with python3Packages; [ setuptools ];
+  nativeBuildInputs = with python3Packages; [
+    setuptools
+    makeWrapper
+  ];
   propagatedBuildInputs = with python3Packages; [
     brother-ql
     matplotlib
@@ -24,4 +28,14 @@ python3Packages.buildPythonApplication {
     python-barcode
     sqlalchemy
   ];
+
+  postInstall = ''
+    wrapProgram $out/bin/dibbler \
+      --prefix PATH : "${lib.makeBinPath [ less ]}"
+  '';
+
+  meta = {
+    description = "The little kiosk that could";
+    mainProgram = "dibbler";
+  };
 }
