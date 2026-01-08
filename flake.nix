@@ -45,7 +45,7 @@
       overlays = {
         default = self.overlays.dibbler;
         dibbler = final: prev: {
-          inherit (self.packages.${prev.system}) dibbler;
+          inherit (self.packages.${prev.stdenv.hostPlatform.system}) dibbler;
         };
       };
 
