@@ -78,3 +78,42 @@ def until_filter(
             )
 
     return CONST_TRUE
+
+
+def after_filter(
+    after_time: BindParameter[datetime] | None = None,
+    after_transaction_id: BindParameter[int] | None = None,
+    after_inclusive: bool = True,
+    transaction_time: QueryableAttribute = Transaction.time,
+) -> ColumnExpressionArgument[bool]:
+    """
+    Create a filter condition for transactions after a given time or transaction.
+
+    Only one of `after_time` or `after_transaction_id` may be specified.
+    """
+
+    assert not (after_time is not None and after_transaction_id is not None), (
+        "Cannot filter by both after_time and after_transaction_id."
+    )
+
+    match (after_time, after_transaction_id, after_inclusive):
+        case (BindParameter(), None, True):
+            return transaction_time >= after_time
+        case (BindParameter(), None, False):
+            return transaction_time > after_time
+        case (None, BindParameter(), True):
+            return (
+                transaction_time
+                >= select(Transaction.time)
+                .where(Transaction.id == after_transaction_id)
+                .scalar_subquery()
+            )
+        case (None, BindParameter(), False):
+            return (
+                transaction_time
+                > select(Transaction.time)
+                .where(Transaction.id == after_transaction_id)
+                .scalar_subquery()
+            )
+
+    return CONST_TRUE

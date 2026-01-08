@@ -87,6 +87,7 @@ def _transaction_type_field_constraints(
 
 
 class Transaction(Base):
+    __tablename__ = "trx"
     __table_args__ = (
         *[
             _transaction_type_field_constraints(transaction_type, expected_fields)
@@ -207,7 +208,7 @@ class Transaction(Base):
     """
 
     joint_transaction_id: Mapped[int | None] = mapped_column(
-        ForeignKey("transaction.id"),
+        ForeignKey("trx.id"),
         index=True,
     )
     """
