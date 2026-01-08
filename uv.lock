@@ -247,6 +247,7 @@ wheels = [
 
 [[package]]
 name = "dibbler"
+version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "brother-ql" },
