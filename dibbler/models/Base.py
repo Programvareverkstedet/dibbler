@@ -27,6 +27,9 @@ class Base(DeclarativeBase):
 
     @declared_attr.directive
     def __tablename__(cls) -> str:
+        if hasattr(cls, "__table_name__"):
+            assert isinstance(cls.__table_name__, str)
+            return cls.__table_name__
         return _pascal_case_to_snake_case(cls.__name__)
 
     # NOTE: This is the default implementation of __repr__ for all tables,
