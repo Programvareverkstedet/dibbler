@@ -27,7 +27,12 @@ python -m dibbler -c example-config.ini loop
 
 ## Nix
 
-Du kan enklest komme i gang med nix-utvikling ved å kjøre VM-en:
+> [!NOTE]
+> Vi har skrevet nix-kode for å generere en QEMU-VM med tilnærmet produksjonsoppsett.
+> Det kjører ikke nødvendigvis noen VM-er i produksjon, og ihvertfall ikke denne VM-en.
+> Den er hovedsakelig laget for enkel interaktiv testing, og for å teste NixOS modulen.
+
+Du kan enklest komme i gang med nix-utvikling ved å kjøre test VM-en:
 
 ```console
 nix run .#vm
