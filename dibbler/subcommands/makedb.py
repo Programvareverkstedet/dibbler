@@ -1,11 +1,9 @@
 #!/usr/bin/python
+
+from sqlalchemy.engine import Engine
+
 from dibbler.models import Base
-from dibbler.db import engine
 
 
-def main():
+def main(engine: Engine):
     Base.metadata.create_all(engine)
-
-
-if __name__ == "__main__":
-    main()

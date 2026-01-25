@@ -2,10 +2,9 @@ import argparse
 from pathlib import Path
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 
 from dibbler.conf import load_config, config_db_string
-from dibbler.db import engine, session
 
 parser = argparse.ArgumentParser()
 
@@ -34,29 +33,28 @@ def main():
 
     load_config(args.config)
 
-    global engine, session
     engine = create_engine(config_db_string())
-    session = sessionmaker(bind=engine)
+    sql_session = Session(engine)
 
     if args.subcommand == "loop":
         import dibbler.subcommands.loop as loop
 
-        loop.main()
+        loop.main(sql_session)
 
     elif args.subcommand == "create-db":
         import dibbler.subcommands.makedb as makedb
 
-        makedb.main()
+        makedb.main(engine)
 
     elif args.subcommand == "slabbedasker":
         import dibbler.subcommands.slabbedasker as slabbedasker
 
-        slabbedasker.main()
+        slabbedasker.main(sql_session)
 
     elif args.subcommand == "seed-data":
         import dibbler.subcommands.seed_test_data as seed_test_data
 
-        seed_test_data.main()
+        seed_test_data.main(sql_session)
 
 
 if __name__ == "__main__":

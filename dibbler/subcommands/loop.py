@@ -5,6 +5,8 @@ import random
 import sys
 import traceback
 
+from sqlalchemy.orm import Session
+
 from ..conf import config
 from ..lib.helpers import *
 from ..menus import *
@@ -12,7 +14,7 @@ from ..menus import *
 random.seed()
 
 
-def main():
+def main(sql_session: Session):
     if not config["general"]["stop_allowed"]:
         signal.signal(signal.SIGQUIT, signal.SIG_IGN)
 
@@ -22,36 +24,36 @@ def main():
     main = MainMenu(
         "Dibbler main menu",
         items=[
-            BuyMenu(),
-            ProductListMenu(),
-            ShowUserMenu(),
-            UserListMenu(),
-            AdjustCreditMenu(),
-            TransferMenu(),
-            AddStockMenu(),
+            BuyMenu(sql_session),
+            ProductListMenu(sql_session),
+            ShowUserMenu(sql_session),
+            UserListMenu(sql_session),
+            AdjustCreditMenu(sql_session),
+            TransferMenu(sql_session),
+            AddStockMenu(sql_session),
             Menu(
                 "Add/edit",
                 items=[
-                    AddUserMenu(),
-                    EditUserMenu(),
-                    AddProductMenu(),
-                    EditProductMenu(),
-                    AdjustStockMenu(),
-                    CleanupStockMenu(),
+                    AddUserMenu(sql_session),
+                    EditUserMenu(sql_session),
+                    AddProductMenu(sql_session),
+                    EditProductMenu(sql_session),
+                    AdjustStockMenu(sql_session),
+                    CleanupStockMenu(sql_session),
                 ],
             ),
-            ProductSearchMenu(),
+            ProductSearchMenu(sql_session),
             Menu(
                 "Statistics",
                 items=[
-                    ProductPopularityMenu(),
-                    ProductRevenueMenu(),
-                    BalanceMenu(),
-                    LoggedStatisticsMenu(),
+                    ProductPopularityMenu(sql_session),
+                    ProductRevenueMenu(sql_session),
+                    BalanceMenu(sql_session),
+                    LoggedStatisticsMenu(sql_session),
                 ],
             ),
             FAQMenu(),
-            PrintLabelMenu(),
+            PrintLabelMenu(sql_session),
         ],
         exit_msg="happy happy joy joy",
         exit_confirm_msg="Really quit Dibbler?",
@@ -73,7 +75,3 @@ def main():
         else:
             break
         print("Restarting main menu.")
-
-
-if __name__ == "__main__":
-    main()

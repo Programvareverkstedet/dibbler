@@ -5,7 +5,8 @@ import re
 import sys
 from select import select
 
-from dibbler.db import session as create_session
+from sqlalchemy.orm import Session
+
 from dibbler.models import User
 from dibbler.lib.helpers import (
     search_user,
@@ -37,6 +38,7 @@ class Menu(object):
         exit_disallowed_msg=None,
         help_text=None,
         uses_db=False,
+        sql_session: Session | None=None,
     ):
         self.name = name
         self.items = items if items is not None else []
@@ -49,7 +51,9 @@ class Menu(object):
         self.help_text = help_text
         self.context = None
         self.uses_db = uses_db
-        self.session = None
+        self.sql_session: Session | None = sql_session
+
+        assert not (self.uses_db and self.sql_session is None)
 
     def exit_menu(self):
         if self.exit_disallowed_msg is not None:
@@ -338,7 +342,7 @@ class Menu(object):
         results = {}
         result_values = {}
         for thing in permitted_things:
-            results[thing] = search_fun[thing](search_str, self.session, find_hidden_products)
+            results[thing] = search_fun[thing](search_str, self.sql_session, find_hidden_products)
             result_values[thing] = self.search_result_value(results[thing])
         selected_thing = argmax(result_values)
         if not results[selected_thing]:
@@ -373,7 +377,7 @@ class Menu(object):
             print(f'"{string}" looks like a username, but no such user exists.')
             if self.confirm(f"Create user {string}?"):
                 user = User(string, None)
-                self.session.add(user)
+                self.sql_session.add(user)
                 return user
             return None
         if type_guess == "card":
@@ -392,7 +396,7 @@ class Menu(object):
                     (1, 10),
                 )
                 user = User(username, string)
-                self.session.add(user)
+                self.sql_session.add(user)
                 return user
             if selection == "set":
                 user = self.input_user("User to set card number for")
@@ -406,7 +410,7 @@ class Menu(object):
             return None
 
     def search_ui(self, search_fun, search_str, thing):
-        result = search_fun(search_str, self.session)
+        result = search_fun(search_str, self.sql_session)
         return self.search_ui2(search_str, result, thing)
 
     def search_ui2(self, search_str, result, thing):
@@ -484,16 +488,13 @@ class Menu(object):
     def execute(self, **kwargs):
         self.set_context(None)
         try:
-            if self.uses_db and not self.session:
-                self.session = create_session()
             return self._execute(**kwargs)
         except ExitMenu:
             self.at_exit()
             return None
         finally:
-            if self.session is not None:
-                self.session.close()
-                self.session = None
+            if self.sql_session is not None:
+                self.sql_session = None
 
     def _execute(self, **kwargs):
         while True:

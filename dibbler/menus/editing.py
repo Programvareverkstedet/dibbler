@@ -1,5 +1,7 @@
 import sqlalchemy
 
+from sqlalchemy.orm import Session
+
 from dibbler.models import User, Product
 from .helpermenus import Menu, Selector
 
@@ -14,8 +16,8 @@ __all__ = [
 
 
 class AddUserMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Add user", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Add user", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
@@ -28,9 +30,9 @@ class AddUserMenu(Menu):
         cardnum = cardnum.lower()
         rfid = self.input_str("RFID (optional)", regex=User.rfid_re, length_range=(0, 10))
         user = User(username, cardnum, rfid)
-        self.session.add(user)
+        self.sql_session.add(user)
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print(f"User {username} stored")
         except sqlalchemy.exc.IntegrityError as e:
             print(f"Could not store user {username}: {e}")
@@ -38,8 +40,8 @@ class AddUserMenu(Menu):
 
 
 class EditUserMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Edit user", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Edit user", sql_session=sql_session, uses_db=True)
         self.help_text = """
 The only editable part of a user is its card number and rfid.
 
@@ -69,7 +71,7 @@ user, then rfid (write an empty line to remove the card number or rfid).
             empty_string_is_none=True,
         )
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print(f"User {user.name} stored")
         except sqlalchemy.exc.SQLAlchemyError as e:
             print(f"Could not store user {user.name}: {e}")
@@ -77,8 +79,8 @@ user, then rfid (write an empty line to remove the card number or rfid).
 
 
 class AddProductMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Add product", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Add product", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
@@ -86,9 +88,9 @@ class AddProductMenu(Menu):
         name = self.input_str("Name", regex=Product.name_re, length_range=(1, Product.name_length))
         price = self.input_int("Price", 1, 100000)
         product = Product(bar_code, name, price)
-        self.session.add(product)
+        self.sql_session.add(product)
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print(f"Product {name} stored")
         except sqlalchemy.exc.SQLAlchemyError as e:
             print(f"Could not store product {name}: {e}")
@@ -96,8 +98,8 @@ class AddProductMenu(Menu):
 
 
 class EditProductMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Edit product", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Edit product", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
@@ -135,7 +137,7 @@ class EditProductMenu(Menu):
                 product.hidden = self.confirm(f"Hidden(currently {product.hidden})", default=False)
             elif what == "store":
                 try:
-                    self.session.commit()
+                    self.sql_session.commit()
                     print(f"Product {product.name} stored")
                 except sqlalchemy.exc.SQLAlchemyError as e:
                     print(f"Could not store product {product.name}: {e}")
@@ -149,8 +151,8 @@ class EditProductMenu(Menu):
 
 
 class AdjustStockMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Adjust stock", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Adjust stock", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
@@ -168,7 +170,7 @@ class AdjustStockMenu(Menu):
         product.stock += add_stock
 
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print("Stock is now stored")
             self.pause()
         except sqlalchemy.exc.SQLAlchemyError as e:
@@ -179,13 +181,13 @@ class AdjustStockMenu(Menu):
 
 
 class CleanupStockMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Stock Cleanup", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Stock Cleanup", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
 
-        products = self.session.query(Product).filter(Product.stock != 0).all()
+        products = self.sql_session.query(Product).filter(Product.stock != 0).all()
 
         print("Every product in stock will be printed.")
         print("Entering no value will keep current stock or set it to 0 if it is negative.")
@@ -199,12 +201,12 @@ class CleanupStockMenu(Menu):
         for product in products:
             oldstock = product.stock
             product.stock = self.input_int(product.name, 0, 10000, default=max(0, oldstock))
-            self.session.add(product)
+            self.sql_session.add(product)
             if oldstock != product.stock:
                 changed_products.append((product, oldstock))
 
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print("New stocks are now stored.")
             self.pause()
         except sqlalchemy.exc.SQLAlchemyError as e:

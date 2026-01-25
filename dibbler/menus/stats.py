@@ -1,4 +1,5 @@
 from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
 
 from dibbler.lib.helpers import less
 from dibbler.models import PurchaseEntry, Product, User
@@ -15,14 +16,14 @@ __all__ = [
 
 
 class ProductPopularityMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Products by popularity", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Products by popularity", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
         text = ""
         sub = (
-            self.session.query(
+            self.sql_session.query(
                 PurchaseEntry.product_id,
                 func.sum(PurchaseEntry.amount).label("purchase_count"),
             )
@@ -31,7 +32,7 @@ class ProductPopularityMenu(Menu):
             .subquery()
         )
         product_list = (
-            self.session.query(Product, sub.c.purchase_count)
+            self.sql_session.query(Product, sub.c.purchase_count)
             .outerjoin((sub, Product.product_id == sub.c.product_id))
             .order_by(desc(sub.c.purchase_count))
             .filter(sub.c.purchase_count is not None)
@@ -48,14 +49,14 @@ class ProductPopularityMenu(Menu):
 
 
 class ProductRevenueMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Products by revenue", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Products by revenue", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
         text = ""
         sub = (
-            self.session.query(
+            self.sql_session.query(
                 PurchaseEntry.product_id,
                 func.sum(PurchaseEntry.amount).label("purchase_count"),
             )
@@ -64,7 +65,7 @@ class ProductRevenueMenu(Menu):
             .subquery()
         )
         product_list = (
-            self.session.query(Product, sub.c.purchase_count)
+            self.sql_session.query(Product, sub.c.purchase_count)
             .outerjoin((sub, Product.product_id == sub.c.product_id))
             .order_by(desc(sub.c.purchase_count * Product.price))
             .filter(sub.c.purchase_count is not None)
@@ -86,22 +87,22 @@ class ProductRevenueMenu(Menu):
 
 
 class BalanceMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Total balance of PVVVV", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Total balance of PVVVV", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
         text = ""
         total_value = 0
-        product_list = self.session.query(Product).filter(Product.stock > 0).all()
+        product_list = self.sql_session.query(Product).filter(Product.stock > 0).all()
         for p in product_list:
             total_value += p.stock * p.price
 
         total_positive_credit = (
-            self.session.query(func.sum(User.credit)).filter(User.credit > 0).first()[0]
+            self.sql_session.query(func.sum(User.credit)).filter(User.credit > 0).first()[0]
         )
         total_negative_credit = (
-            self.session.query(func.sum(User.credit)).filter(User.credit < 0).first()[0]
+            self.sql_session.query(func.sum(User.credit)).filter(User.credit < 0).first()[0]
         )
 
         total_credit = total_positive_credit + total_negative_credit
@@ -119,8 +120,8 @@ class BalanceMenu(Menu):
 
 
 class LoggedStatisticsMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Statistics from log", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Statistics from log", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
-        statisticsTextOnly()
+        statisticsTextOnly(self.sql_session)

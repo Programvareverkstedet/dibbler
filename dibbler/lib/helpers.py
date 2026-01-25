@@ -4,21 +4,22 @@ import os
 import signal
 
 from sqlalchemy import or_, and_
+from sqlalchemy.orm import Session
 
 from ..models import User, Product
 
 
-def search_user(string, session, ignorethisflag=None):
+def search_user(string, sql_session: Session, ignorethisflag=None):
     string = string.lower()
     exact_match = (
-        session.query(User)
+        sql_session.query(User)
         .filter(or_(User.name == string, User.card == string, User.rfid == string))
         .first()
     )
     if exact_match:
         return exact_match
     user_list = (
-        session.query(User)
+        sql_session.query(User)
         .filter(
             or_(
                 User.name.ilike(f"%{string}%"),
@@ -31,16 +32,16 @@ def search_user(string, session, ignorethisflag=None):
     return user_list
 
 
-def search_product(string, session, find_hidden_products=True):
+def search_product(string, sql_session: Session, find_hidden_products=True):
     if find_hidden_products:
         exact_match = (
-            session.query(Product)
+            sql_session.query(Product)
             .filter(or_(Product.bar_code == string, Product.name == string))
             .first()
         )
     else:
         exact_match = (
-            session.query(Product)
+            sql_session.query(Product)
             .filter(
                 or_(
                     Product.bar_code == string,
@@ -53,7 +54,7 @@ def search_product(string, session, find_hidden_products=True):
         return exact_match
     if find_hidden_products:
         product_list = (
-            session.query(Product)
+            sql_session.query(Product)
             .filter(
                 or_(
                     Product.bar_code.ilike(f"%{string}%"),
@@ -64,7 +65,7 @@ def search_product(string, session, find_hidden_products=True):
         )
     else:
         product_list = (
-            session.query(Product)
+            sql_ession.query(Product)
             .filter(
                 or_(
                     Product.bar_code.ilike(f"%{string}%"),

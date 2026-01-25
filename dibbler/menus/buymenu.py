@@ -1,4 +1,5 @@
 import sqlalchemy
+from sqlalchemy.orm import Session
 
 from dibbler.conf import config
 from dibbler.models import (
@@ -13,10 +14,8 @@ from .helpermenus import Menu
 
 
 class BuyMenu(Menu):
-    def __init__(self, session=None):
-        Menu.__init__(self, "Buy", uses_db=True)
-        if session:
-            self.session = session
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Buy", sql_session=sql_session, uses_db=True)
         self.superfast_mode = False
         self.help_text = """
 Each purchase may contain one or more products and one or more buyers.
@@ -167,9 +166,9 @@ When finished, write an empty line to confirm the purchase.\n"""
                 break
 
         self.purchase.perform_purchase()
-        self.session.add(self.purchase)
+        self.sql_session.add(self.purchase)
         try:
-            self.session.commit()
+            self.sql_session.commit()
         except sqlalchemy.exc.SQLAlchemyError as e:
             print(f"Could not store purchase: {e}")
         else:

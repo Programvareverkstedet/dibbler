@@ -1,6 +1,7 @@
 from math import ceil
 
 import sqlalchemy
+from sqlalchemy.orm import Session
 
 from dibbler.models import (
     Product,
@@ -13,8 +14,8 @@ from .helpermenus import Menu
 
 
 class AddStockMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Add stock and adjust credit", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Add stock and adjust credit", sql_session=sql_session, uses_db=True)
         self.help_text = """
 Enter what you have bought for PVVVV here, along with your user name and how
 much money you're due in credits for the purchase when prompted.\n"""
@@ -151,10 +152,10 @@ much money you're due in credits for the purchase when prompted.\n"""
             PurchaseEntry(purchase, product, -self.products[product][0])
 
         purchase.perform_soft_purchase(-self.price, round_up=False)
-        self.session.add(purchase)
+        self.sql_session.add(purchase)
 
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print("Success! Transaction performed:")
             # self.print_info()
             for user in self.users:

@@ -4,17 +4,17 @@
 import datetime
 from collections import defaultdict
 
+from sqlalchemy.orm import Session
+
 from .helpers import *
 from ..models import Transaction
-from ..db import session as create_session
 
 
-def getUser():
+def getUser(sql_session: Session):
     while 1:
         string = input("user? ")
-        session = create_session()
-        user = search_user(string, session)
-        session.close()
+        user = search_user(string, sql_session)
+        sql_session.close()
         if not isinstance(user, list):
             return user.name
         i = 0
@@ -37,12 +37,10 @@ def getUser():
             return user[n].name
 
 
-def getProduct():
+def getProduct(sql_session: Session):
     while 1:
         string = input("product? ")
-        session = create_session()
-        product = search_product(string, session)
-        session.close()
+        product = search_product(string, sql_session)
         if not isinstance(product, list):
             return product.name
         i = 0
@@ -238,12 +236,11 @@ def addLineToDatabase(database, inputLine):
     return database
 
 
-def buildDatabaseFromDb(inputType, inputProduct, inputUser):
+def buildDatabaseFromDb(inputType, inputProduct, inputUser, sql_session: Session):
     sdate = input("enter start date (yyyy-mm-dd)? ")
     edate = input("enter end date (yyyy-mm-dd)? ")
     print("building database...")
-    session = create_session()
-    transaction_list = session.query(Transaction).all()
+    transaction_list = sql_session.query(Transaction).all()
     inputLine = InputLine(inputUser, inputProduct, inputType)
     startDate = getDateDb(transaction_list[0].time, sdate)
     endDate = getDateDb(transaction_list[-1].time, edate)
@@ -275,7 +272,7 @@ def buildDatabaseFromDb(inputType, inputProduct, inputUser):
     print("saving as default.dibblerlog...", end=" ")
     f = open("default.dibblerlog", "w")
     line_format = "%s|%s|%s|%s|%s|%s\n"
-    transaction_list = session.query(Transaction).all()
+    transaction_list = sql_session.query(Transaction).all()
     for transaction in transaction_list:
         if transaction.purchase:
             products = "¤".join([ent.product.name for ent in transaction.purchase.entries])
@@ -290,7 +287,6 @@ def buildDatabaseFromDb(inputType, inputProduct, inputUser):
             transaction.description,
         )
         f.write(line.encode("utf8"))
-    session.close()
     f.close
     # bygg database.pengebeholdning
     if (inputType == 3) or (inputType == 4):
@@ -466,7 +462,7 @@ def printGlobal(database, dateLine, n):
     )
 
 
-def alt4menuTextOnly(database, dateLine):
+def alt4menuTextOnly(database, dateLine, sql_session: Session):
     n = 10
     while 1:
         print(
@@ -477,12 +473,12 @@ def alt4menuTextOnly(database, dateLine):
             break
         elif inp == "1":
             try:
-                printUser(database, dateLine, getUser(), n)
+                printUser(database, dateLine, getUser(sql_session), n)
             except:
                 print("\n\nSomething is not right, (last date prior to first date?)")
         elif inp == "2":
             try:
-                printProduct(database, dateLine, getProduct(), n)
+                printProduct(database, dateLine, getProduct(sql_session), n)
             except:
                 print("\n\nSomething is not right, (last date prior to first date?)")
         elif inp == "3":
@@ -494,15 +490,15 @@ def alt4menuTextOnly(database, dateLine):
             n = int(input("set number to show "))
 
 
-def statisticsTextOnly():
+def statisticsTextOnly(sql_session: Session):
     inputType = 4
     product = ""
     user = ""
     print("\n0: from file, 1: from database, q:quit")
     inp = input("")
     if inp == "1":
-        database, dateLine = buildDatabaseFromDb(inputType, product, user)
+        database, dateLine = buildDatabaseFromDb(inputType, product, user, sql_session)
     elif inp == "0" or inp == "":
         database, dateLine = buildDatabaseFromFile("default.dibblerlog", inputType, product, user)
     if not inp == "q":
-        alt4menuTextOnly(database, dateLine)
+        alt4menuTextOnly(database, dateLine, sql_session)

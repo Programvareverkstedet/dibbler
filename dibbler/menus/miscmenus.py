@@ -1,4 +1,5 @@
 import sqlalchemy
+from sqlalchemy.orm import Session
 
 from dibbler.conf import config
 from dibbler.models import Transaction, Product, User
@@ -8,8 +9,8 @@ from .helpermenus import Menu, Selector
 
 
 class TransferMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Transfer credit between users", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Transfer credit between users", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
@@ -26,10 +27,10 @@ class TransferMenu(Menu):
         t2 = Transaction(user2, -amount, f'transfer from {user1.name} "{comment}"')
         t1.perform_transaction()
         t2.perform_transaction()
-        self.session.add(t1)
-        self.session.add(t2)
+        self.sql_session.add(t1)
+        self.sql_session.add(t2)
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print(f"Transferred {amount:d} kr from {user1} to {user2}")
             print(f"User {user1}'s credit is now {user1.credit:d} kr")
             print(f"User {user2}'s credit is now {user2.credit:d} kr")
@@ -40,8 +41,8 @@ class TransferMenu(Menu):
 
 
 class ShowUserMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Show user", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Show user", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
@@ -123,13 +124,13 @@ class ShowUserMenu(Menu):
 
 
 class UserListMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "User list", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "User list", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
-        user_list = self.session.query(User).all()
-        total_credit = self.session.query(sqlalchemy.func.sum(User.credit)).first()[0]
+        user_list = self.sql_session.query(User).all()
+        total_credit = self.sql_session.query(sqlalchemy.func.sum(User.credit)).first()[0]
 
         line_format = "%-12s | %6s\n"
         hline = "---------------------\n"
@@ -144,8 +145,8 @@ class UserListMenu(Menu):
 
 
 class AdjustCreditMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Adjust credit", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Adjust credit", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
@@ -164,9 +165,9 @@ class AdjustCreditMenu(Menu):
             description = "manually adjusted credit"
         transaction = Transaction(user, -amount, description)
         transaction.perform_transaction()
-        self.session.add(transaction)
+        self.sql_session.add(transaction)
         try:
-            self.session.commit()
+            self.sql_session.commit()
             print(f"User {user.name}'s credit is now {user.credit:d} kr")
         except sqlalchemy.exc.SQLAlchemyError as e:
             print(f"Could not store transaction: {e}")
@@ -174,14 +175,14 @@ class AdjustCreditMenu(Menu):
 
 
 class ProductListMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Product list", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Product list", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
         text = ""
         product_list = (
-            self.session.query(Product)
+            self.sql_session.query(Product)
             .filter(Product.hidden.is_(False))
             .order_by(Product.stock.desc())
         )
@@ -204,8 +205,8 @@ class ProductListMenu(Menu):
 
 
 class ProductSearchMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Product search", uses_db=True)
+    def __init__(self, sql_session: Session):
+        Menu.__init__(self, "Product search", sql_session=sql_session, uses_db=True)
 
     def _execute(self):
         self.print_header()
