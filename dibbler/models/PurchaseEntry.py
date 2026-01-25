@@ -27,8 +27,8 @@ class PurchaseEntry(Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"))
     purchase_id: Mapped[int] = mapped_column(ForeignKey("purchases.id"))
 
-    product: Mapped[Product] = relationship(lazy="joined")
-    purchase: Mapped[Purchase] = relationship(lazy="joined")
+    product: Mapped[Product] = relationship(back_populates='purchases', lazy="joined")
+    purchase: Mapped[Purchase] = relationship(back_populates='entries', lazy="joined")
 
     def __init__(self, purchase, product, amount):
         self.product = product

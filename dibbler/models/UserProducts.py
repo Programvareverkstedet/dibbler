@@ -27,5 +27,5 @@ class UserProducts(Base):
     count: Mapped[int] = mapped_column(Integer)
     sign: Mapped[int] = mapped_column(Integer)
 
-    user: Mapped[User] = relationship()
-    product: Mapped[Product] = relationship()
+    user: Mapped[User] = relationship(back_populates="products")
+    product: Mapped[Product] = relationship(back_populates="users")

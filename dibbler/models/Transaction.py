@@ -36,7 +36,7 @@ class Transaction(Base):
     purchase_id: Mapped[int | None] = mapped_column(ForeignKey("purchases.id"))
 
     user: Mapped[User] = relationship(lazy="joined")
-    purchase: Mapped[Purchase] = relationship(lazy="joined")
+    purchase: Mapped[Purchase] = relationship(back_populates='transactions', lazy="joined")
 
     def __init__(
         self,

@@ -1,8 +1,8 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
-from datetime import datetime
 import math
+from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     DateTime,
@@ -29,7 +29,8 @@ class Purchase(Base):
     price: Mapped[int] = mapped_column(Integer)
 
     transactions: Mapped[set[Transaction]] = relationship(
-        back_populates="purchase", order_by="Transaction.user_name"
+        back_populates="purchase",
+        order_by=Transaction.user_name,
     )
     entries: Mapped[set[PurchaseEntry]] = relationship(back_populates="purchase")
 

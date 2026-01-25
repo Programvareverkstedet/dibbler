@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -14,19 +15,22 @@ from sqlalchemy.orm import (
 from .Base import Base
 
 if TYPE_CHECKING:
-    from .UserProducts import UserProducts
     from .Transaction import Transaction
+    from .UserProducts import UserProducts
 
 
 class User(Base):
     __tablename__ = "users"
     name: Mapped[str] = mapped_column(String(10), primary_key=True)
-    credit: Mapped[str] = mapped_column(Integer)
+    credit: Mapped[int] = mapped_column(Integer)
     card: Mapped[str | None] = mapped_column(String(20))
     rfid: Mapped[str | None] = mapped_column(String(20))
 
     products: Mapped[list[UserProducts]] = relationship(back_populates="user")
-    transactions: Mapped[list[Transaction]] = relationship(back_populates="user")
+    transactions: Mapped[list[Transaction]] = relationship(
+        back_populates="user",
+        order_by="Transaction.time",
+    )
 
     name_re = r"[a-z]+"
     card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
