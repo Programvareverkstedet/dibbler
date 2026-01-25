@@ -1,12 +1,12 @@
 #!/usr/bin/python
 
-from dibbler.db import Session
+from dibbler.db import session as create_session
 from dibbler.models import User
 
 
 def main():
     # Start an SQL session
-    session = Session()
+    session = create_session()
     # Let's find all users with a negative credit
     slabbedasker = session.query(User).filter(User.credit < 0).all()
 

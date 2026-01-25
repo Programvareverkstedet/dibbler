@@ -6,13 +6,13 @@ from collections import defaultdict
 
 from .helpers import *
 from ..models import Transaction
-from ..db import Session
+from ..db import session as create_session
 
 
 def getUser():
     while 1:
         string = input("user? ")
-        session = Session()
+        session = create_session()
         user = search_user(string, session)
         session.close()
         if not isinstance(user, list):
@@ -40,7 +40,7 @@ def getUser():
 def getProduct():
     while 1:
         string = input("product? ")
-        session = Session()
+        session = create_session()
         product = search_product(string, session)
         session.close()
         if not isinstance(product, list):
@@ -242,7 +242,7 @@ def buildDatabaseFromDb(inputType, inputProduct, inputUser):
     sdate = input("enter start date (yyyy-mm-dd)? ")
     edate = input("enter end date (yyyy-mm-dd)? ")
     print("building database...")
-    session = Session()
+    session = create_session()
     transaction_list = session.query(Transaction).all()
     inputLine = InputLine(inputUser, inputProduct, inputType)
     startDate = getDateDb(transaction_list[0].time, sdate)

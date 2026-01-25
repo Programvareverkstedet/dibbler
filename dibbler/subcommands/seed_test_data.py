@@ -1,5 +1,5 @@
 import json
-from dibbler.db import Session
+from dibbler.db import session as create_session
 
 from pathlib import Path
 
@@ -17,7 +17,7 @@ def clear_db(session):
 
 
 def main():
-    session = Session()
+    session = create_session()
     clear_db(session)
     product_items = []
     user_items = []

@@ -32,14 +32,14 @@ Put it up somewhere in the vicinity.
                 thing.bar_code,
                 thing.name,
                 barcode_type=bar_type,
-                rotate=config.getboolean("printer", "rotate"),
+                rotate=config["printer"]["rotate"],
                 printer_type="QL-700",
                 label_type=config.get("printer", "label_type"),
             )
         elif isinstance(thing, User):
             print_name_label(
                 text=thing.name,
-                label_type=config.get("printer", "label_type"),
-                rotate=config.getboolean("printer", "rotate"),
+                label_type=config["printer"]["label_type"],
+                rotate=config["printer"]["rotate"],
                 printer_type="QL-700",
             )

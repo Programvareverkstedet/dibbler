@@ -3,7 +3,7 @@ import os
 import random
 import sys
 
-from dibbler.db import Session
+from dibbler.db import session as create_session
 
 from .buymenu import BuyMenu
 from .faq import FAQMenu
@@ -28,7 +28,7 @@ class MainMenu(Menu):
         else:
             num = 1
             item_name = in_str
-        buy_menu = BuyMenu(Session())
+        buy_menu = BuyMenu(create_session())
         thing = buy_menu.search_for_thing(item_name, find_hidden_products=False)
         if thing:
             buy_menu.execute(initial_contents=[(thing, num)])

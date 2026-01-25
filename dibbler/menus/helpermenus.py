@@ -5,7 +5,7 @@ import re
 import sys
 from select import select
 
-from dibbler.db import Session
+from dibbler.db import session as create_session
 from dibbler.models import User
 from dibbler.lib.helpers import (
     search_user,
@@ -485,7 +485,7 @@ class Menu(object):
         self.set_context(None)
         try:
             if self.uses_db and not self.session:
-                self.session = Session()
+                self.session = create_session()
             return self._execute(**kwargs)
         except ExitMenu:
             self.at_exit()

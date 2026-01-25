@@ -1,8 +1,11 @@
 import argparse
-import sys
 from pathlib import Path
 
-from dibbler.conf import DEFAULT_CONFIG_PATH, config, default_config_path_submissive_and_readable
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+from dibbler.conf import load_config
+from dibbler.db import engine, session
 
 parser = argparse.ArgumentParser()
 
@@ -12,7 +15,7 @@ parser.add_argument(
     help="Path to the config file",
     type=Path,
     metavar="FILE",
-    default="config.ini",
+    required=False,
 )
 
 subparsers = parser.add_subparsers(
@@ -29,12 +32,13 @@ subparsers.add_parser("seed-data", help="Fill with mock data")
 def main():
     args = parser.parse_args()
 
-    if args.config is not None:
-        config.read(args.config)
-    elif default_config_path_submissive_and_readable():
-        config.read(DEFAULT_CONFIG_PATH)
-    else:
-        print("Could not read config file, it was neither provided nor readable in default location", file=sys.stderr)
+    load_config(args.config)
+
+    from dibbler.conf import config
+
+    global engine, session
+    engine = create_engine(config['database']['url'])
+    session = sessionmaker(bind=engine)
 
     if args.subcommand == "loop":
         import dibbler.subcommands.loop as loop

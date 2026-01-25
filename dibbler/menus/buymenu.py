@@ -37,7 +37,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         """
         assert isinstance(user, User)
 
-        return user.credit > config.getint("limits", "low_credit_warning_limit")
+        return user.credit > config["limits"]["low_credit_warning_limit"]
 
     def low_credit_warning(self, user, timeout=False):
         assert isinstance(user, User)
@@ -58,7 +58,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         print("***********************************************************************")
         print("")
         print(
-            f"USER {user.name} HAS LOWER CREDIT THAN {config.getint('limits', 'low_credit_warning_limit'):d}."
+            f"USER {user.name} HAS LOWER CREDIT THAN {config['limits']['low_credit_warning_limit']:d}."
         )
         print("THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH.")
         print("CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS.")
@@ -178,9 +178,9 @@ When finished, write an empty line to confirm the purchase.\n"""
             for t in self.purchase.transactions:
                 if not t.user.is_anonymous():
                     print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
-                    if t.user.credit < config.getint("limits", "low_credit_warning_limit"):
+                    if t.user.credit < config["limits"]["low_credit_warning_limit"]:
                         print(
-                            f"USER {t.user.name} HAS LOWER CREDIT THAN {config.getint('limits', 'low_credit_warning_limit'):d},",
+                            f"USER {t.user.name} HAS LOWER CREDIT THAN {config['limits']['low_credit_warning_limit']:d},",
                             "AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.",
                         )
 

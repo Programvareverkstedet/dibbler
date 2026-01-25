@@ -1,7 +1,7 @@
 { config, pkgs, lib, ... }: let
   cfg = config.services.dibbler;
 
-  format = pkgs.formats.ini { };
+  format = pkgs.formats.toml { };
 in {
   options.services.dibbler = {
     enable = lib.mkEnableOption "dibbler, the little kiosk computer";
@@ -58,7 +58,7 @@ in {
 
   config = lib.mkIf cfg.enable (lib.mkMerge [
     {
-      services.dibbler.settings = lib.pipe ../example-config.ini [
+      services.dibbler.settings = lib.pipe ../example-config.toml [
         builtins.readFile
         builtins.fromTOML
         (lib.mapAttrsRecursive (_: lib.mkDefault))
@@ -67,7 +67,7 @@ in {
     {
       environment.systemPackages = [ cfg.package ];
 
-      environment.etc."dibbler/dibbler.conf".source = format.generate "dibbler.conf" cfg.settings;
+      environment.etc."dibbler/dibbler.toml".source = format.generate "dibbler.toml" cfg.settings;
 
       users = {
         users.dibbler = {
@@ -97,7 +97,7 @@ in {
         };
         serviceConfig = {
           Type = "oneshot";
-          ExecStart = "${lib.getExe cfg.package} --config /etc/dibbler/dibbler.conf create-db";
+          ExecStart = "${lib.getExe cfg.package} --config /etc/dibbler/dibbler.toml create-db";
           ExecStartPost = "${lib.getExe' pkgs.coreutils "touch"} /var/lib/dibbler/.db-setup-done";
           StateDirectory = "dibbler";
 
@@ -163,7 +163,7 @@ in {
             ];
 
             dibblerArgs = lib.cli.toCommandLineShellGNU { } {
-              config = "/etc/dibbler/dibbler.conf";
+              config = "/etc/dibbler/dibbler.toml";
             };
 
           in "${lib.getExe cfg.screenPackage} ${screenArgs} ${lib.getExe cfg.package} ${dibblerArgs} loop";

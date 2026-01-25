@@ -56,7 +56,7 @@ class ShowUserMenu(Menu):
                 (
                     "transactions",
                     "Recent transactions (List of last "
-                    + str(config.getint("limits", "user_recent_transaction_limit"))
+                    + str(config["limits"]["user_recent_transaction_limit"])
                     + ")",
                 ),
                 ("products", f"Which products {user.name} has bought, and how many"),
@@ -65,7 +65,7 @@ class ShowUserMenu(Menu):
         )
         what = selector.execute()
         if what == "transactions":
-            self.print_transactions(user, config.getint("limits", "user_recent_transaction_limit"))
+            self.print_transactions(user, config["limits"]["user_recent_transaction_limit"])
         elif what == "products":
             self.print_purchased_products(user)
         elif what == "transactions-all":

@@ -20,9 +20,9 @@ Installer python, og lag og aktiver et venv. Installer så avhengighetene med `p
 Deretter kan du kjøre programmet med
 
 ```console
-python -m dibbler -c example-config.ini create-db
-python -m dibbler -c example-config.ini seed-data
-python -m dibbler -c example-config.ini loop
+python -m dibbler -c example-config.toml create-db
+python -m dibbler -c example-config.toml seed-data
+python -m dibbler -c example-config.toml loop
 ```
 
 ## Nix
@@ -46,7 +46,7 @@ Du kan også bygge pakken manuelt, eller kjøre den direkte:
 ```console
 nix build .#dibbler
 
-nix run .# -- --config example-config.ini create-db
-nix run .# -- --config example-config.ini seed-data
-nix run .# -- --config example-config.ini loop
+nix run .# -- --config example-config.toml create-db
+nix run .# -- --config example-config.toml seed-data
+nix run .# -- --config example-config.toml loop
 ```
