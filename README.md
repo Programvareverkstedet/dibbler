@@ -50,3 +50,7 @@ nix run .# -- --config example-config.toml create-db
 nix run .# -- --config example-config.toml seed-data
 nix run .# -- --config example-config.toml loop
 ```
+
+## Produksjonssetting
+
+Se https://wiki.pvv.ntnu.no/wiki/Drift/Dibbler
