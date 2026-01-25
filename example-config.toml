@@ -5,8 +5,24 @@ show_tracebacks = true
 input_encoding = 'utf8'
 
 [database]
-# url = "postgresql://robertem@127.0.0.1/pvvvv"
-url = "sqlite:///test.db"
+type = 'sqlite'
+
+[database.sqlite]
+path = 'sqlite:///test.db'
+
+[database.postgresql]
+host = 'localhost'
+# host = '/run/postgresql'
+port = 5432
+
+username = 'dibbler'
+dbname = 'dibbler'
+
+# You can either specify a path to a file containing the password,
+# or just specify the password directly
+# password = 'superhemlig'
+# password_file = '/var/lib/dibbler/db-password'
+
 
 [limits]
 low_credit_warning_limit = -100
@@ -15,5 +31,5 @@ user_recent_transaction_limit = 100
 # See https://pypi.org/project/brother_ql/ for label types
 # Set rotate to False for endless labels
 [printer]
-label_type = "62"
+label_type = '62'
 label_rotate = false

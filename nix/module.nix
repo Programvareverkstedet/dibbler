@@ -77,7 +77,10 @@ in {
         groups.dibbler = { };
       };
 
-      services.dibbler.settings.database.url = lib.mkIf cfg.createLocalDatabase "postgresql://dibbler?host=/run/postgresql";
+      services.dibbler.settings.database = lib.mkIf cfg.createLocalDatabase {
+        type = "postgresql";
+        postgresql.host = "/run/postgresql";
+      };
 
       services.postgresql = lib.mkIf cfg.createLocalDatabase {
         ensureDatabases = [ "dibbler" ];

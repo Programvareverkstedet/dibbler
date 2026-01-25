@@ -4,7 +4,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from dibbler.conf import load_config
+from dibbler.conf import load_config, config_db_string
 from dibbler.db import engine, session
 
 parser = argparse.ArgumentParser()
@@ -34,10 +34,8 @@ def main():
 
     load_config(args.config)
 
-    from dibbler.conf import config
-
     global engine, session
-    engine = create_engine(config['database']['url'])
+    engine = create_engine(config_db_string())
     session = sessionmaker(bind=engine)
 
     if args.subcommand == "loop":

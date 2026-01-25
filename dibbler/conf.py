@@ -34,3 +34,32 @@ def load_config(config_path: Path | None = None):
     else:
         print("Could not read config file, it was neither provided nor readable in default location", file=sys.stderr)
         sys.exit(1)
+
+def config_db_string() -> str:
+    db_type = config["database"]["type"]
+
+    if db_type == "sqlite":
+        path = Path(config["database"]["sqlite"]["path"])
+        return f"sqlite:///{path.absolute()}"
+
+    elif db_type == "postgresql":
+        host = config["database"]["postgresql"]["host"]
+        port = config["database"]["postgresql"].get("port", 5432)
+        username = config["database"]["postgresql"].get("username", "dibbler")
+        dbname = config["database"]["postgresql"].get("dbname", "dibbler")
+
+        if "password_file" in config["database"]["postgresql"]:
+            with Path(config["database"]["postgresql"]["password_file"]).open("r") as f:
+                password = f.read().strip()
+        elif "password" in config["database"]["postgresql"]:
+            password = config["database"]["postgresql"]["password"]
+        else:
+            password = ''
+
+        if host.startswith("/"):
+            return f"postgresql+psycopg2://{username}:{password}@/{dbname}?host={host}"
+        else:
+            return f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}"
+    else:
+        print(f"Error: unknown database type '{db_type}'")
+        exit(1)
