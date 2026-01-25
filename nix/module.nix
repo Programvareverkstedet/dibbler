@@ -114,7 +114,7 @@ in {
 
       users.users.dibbler = {
         extraGroups = [ "lp" ];
-        shell = (pkgs.writeShellScriptBin "login-shell" "${lib.getExe cfg.screenPackage} -x dibbler") // {
+        shell = (pkgs.writeShellScriptBin "login-shell" "${lib.getExe' cfg.screenPackage "screen"} -x dibbler") // {
           shellPath = "/bin/login-shell";
         };
       };
@@ -145,7 +145,7 @@ in {
           User = "dibbler";
           Group = "dibbler";
 
-          ExecStartPre = "-${lib.getExe cfg.screenPackage} -X -S dibbler kill";
+          ExecStartPre = "-${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler kill";
           ExecStart = let
             screenArgs = lib.escapeShellArgs [
               # -dm creates the screen in detached mode without accessing it
@@ -166,13 +166,13 @@ in {
               config = "/etc/dibbler/dibbler.toml";
             };
 
-          in "${lib.getExe cfg.screenPackage} ${screenArgs} ${lib.getExe cfg.package} ${dibblerArgs} loop";
+          in "${lib.getExe' cfg.screenPackage "screen"} ${screenArgs} ${lib.getExe cfg.package} ${dibblerArgs} loop";
           ExecStartPost =
             lib.optionals (cfg.limitScreenWidth != null) [
-              "${lib.getExe cfg.screenPackage} -X -S dibbler width ${toString cfg.limitScreenWidth}"
+              "${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler width ${toString cfg.limitScreenWidth}"
             ]
             ++ lib.optionals (cfg.limitScreenHeight != null) [
-              "${lib.getExe cfg.screenPackage} -X -S dibbler height ${toString cfg.limitScreenHeight}"
+              "${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler height ${toString cfg.limitScreenHeight}"
             ];
         };
       };
