@@ -1,15 +1,21 @@
-import pwd
-import subprocess
 import os
+import pwd
 import signal
+import subprocess
+from typing import Any, Callable, Literal
 
-from sqlalchemy import or_, and_
+from sqlalchemy import and_, not_, or_
 from sqlalchemy.orm import Session
 
-from ..models import User, Product
+from ..models import Product, User
 
 
-def search_user(string, sql_session: Session, ignorethisflag=None):
+def search_user(
+    string: str,
+    sql_session: Session,
+    ignorethisflag=None,
+):
+    assert sql_session is not None
     string = string.lower()
     exact_match = (
         sql_session.query(User)
@@ -32,7 +38,12 @@ def search_user(string, sql_session: Session, ignorethisflag=None):
     return user_list
 
 
-def search_product(string, sql_session: Session, find_hidden_products=True):
+def search_product(
+    string: str,
+    sql_session: Session,
+    find_hidden_products: bool = True,
+):
+    assert sql_session is not None
     if find_hidden_products:
         exact_match = (
             sql_session.query(Product)
@@ -45,7 +56,10 @@ def search_product(string, sql_session: Session, find_hidden_products=True):
             .filter(
                 or_(
                     Product.bar_code == string,
-                    and_(Product.name == string, Product.hidden is False),
+                    and_(
+                        Product.name == string,
+                        not_(Product.hidden),
+                    ),
                 )
             )
             .first()
@@ -65,11 +79,14 @@ def search_product(string, sql_session: Session, find_hidden_products=True):
         )
     else:
         product_list = (
-            sql_ession.query(Product)
+            sql_session.query(Product)
             .filter(
                 or_(
                     Product.bar_code.ilike(f"%{string}%"),
-                    and_(Product.name.ilike(f"%{string}%"), Product.hidden is False),
+                    and_(
+                        Product.name.ilike(f"%{string}%"),
+                        not_(Product.hidden),
+                    ),
                 )
             )
             .all()
@@ -77,7 +94,7 @@ def search_product(string, sql_session: Session, find_hidden_products=True):
     return product_list
 
 
-def system_user_exists(username):
+def system_user_exists(username: str) -> bool:
     try:
         pwd.getpwnam(username)
     except KeyError:
@@ -88,7 +105,7 @@ def system_user_exists(username):
         return True
 
 
-def guess_data_type(string):
+def guess_data_type(string: str) -> Literal["card", "rfid", "bar_code", "username"] | None:
     if string.startswith("ntnu") and string[4:].isdigit():
         return "card"
     if string.isdigit() and len(string) == 10:
@@ -102,7 +119,11 @@ def guess_data_type(string):
     return None
 
 
-def argmax(d, all=False, value=None):
+def argmax(
+    d,
+    all: bool = False,
+    value: Callable[[Any], Any] | None = None,
+):
     maxarg = None
     if value is not None:
         dd = d
@@ -117,7 +138,7 @@ def argmax(d, all=False, value=None):
     return maxarg
 
 
-def less(string):
+def less(string: str) -> None:
     """
     Run less with string as input; wait until it finishes.
     """

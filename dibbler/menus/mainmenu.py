@@ -19,7 +19,7 @@ def restart():
 
 
 class MainMenu(Menu):
-    def special_input_choice(self, in_str):
+    def special_input_choice(self, in_str: str) -> bool:
         mv = in_str.split()
         if len(mv) == 2 and mv[0].isdigit():
             num = int(mv[0])
@@ -35,9 +35,9 @@ class MainMenu(Menu):
             return True
         return False
 
-    def special_input_options(self, result):
+    def special_input_options(self, result: str) -> bool:
         if result in faq_commands:
-            FAQMenu().execute()
+            FAQMenu(self.sql_session).execute()
             return True
         if result in restart_commands:
             if self.confirm("Restart Dibbler?"):
@@ -62,5 +62,5 @@ class MainMenu(Menu):
             return True
         return False
 
-    def invalid_menu_choice(self, in_str):
+    def invalid_menu_choice(self, in_str: str) -> None:
         print(self.show_context())

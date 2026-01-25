@@ -10,7 +10,7 @@ from .helpermenus import Menu, Selector
 
 class TransferMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Transfer credit between users", sql_session=sql_session, uses_db=True)
+        super().__init__("Transfer credit between users", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -42,7 +42,7 @@ class TransferMenu(Menu):
 
 class ShowUserMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Show user", sql_session=sql_session, uses_db=True)
+        super().__init__("Show user", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -53,6 +53,7 @@ class ShowUserMenu(Menu):
         print(f"Credit: {user.credit} kr")
         selector = Selector(
             f"What do you want to know about {user.name}?",
+            self.sql_session,
             items=[
                 (
                     "transactions",
@@ -75,7 +76,7 @@ class ShowUserMenu(Menu):
             print("What what?")
 
     @staticmethod
-    def print_transactions(user, limit=None):
+    def print_transactions(user: User, limit: int | None = None) -> None:
         num_trans = len(user.transactions)
         if limit is None:
             limit = num_trans
@@ -99,13 +100,13 @@ class ShowUserMenu(Menu):
                 string += ")"
                 if t.penalty > 1:
                     string += f" * {t.penalty:d}x penalty applied"
-            else:
+            elif t.description is not None:
                 string += t.description
             string += "\n"
         less(string)
 
     @staticmethod
-    def print_purchased_products(user):
+    def print_purchased_products(user: User) -> None:
         products = []
         for ref in user.products:
             product = ref.product
@@ -125,7 +126,7 @@ class ShowUserMenu(Menu):
 
 class UserListMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "User list", sql_session=sql_session, uses_db=True)
+        super().__init__("User list", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -146,7 +147,7 @@ class UserListMenu(Menu):
 
 class AdjustCreditMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Adjust credit", sql_session=sql_session, uses_db=True)
+        super().__init__("Adjust credit", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -176,7 +177,7 @@ class AdjustCreditMenu(Menu):
 
 class ProductListMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Product list", sql_session=sql_session, uses_db=True)
+        super().__init__("Product list", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -206,7 +207,7 @@ class ProductListMenu(Menu):
 
 class ProductSearchMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Product search", sql_session=sql_session, uses_db=True)
+        super().__init__("Product search", sql_session)
 
     def _execute(self):
         self.print_header()

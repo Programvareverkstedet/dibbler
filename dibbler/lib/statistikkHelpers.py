@@ -11,6 +11,7 @@ from ..models import Transaction
 
 
 def getUser(sql_session: Session):
+    assert sql_session is not None
     while 1:
         string = input("user? ")
         user = search_user(string, sql_session)
@@ -38,6 +39,7 @@ def getUser(sql_session: Session):
 
 
 def getProduct(sql_session: Session):
+    assert sql_session is not None
     while 1:
         string = input("product? ")
         product = search_product(string, sql_session)
@@ -237,6 +239,7 @@ def addLineToDatabase(database, inputLine):
 
 
 def buildDatabaseFromDb(inputType, inputProduct, inputUser, sql_session: Session):
+    assert sql_session is not None
     sdate = input("enter start date (yyyy-mm-dd)? ")
     edate = input("enter end date (yyyy-mm-dd)? ")
     print("building database...")
@@ -463,6 +466,7 @@ def printGlobal(database, dateLine, n):
 
 
 def alt4menuTextOnly(database, dateLine, sql_session: Session):
+    assert sql_session is not None
     n = 10
     while 1:
         print(
@@ -491,6 +495,7 @@ def alt4menuTextOnly(database, dateLine, sql_session: Session):
 
 
 def statisticsTextOnly(sql_session: Session):
+    assert sql_session is not None
     inputType = 4
     product = ""
     user = ""

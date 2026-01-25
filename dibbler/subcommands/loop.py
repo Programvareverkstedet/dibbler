@@ -4,25 +4,56 @@
 import random
 import sys
 import traceback
+from signal import (
+    SIG_IGN,
+    SIGQUIT,
+    SIGTSTP,
+)
+from signal import (
+    signal as set_signal_handler,
+)
 
 from sqlalchemy.orm import Session
 
 from ..conf import config
-from ..lib.helpers import *
-from ..menus import *
+from ..menus import (
+    AddProductMenu,
+    AddStockMenu,
+    AddUserMenu,
+    AdjustCreditMenu,
+    AdjustStockMenu,
+    BalanceMenu,
+    BuyMenu,
+    CleanupStockMenu,
+    EditProductMenu,
+    EditUserMenu,
+    FAQMenu,
+    LoggedStatisticsMenu,
+    MainMenu,
+    Menu,
+    PrintLabelMenu,
+    ProductListMenu,
+    ProductPopularityMenu,
+    ProductRevenueMenu,
+    ProductSearchMenu,
+    ShowUserMenu,
+    TransferMenu,
+    UserListMenu,
+)
 
 random.seed()
 
 
 def main(sql_session: Session):
     if not config["general"]["stop_allowed"]:
-        signal.signal(signal.SIGQUIT, signal.SIG_IGN)
+        set_signal_handler(SIGQUIT, SIG_IGN)
 
     if not config["general"]["stop_allowed"]:
-        signal.signal(signal.SIGTSTP, signal.SIG_IGN)
+        set_signal_handler(SIGTSTP, SIG_IGN)
 
     main = MainMenu(
         "Dibbler main menu",
+        sql_session,
         items=[
             BuyMenu(sql_session),
             ProductListMenu(sql_session),
@@ -33,6 +64,7 @@ def main(sql_session: Session):
             AddStockMenu(sql_session),
             Menu(
                 "Add/edit",
+                sql_session,
                 items=[
                     AddUserMenu(sql_session),
                     EditUserMenu(sql_session),
@@ -45,6 +77,7 @@ def main(sql_session: Session):
             ProductSearchMenu(sql_session),
             Menu(
                 "Statistics",
+                sql_session,
                 items=[
                     ProductPopularityMenu(sql_session),
                     ProductRevenueMenu(sql_session),
@@ -52,7 +85,7 @@ def main(sql_session: Session):
                     LoggedStatisticsMenu(sql_session),
                 ],
             ),
-            FAQMenu(),
+            FAQMenu(sql_session),
             PrintLabelMenu(sql_session),
         ],
         exit_msg="happy happy joy joy",

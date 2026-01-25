@@ -1,46 +1,57 @@
 # -*- coding: utf-8 -*-
-
-
 import re
 import sys
 from select import select
+from typing import Any, Callable, Iterable, Literal, Self
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import User
 from dibbler.lib.helpers import (
-    search_user,
-    search_product,
-    guess_data_type,
     argmax,
+    guess_data_type,
+    search_product,
+    search_user,
 )
+from dibbler.models import Product, User
 
-exit_commands = ["exit", "abort", "quit", "bye", "eat flaming death", "q"]
-help_commands = ["help", "?"]
-context_commands = ["what", "??"]
-local_help_commands = ["help!", "???"]
+exit_commands: list[str] = ["exit", "abort", "quit", "bye", "eat flaming death", "q"]
+help_commands: list[str] = ["help", "?"]
+context_commands: list[str] = ["what", "??"]
+local_help_commands: list[str] = ["help!", "???"]
 
 
-class ExitMenu(Exception):
+class ExitMenuException(Exception):
     pass
 
 
 class Menu(object):
+    name: str
+    sql_session: Session
+    items: list[Self | tuple | str]
+    prompt: str | None
+    end_prompt: str | None
+    return_index: bool
+    exit_msg: str | None
+    exit_confirm_msg: str | None
+    exit_disallowed_msg: str | None
+    help_text: str | None
+    context: str | None
+
     def __init__(
         self,
-        name,
-        items=None,
-        prompt=None,
-        end_prompt="> ",
-        return_index=True,
-        exit_msg=None,
-        exit_confirm_msg=None,
-        exit_disallowed_msg=None,
-        help_text=None,
-        uses_db=False,
-        sql_session: Session | None=None,
+        name: str,
+        sql_session: Session,
+        items: list[Self | tuple[Any, str] | str] | None = None,
+        prompt: str | None = None,
+        end_prompt: str | None = "> ",
+        return_index: bool = True,
+        exit_msg: str | None = None,
+        exit_confirm_msg: str | None = None,
+        exit_disallowed_msg: str | None = None,
+        help_text: str | None = None,
     ):
-        self.name = name
+        self.name: str = name
+        self.sql_session: Session = sql_session
         self.items = items if items is not None else []
         self.prompt = prompt
         self.end_prompt = end_prompt
@@ -50,48 +61,54 @@ class Menu(object):
         self.exit_disallowed_msg = exit_disallowed_msg
         self.help_text = help_text
         self.context = None
-        self.uses_db = uses_db
-        self.sql_session: Session | None = sql_session
 
-        assert not (self.uses_db and self.sql_session is None)
+        assert name is not None
+        assert self.sql_session is not None
 
-    def exit_menu(self):
+    def exit_menu(self) -> None:
         if self.exit_disallowed_msg is not None:
             print(self.exit_disallowed_msg)
             return
         if self.exit_confirm_msg is not None:
             if not self.confirm(self.exit_confirm_msg, default=True):
                 return
-        raise ExitMenu()
+        raise ExitMenuException()
 
-    def at_exit(self):
+    def at_exit(self) -> None:
         if self.exit_msg:
             print(self.exit_msg)
 
-    def set_context(self, string, display=True):
+    def set_context(
+        self,
+        string: str | None,
+        display: bool = True,
+    ) -> None:
         self.context = string
         if self.context is not None and display:
             print(self.context)
 
-    def add_to_context(self, string):
-        self.context += string
+    def add_to_context(self, string: str) -> None:
+        if self.context is not None:
+            self.context += string
+        else:
+            self.context = string
 
-    def printc(self, string):
+    def printc(self, string: str) -> None:
         print(string)
         if self.context is None:
             self.context = string
         else:
             self.context += "\n" + string
 
-    def show_context(self):
+    def show_context(self) -> None:
         print(self.header())
         if self.context is not None:
             print(self.context)
 
-    def item_is_submenu(self, i):
+    def item_is_submenu(self, i: int) -> bool:
         return isinstance(self.items[i], Menu)
 
-    def item_name(self, i):
+    def item_name(self, i: int) -> str:
         if self.item_is_submenu(i):
             return self.items[i].name
         elif isinstance(self.items[i], tuple):
@@ -99,7 +116,7 @@ class Menu(object):
         else:
             return self.items[i]
 
-    def item_value(self, i):
+    def item_value(self, i: int):
         if isinstance(self.items[i], tuple):
             return self.items[i][0]
         if self.return_index:
@@ -108,11 +125,11 @@ class Menu(object):
 
     def input_str(
         self,
-        prompt=None,
-        end_prompt=None,
-        regex=None,
+        prompt: str | None = None,
+        end_prompt: str | None = None,
+        regex: str | None = None,
         length_range=(None, None),
-        empty_string_is_none=False,
+        empty_string_is_none: bool = False,
         timeout=None,
         default=None,
     ):
@@ -181,7 +198,7 @@ class Menu(object):
                     continue
             return result
 
-    def special_input_options(self, result):
+    def special_input_options(self, result) -> bool:
         """
         Handles special, magic input for input_str
 
@@ -191,7 +208,7 @@ class Menu(object):
         """
         return False
 
-    def special_input_choice(self, in_str):
+    def special_input_choice(self, in_str: str) -> bool:
         """
         Handle choices which are not simply menu items.
 
@@ -201,7 +218,12 @@ class Menu(object):
         """
         return False
 
-    def input_choice(self, number_of_choices, prompt=None, end_prompt=None):
+    def input_choice(
+        self,
+        number_of_choices: int,
+        prompt: str | None = None,
+        end_prompt: str | None = None,
+    ):
         while True:
             result = self.input_str(prompt, end_prompt)
             if result == "":
@@ -216,7 +238,7 @@ class Menu(object):
                 if not self.special_input_choice(result):
                     self.invalid_menu_choice(result)
 
-    def invalid_menu_choice(self, in_str):
+    def invalid_menu_choice(self, in_str: str):
         print("Please enter a valid choice.")
 
     def input_int(
@@ -256,32 +278,40 @@ class Menu(object):
             except ValueError:
                 print("Please enter an integer")
 
-    def input_user(self, prompt=None, end_prompt=None):
+    def input_user(
+        self,
+        prompt: str | None = None,
+        end_prompt: str | None = None,
+    ) -> User:
         user = None
         while user is None:
             user = self.retrieve_user(self.input_str(prompt, end_prompt))
         return user
 
-    def retrieve_user(self, search_str):
+    def retrieve_user(self, search_str: str) -> User | None:
         return self.search_ui(search_user, search_str, "user")
 
-    def input_product(self, prompt=None, end_prompt=None):
+    def input_product(
+        self,
+        prompt: str | None = None,
+        end_prompt: str | None = None,
+    ) -> Product:
         product = None
         while product is None:
             product = self.retrieve_product(self.input_str(prompt, end_prompt))
         return product
 
-    def retrieve_product(self, search_str):
+    def retrieve_product(self, search_str: str) -> Product | None:
         return self.search_ui(search_product, search_str, "product")
 
     def input_thing(
         self,
-        prompt=None,
-        end_prompt=None,
-        permitted_things=("user", "product"),
+        prompt: str | None = None,
+        end_prompt: str | None = None,
+        permitted_things: Iterable[str] = ("user", "product"),
         add_nonexisting=(),
-        empty_input_permitted=False,
-        find_hidden_products=True,
+        empty_input_permitted: bool = False,
+        find_hidden_products: bool = True,
     ):
         result = None
         while result is None:
@@ -289,19 +319,22 @@ class Menu(object):
             if search_str == "" and empty_input_permitted:
                 return None
             result = self.search_for_thing(
-                search_str, permitted_things, add_nonexisting, find_hidden_products
+                search_str,
+                permitted_things,
+                add_nonexisting,
+                find_hidden_products,
             )
         return result
 
     def input_multiple(
         self,
-        prompt=None,
-        end_prompt=None,
-        permitted_things=("user", "product"),
+        prompt: str | None = None,
+        end_prompt: str | None = None,
+        permitted_things: Iterable[str] = ("user", "product"),
         add_nonexisting=(),
-        empty_input_permitted=False,
-        find_hidden_products=True,
-    ):
+        empty_input_permitted: bool = False,
+        find_hidden_products: bool = True,
+    ) -> tuple[User | Product, int] | None:
         result = None
         num = 0
         while result is None:
@@ -311,7 +344,10 @@ class Menu(object):
                 return None
             else:
                 result = self.search_for_thing(
-                    search_str, permitted_things, add_nonexisting, find_hidden_products
+                    search_str,
+                    permitted_things,
+                    add_nonexisting,
+                    find_hidden_products,
                 )
                 num = 1
 
@@ -333,12 +369,15 @@ class Menu(object):
 
     def search_for_thing(
         self,
-        search_str,
+        search_str: str,
         permitted_things=("user", "product"),
         add_non_existing=(),
-        find_hidden_products=True,
-    ):
-        search_fun = {"user": search_user, "product": search_product}
+        find_hidden_products: bool = True,
+    ) -> User | Product | None:
+        search_fun = {
+            "user": search_user,
+            "product": search_product,
+        }
         results = {}
         result_values = {}
         for thing in permitted_things:
@@ -357,10 +396,14 @@ class Menu(object):
                 return self.search_add(search_str)
             # print('No match found for "%s".' % search_str)
             return None
-        return self.search_ui2(search_str, results[selected_thing], selected_thing)
+        return self.search_ui2(
+            search_str,
+            results[selected_thing],
+            selected_thing,
+        )
 
     @staticmethod
-    def search_result_value(result):
+    def search_result_value(result) -> Literal[0, 1, 2, 3]:
         if result is None:
             return 0
         if not isinstance(result, list):
@@ -371,7 +414,7 @@ class Menu(object):
             return 2
         return 1
 
-    def search_add(self, string):
+    def search_add(self, string: str) -> User | None:
         type_guess = guess_data_type(string)
         if type_guess == "username":
             print(f'"{string}" looks like a username, but no such user exists.')
@@ -383,6 +426,7 @@ class Menu(object):
         if type_guess == "card":
             selector = Selector(
                 f'"{string}" looks like a card number, but no user with that card number exists.',
+                self.sql_session,
                 [
                     ("create", f"Create user with card number {string}"),
                     ("set", f"Set card number of an existing user to {string}"),
@@ -409,11 +453,21 @@ class Menu(object):
             print(f'"{string}" looks like the bar code for a product, but no such product exists.')
             return None
 
-    def search_ui(self, search_fun, search_str, thing):
+    def search_ui(
+        self,
+        search_fun: Callable[[str, Session], list[Any] | Any],
+        search_str: str,
+        thing: str,
+    ) -> Any:
         result = search_fun(search_str, self.sql_session)
         return self.search_ui2(search_str, result, thing)
 
-    def search_ui2(self, search_str, result, thing):
+    def search_ui2(
+        self,
+        search_str: str,
+        result: list[Any] | Any,
+        thing: str,
+    ) -> Any:
         if not isinstance(result, list):
             return result
         if len(result) == 0:
@@ -433,21 +487,37 @@ class Menu(object):
         else:
             select_header = f'{len(result):d} {thing}s matching "{search_str}"'
             select_items = result
-        selector = Selector(select_header, items=select_items, return_index=False)
+        selector = Selector(
+            select_header,
+            self.sql_session,
+            items=select_items,
+            return_index=False,
+        )
         return selector.execute()
 
-    @staticmethod
-    def confirm(prompt, end_prompt=None, default=None, timeout=None):
-        return ConfirmMenu(prompt, end_prompt=None, default=default, timeout=timeout).execute()
+    def confirm(
+        self,
+        prompt: str,
+        end_prompt: str | None = None,
+        default: bool | None = None,
+        timeout: int | None = None,
+    ) -> bool:
+        return ConfirmMenu(
+            self.sql_session,
+            prompt,
+            end_prompt=None,
+            default=default,
+            timeout=timeout,
+        ).execute()
 
-    def header(self):
+    def header(self) -> str:
         return f"[{self.name}]"
 
-    def print_header(self):
+    def print_header(self) -> None:
         print("")
         print(self.header())
 
-    def pause(self):
+    def pause(self) -> None:
         self.input_str(".", end_prompt="")
 
     @staticmethod
@@ -489,7 +559,7 @@ class Menu(object):
         self.set_context(None)
         try:
             return self._execute(**kwargs)
-        except ExitMenu:
+        except ExitMenuException:
             self.at_exit()
             return None
         finally:
@@ -515,8 +585,17 @@ class Menu(object):
 
 
 class MessageMenu(Menu):
-    def __init__(self, name, message, pause_after_message=True):
-        Menu.__init__(self, name)
+    message: str
+    pause_after_message: bool
+
+    def __init__(
+        self,
+        name: str,
+        message: str,
+        sql_session: Session,
+        pause_after_message: bool = True,
+    ):
+        super().__init__(name, sql_session)
         self.message = message.strip()
         self.pause_after_message = pause_after_message
 
@@ -529,10 +608,17 @@ class MessageMenu(Menu):
 
 
 class ConfirmMenu(Menu):
-    def __init__(self, prompt="confirm? ", end_prompt=": ", default=None, timeout=0):
-        Menu.__init__(
-            self,
+    def __init__(
+        self,
+        sql_session: Session,
+        prompt: str = "confirm? ",
+        end_prompt: str | None = ": ",
+        default: bool | None = None,
+        timeout: int | None = 0,
+    ):
+        super().__init__(
             "question",
+            sql_session,
             prompt=prompt,
             end_prompt=end_prompt,
             exit_disallowed_msg="Please answer yes or no",
@@ -560,7 +646,8 @@ class ConfirmMenu(Menu):
 class Selector(Menu):
     def __init__(
         self,
-        name,
+        name: str,
+        sql_session: Session,
         items=None,
         prompt="select",
         return_index=True,
@@ -570,15 +657,22 @@ class Selector(Menu):
     ):
         if items is None:
             items = []
-        Menu.__init__(self, name, items, prompt, return_index=return_index, exit_msg=exit_msg)
+        super().__init__(
+            name,
+            sql_session,
+            items,
+            prompt,
+            return_index=return_index,
+            exit_msg=exit_msg,
+        )
 
-    def header(self):
+    def header(self) -> str:
         return self.name
 
-    def print_header(self):
+    def print_header(self) -> None:
         print(self.header())
 
-    def local_help(self):
+    def local_help(self) -> None:
         if self.help_text is None:
             print("This is a selection menu.  Enter one of the listed numbers, or")
             print("'exit' to go out and do something else.")

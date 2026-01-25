@@ -38,15 +38,22 @@ class Transaction(Base):
     user: Mapped[User] = relationship(lazy="joined")
     purchase: Mapped[Purchase] = relationship(lazy="joined")
 
-    def __init__(self, user, amount=0, description=None, purchase=None, penalty=1):
+    def __init__(
+        self,
+        user: User,
+        amount: int = 0,
+        description: str | None = None,
+        purchase: Purchase | None = None,
+        penalty: int = 1,
+    ):
         self.user = user
         self.amount = amount
         self.description = description
         self.purchase = purchase
         self.penalty = penalty
 
-    def perform_transaction(self, ignore_penalty=False):
-        self.time = datetime.datetime.now()
+    def perform_transaction(self, ignore_penalty: bool = False) -> None:
+        self.time = datetime.now()
         if not ignore_penalty:
             self.amount *= self.penalty
         self.user.credit -= self.amount

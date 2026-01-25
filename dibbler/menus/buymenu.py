@@ -14,8 +14,11 @@ from .helpermenus import Menu
 
 
 class BuyMenu(Menu):
+    superfast_mode: bool
+    purchase: Purchase
+
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Buy", sql_session=sql_session, uses_db=True)
+        super().__init__("Buy", sql_session)
         self.superfast_mode = False
         self.help_text = """
 Each purchase may contain one or more products and one or more buyers.
@@ -27,7 +30,7 @@ addition, and you can type 'what' at any time to redisplay it.
 When finished, write an empty line to confirm the purchase.\n"""
 
     @staticmethod
-    def credit_check(user):
+    def credit_check(user: User):
         """
 
         :param user:
@@ -38,7 +41,11 @@ When finished, write an empty line to confirm the purchase.\n"""
 
         return user.credit > config["limits"]["low_credit_warning_limit"]
 
-    def low_credit_warning(self, user, timeout=False):
+    def low_credit_warning(
+        self,
+        user: User,
+        timeout: bool = False,
+    ):
         assert isinstance(user, User)
 
         print("***********************************************************************")
@@ -70,7 +77,11 @@ When finished, write an empty line to confirm the purchase.\n"""
         else:
             return self.confirm(prompt=">", default=True)
 
-    def add_thing_to_purchase(self, thing, amount=1):
+    def add_thing_to_purchase(
+        self,
+        thing: User | Product,
+        amount: int = 1,
+    ) -> bool:
         if isinstance(thing, User):
             if thing.is_anonymous():
                 print("---------------------------------------------")
@@ -79,7 +90,10 @@ When finished, write an empty line to confirm the purchase.\n"""
                 print("---------------------------------------------")
 
             if not self.credit_check(thing):
-                if self.low_credit_warning(user=thing, timeout=self.superfast_mode):
+                if self.low_credit_warning(
+                    user=thing,
+                    timeout=self.superfast_mode,
+                ):
                     Transaction(thing, purchase=self.purchase, penalty=2)
                 else:
                     return False
@@ -94,7 +108,10 @@ When finished, write an empty line to confirm the purchase.\n"""
             PurchaseEntry(self.purchase, thing, amount)
         return True
 
-    def _execute(self, initial_contents=None):
+    def _execute(
+        self,
+        initial_contents: list[tuple[User | Product, int]] | None = None,
+    ):
         self.print_header()
         self.purchase = Purchase()
         self.exit_confirm_msg = None

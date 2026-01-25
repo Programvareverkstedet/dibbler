@@ -17,7 +17,7 @@ __all__ = [
 
 class AddUserMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Add user", sql_session=sql_session, uses_db=True)
+        super().__init__("Add user", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -41,7 +41,7 @@ class AddUserMenu(Menu):
 
 class EditUserMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Edit user", sql_session=sql_session, uses_db=True)
+        super().__init__("Edit user", sql_session)
         self.help_text = """
 The only editable part of a user is its card number and rfid.
 
@@ -80,7 +80,7 @@ user, then rfid (write an empty line to remove the card number or rfid).
 
 class AddProductMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Add product", sql_session=sql_session, uses_db=True)
+        super().__init__("Add product", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -99,7 +99,7 @@ class AddProductMenu(Menu):
 
 class EditProductMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Edit product", sql_session=sql_session, uses_db=True)
+        super().__init__("Edit product", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -108,6 +108,7 @@ class EditProductMenu(Menu):
         while True:
             selector = Selector(
                 f"Do what with {product.name}?",
+                sql_session=self.sql_session,
                 items=[
                     ("name", "Edit name"),
                     ("price", "Edit price"),
@@ -152,7 +153,7 @@ class EditProductMenu(Menu):
 
 class AdjustStockMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Adjust stock", sql_session=sql_session, uses_db=True)
+        super().__init__("Adjust stock", sql_session)
 
     def _execute(self):
         self.print_header()
@@ -182,7 +183,7 @@ class AdjustStockMenu(Menu):
 
 class CleanupStockMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Stock Cleanup", sql_session=sql_session, uses_db=True)
+        super().__init__("Stock Cleanup", sql_session)
 
     def _execute(self):
         self.print_header()

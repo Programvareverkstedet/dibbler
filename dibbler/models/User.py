@@ -25,14 +25,20 @@ class User(Base):
     card: Mapped[str | None] = mapped_column(String(20))
     rfid: Mapped[str | None] = mapped_column(String(20))
 
-    products: Mapped[set[UserProducts]] = relationship(back_populates="user")
-    transactions: Mapped[set[Transaction]] = relationship(back_populates="user")
+    products: Mapped[list[UserProducts]] = relationship(back_populates="user")
+    transactions: Mapped[list[Transaction]] = relationship(back_populates="user")
 
     name_re = r"[a-z]+"
     card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
     rfid_re = r"[0-9a-fA-F]*"
 
-    def __init__(self, name, card, rfid=None, credit=0):
+    def __init__(
+        self,
+        name: str,
+        card: str | None,
+        rfid: str | None = None,
+        credit: int = 0,
+    ):
         self.name = name
         if card == "":
             card = None

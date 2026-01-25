@@ -4,7 +4,8 @@ import tomllib
 import os
 import sys
 
-DEFAULT_CONFIG_PATH = Path('/etc/dibbler/dibbler.toml')
+DEFAULT_CONFIG_PATH = Path("/etc/dibbler/dibbler.toml")
+
 
 def default_config_path_submissive_and_readable() -> bool:
     return DEFAULT_CONFIG_PATH.is_file() and any(
@@ -21,7 +22,9 @@ def default_config_path_submissive_and_readable() -> bool:
         ]
     )
 
+
 config: dict[str, dict[str, Any]] = dict()
+
 
 def load_config(config_path: Path | None = None):
     global config
@@ -32,8 +35,12 @@ def load_config(config_path: Path | None = None):
         with DEFAULT_CONFIG_PATH.open("rb") as file:
             config = tomllib.load(file)
     else:
-        print("Could not read config file, it was neither provided nor readable in default location", file=sys.stderr)
+        print(
+            "Could not read config file, it was neither provided nor readable in default location",
+            file=sys.stderr,
+        )
         sys.exit(1)
+
 
 def config_db_string() -> str:
     db_type = config["database"]["type"]
@@ -54,7 +61,7 @@ def config_db_string() -> str:
         elif "password" in config["database"]["postgresql"]:
             password = config["database"]["postgresql"]["password"]
         else:
-            password = ''
+            password = ""
 
         if host.startswith("/"):
             return f"postgresql+psycopg2://{username}:{password}@/{dbname}?host={host}"

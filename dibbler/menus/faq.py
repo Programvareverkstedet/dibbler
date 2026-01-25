@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
+from sqlalchemy.orm import Session
 
-from .helpermenus import MessageMenu, Menu
+from .helpermenus import Menu, MessageMenu
 
 
 class FAQMenu(Menu):
-    def __init__(self):
-        Menu.__init__(self, "Frequently Asked Questions")
+    def __init__(self, sql_session: Session):
+        super().__init__("Frequently Asked Questions", sql_session)
         self.items = [
             MessageMenu(
                 "What is the meaning with this program?",
@@ -17,19 +18,25 @@ class FAQMenu(Menu):
 
             Dibbler stores a "credit" amount for each user.  When you register a
             purchase in Dibbler, this amount is decreased.  To increase your
-            credit, purchase products for dibbler, and register them using "Add 
-            stock and adjust credit". 
+            credit, purchase products for dibbler, and register them using "Add
+            stock and adjust credit".
             Alternatively, add money to the money box and use "Adjust credit" to
             tell Dibbler about it.
             """,
+                sql_session,
             ),
             MessageMenu(
                 "Can I still pay for stuff using cash?",
                 """
-            Please put money in the money box and use "Adjust Credit" so that 
+            Please put money in the money box and use "Adjust Credit" so that
             dibbler can keep track of credit and purchases.""",
+                sql_session,
             ),
-            MessageMenu("How do I exit from a submenu/dialog/thing?", 'Type "exit", "q", or ^d.'),
+            MessageMenu(
+                "How do I exit from a submenu/dialog/thing?",
+                'Type "exit", "q", or ^d.',
+                sql_session,
+            ),
             MessageMenu(
                 'What does "." mean?',
                 """
@@ -41,6 +48,7 @@ class FAQMenu(Menu):
             line containing only a period, you should read the lines above and
             then press enter to continue.
                                   """,
+                sql_session,
             ),
             MessageMenu(
                 "Why is the user interface so terribly unintuitive?",
@@ -52,25 +60,30 @@ class FAQMenu(Menu):
 
             Answer #3:  YOU are unintuitive.
             """,
+                sql_session,
             ),
             MessageMenu(
                 "Why is there no help command?",
                 'There is.  Have you tried typing "help"?',
+                sql_session,
             ),
             MessageMenu(
                 'Where are the easter eggs?  I tried saying "moo", but nothing happened.',
                 'Don\'t say "moo".',
+                sql_session,
             ),
             MessageMenu(
                 "Why does the program speak English when all the users are Norwegians?",
                 "Godt spørsmål.  Det virket sikkert som en god idé der og da.",
+                sql_session,
             ),
             MessageMenu(
                 "Why does the screen have strange colours?",
                 """
-            Type "c" on the main menu to change the colours of the display, or 
+            Type "c" on the main menu to change the colours of the display, or
             "cs" if you are a boring person.
             """,
+                sql_session,
             ),
             MessageMenu(
                 "I found a bug; is there a reward?",
@@ -101,6 +114,7 @@ class FAQMenu(Menu):
             6. Type "restart" in Dibbler to replace the running process by a new
                one using the updated files.
             """,
+                sql_session,
             ),
             MessageMenu(
                 "My question isn't listed here; what do I do?",
@@ -125,5 +139,6 @@ class FAQMenu(Menu):
             5. Type "restart" in Dibbler to replace the running process by a new
                one using the updated files.
             """,
+                sql_session,
             ),
         ]

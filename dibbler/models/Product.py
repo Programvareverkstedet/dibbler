@@ -36,12 +36,19 @@ class Product(Base):
     name_re = r".+"
     name_length = 45
 
-    def __init__(self, bar_code, name, price, stock=0, hidden=False):
+    def __init__(
+        self,
+        bar_code: str,
+        name: str,
+        price: int,
+        stock: int = 0,
+        hidden: bool = False,
+    ):
         self.name = name
         self.bar_code = bar_code
         self.price = price
         self.stock = stock
         self.hidden = hidden
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name

@@ -11,7 +11,7 @@ from .helpermenus import Menu
 
 class PrintLabelMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Print a label", sql_session=sql_session, uses_db=True)
+        super().__init__("Print a label", sql_session)
         self.help_text = """
 Prints out a product bar code on the printer
 

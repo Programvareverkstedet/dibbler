@@ -10,12 +10,13 @@ from dibbler.models import (
     Transaction,
     User,
 )
+
 from .helpermenus import Menu
 
 
 class AddStockMenu(Menu):
     def __init__(self, sql_session: Session):
-        Menu.__init__(self, "Add stock and adjust credit", sql_session=sql_session, uses_db=True)
+        super().__init__("Add stock and adjust credit", sql_session)
         self.help_text = """
 Enter what you have bought for PVVVV here, along with your user name and how
 much money you're due in credits for the purchase when prompted.\n"""
@@ -110,7 +111,12 @@ much money you're due in credits for the purchase when prompted.\n"""
                 print(f"{self.products[product][0]}".rjust(width - len(product.name)))
                 print(width * "-")
 
-    def add_thing_to_pending(self, thing, amount, price):
+    def add_thing_to_pending(
+        self,
+        thing: User | Product,
+        amount: int,
+        price: int,
+    ):
         if isinstance(thing, User):
             self.users.append(thing)
         elif thing in list(self.products.keys()):
