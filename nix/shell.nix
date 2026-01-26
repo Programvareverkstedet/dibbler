@@ -10,10 +10,10 @@ mkShell {
     ruff
     uv
     (python.withPackages (ps: with ps; [
-      brother-ql
-      matplotlib
+      # brother-ql
+      # matplotlib
       psycopg2
-      python-barcode
+      # python-barcode
       sqlalchemy
     ]))
   ];

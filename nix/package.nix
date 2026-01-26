@@ -16,17 +16,17 @@ python3Packages.buildPythonApplication {
 
   # brother-ql is breaky breaky
   # https://github.com/NixOS/nixpkgs/issues/285234
-  dontCheckRuntimeDeps = true;
+  # dontCheckRuntimeDeps = true;
 
   nativeBuildInputs = with python3Packages; [
     setuptools
     makeWrapper
   ];
   propagatedBuildInputs = with python3Packages; [
-    brother-ql
-    matplotlib
+    # brother-ql
+    # matplotlib
     psycopg2-binary
-    python-barcode
+    # python-barcode
     sqlalchemy
   ];
 

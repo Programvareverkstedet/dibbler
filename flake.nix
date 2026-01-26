@@ -3,7 +3,7 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs, flake-utils }: let
+  outputs = { self, nixpkgs }: let
     inherit (nixpkgs) lib;
 
     systems = [
@@ -28,9 +28,15 @@
         mkVm = name: mkApp "${self.nixosConfigurations.${name}.config.system.build.vm}/bin/run-nixos-vm";
       in forAllSystems (system: pkgs: {
         default = self.apps.${system}.dibbler;
-        dibbler = flake-utils.lib.mkApp {
-          drv = self.packages.${system}.dibbler;
-        };
+        dibbler = let
+          app = lib.writeShellApplication {
+            name = "dibbler-with-default-config";
+            runtimeInputs = [ self.packages.${system}.dibbler ];
+            text = ''
+              dibbler -c ${./example-config.toml}
+            '';
+          };
+        in mkApp (lib.getExe app) "Run the dibbler cli with its default config against an SQLite database";
         vm = mkVm "vm" "Start a NixOS VM with dibbler installed in kiosk-mode";
         vm-non-kiosk = mkVm "vm-non-kiosk" "Start a NixOS VM with dibbler installed in nonkiosk-mode";
       });
@@ -52,14 +58,14 @@
       devShells = forAllSystems (system: pkgs: {
         default = self.devShells.${system}.dibbler;
         dibbler = pkgs.callPackage ./nix/shell.nix {
-          python = pkgs.python312;
+          python = pkgs.python313;
         };
       });
 
       packages = forAllSystems (system: pkgs: {
         default = self.packages.${system}.dibbler;
         dibbler = pkgs.callPackage ./nix/package.nix {
-          python3Packages = pkgs.python312Packages;
+          python3Packages = pkgs.python313Packages;
         };
       });
     };

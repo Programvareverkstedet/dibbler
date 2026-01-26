@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -16,10 +16,10 @@ classifiers = [
 ]
 dependencies = [
     "SQLAlchemy >= 2.0, <2.1",
-    "brother-ql",
-    "matplotlib",
+    # "brother-ql",
+    # "matplotlib",
     "psycopg2-binary >= 2.8, <2.10",
-    "python-barcode",
+    # "python-barcode",
 ]
 
 [tool.setuptools.packages.find]
