@@ -3,6 +3,7 @@ import os
 import random
 import sys
 
+from sqlalchemy.orm import Session
 
 from .buymenu import BuyMenu
 from .faq import FAQMenu
@@ -19,6 +20,9 @@ def restart():
 
 
 class MainMenu(Menu):
+    def __init__(self, sql_session: Session, **kwargs):
+        super().__init__("Dibbler main menu", sql_session, **kwargs)
+
     def special_input_choice(self, in_str: str) -> bool:
         mv = in_str.split()
         if len(mv) == 2 and mv[0].isdigit():

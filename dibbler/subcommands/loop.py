@@ -52,7 +52,6 @@ def main(sql_session: Session):
         set_signal_handler(SIGTSTP, SIG_IGN)
 
     main = MainMenu(
-        "Dibbler main menu",
         sql_session,
         items=[
             BuyMenu(sql_session),
