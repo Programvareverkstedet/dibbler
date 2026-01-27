@@ -29,11 +29,11 @@
       in forAllSystems (system: pkgs: {
         default = self.apps.${system}.dibbler;
         dibbler = let
-          app = lib.writeShellApplication {
+          app = pkgs.writeShellApplication {
             name = "dibbler-with-default-config";
             runtimeInputs = [ self.packages.${system}.dibbler ];
             text = ''
-              dibbler -c ${./example-config.toml}
+              dibbler -c ${./example-config.toml} "$@"
             '';
           };
         in mkApp (lib.getExe app) "Run the dibbler cli with its default config against an SQLite database";
