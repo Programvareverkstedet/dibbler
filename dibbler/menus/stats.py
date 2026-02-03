@@ -99,10 +99,14 @@ class BalanceMenu(Menu):
             total_value += p.stock * p.price
 
         total_positive_credit = (
-            self.sql_session.query(func.sum(User.credit)).filter(User.credit > 0).first()[0]
+            self.sql_session.query(func.coalesce(func.sum(User.credit), 0))
+            .filter(User.credit > 0)
+            .first()[0]
         )
         total_negative_credit = (
-            self.sql_session.query(func.sum(User.credit)).filter(User.credit < 0).first()[0]
+            self.sql_session.query(func.coalesce(func.sum(User.credit), 0))
+            .filter(User.credit < 0)
+            .first()[0]
         )
 
         total_credit = total_positive_credit + total_negative_credit
