@@ -212,11 +212,15 @@ class ProductSearchMenu(Menu):
         self.print_header()
         self.set_context("Enter (part of) product name or bar code")
         product = self.input_product()
-        print(", ".join([
-           f"Result: {product.name}",
-            f"price: {product.price} kr",
-            f"bar code: {product.bar_code}",
-            f"stock: {product.stock}",
-            f"hidden: {'Y' if product.hidden else 'N'}",
-        ]))
+        print(
+            ", ".join(
+                [
+                    f"Result: {product.name}",
+                    f"price: {product.price} kr",
+                    f"bar code: {product.bar_code}",
+                    f"stock: {product.stock}",
+                    f"hidden: {'Y' if product.hidden else 'N'}",
+                ]
+            )
+        )
         # self.pause()

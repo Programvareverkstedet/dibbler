@@ -433,9 +433,10 @@ class Menu:
             selection = selector.execute()
             if selection == "create":
                 username = self.input_str(
-                    "Username for new user (should be same as PVV username)",
-                    User.name_re,
-                    (1, 10),
+                    prompt="Username for new user (should be same as PVV username)",
+                    end_prompt=None,
+                    regex=User.name_re,
+                    length_range=(1, 10),
                 )
                 user = User(username, string)
                 self.sql_session.add(user)
@@ -625,7 +626,9 @@ class ConfirmMenu(Menu):
         options = {True: "[y]/n", False: "y/[n]", None: "y/n"}[self.default]
         while True:
             result = self.input_str(
-                f"{self.prompt} ({options})", end_prompt=": ", timeout=self.timeout,
+                f"{self.prompt} ({options})",
+                end_prompt=": ",
+                timeout=self.timeout,
             )
             result = result.lower().strip()
             if result in ["y", "yes"]:

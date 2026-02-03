@@ -1,4 +1,3 @@
-
 # import barcode
 # from brother_ql.brother_ql_create import create_label
 # from brother_ql.raster import BrotherQLRaster

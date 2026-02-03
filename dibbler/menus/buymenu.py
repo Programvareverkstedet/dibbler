@@ -162,7 +162,8 @@ When finished, write an empty line to confirm the purchase.\n"""
             if thing is None:
                 if not self.complete_input():
                     if self.confirm(
-                        "Not enough information entered. Abort purchase?", default=True,
+                        "Not enough information entered. Abort purchase?",
+                        default=True,
                     ):
                         return False
                     continue
@@ -219,7 +220,10 @@ When finished, write an empty line to confirm the purchase.\n"""
             string += "(empty)"
         else:
             string += ", ".join(
-                [t.user.name + ("*" if not self.credit_check(t.user) else "") for t in transactions],
+                [
+                    t.user.name + ("*" if not self.credit_check(t.user) else "")
+                    for t in transactions
+                ],
             )
         string += "\n  products: "
         if len(entries) == 0:

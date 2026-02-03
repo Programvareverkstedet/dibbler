@@ -1,4 +1,3 @@
-
 from sqlalchemy.orm import Session
 
 # from dibbler.lib.printer_helpers import print_bar_code, print_name_label

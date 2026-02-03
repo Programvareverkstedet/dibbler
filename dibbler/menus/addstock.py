@@ -142,7 +142,8 @@ much money you're due in credits for the purchase when prompted.\n"""
                 ceil(float(value) / (max(product.stock, 0) + self.products[product][0])),
             )
             product.stock = max(
-                self.products[product][0], product.stock + self.products[product][0],
+                self.products[product][0],
+                product.stock + self.products[product][0],
             )
             product.hidden = False
             print(

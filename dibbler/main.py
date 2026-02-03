@@ -35,9 +35,9 @@ def main():
 
     engine = create_engine(config_db_string())
     sql_session = Session(
-      engine,
-      expire_on_commit=False,
-      autoflush=False,
+        engine,
+        expire_on_commit=False,
+        autoflush=False,
     )
 
     if args.subcommand == "loop":
