@@ -167,4 +167,5 @@ much money you're due in credits for the purchase when prompted.\n"""
             for user in self.users:
                 print(f"User {user.name}'s credit is now {user.credit:d}")
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not perform transaction: {e}")

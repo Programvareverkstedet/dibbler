@@ -36,6 +36,7 @@ class TransferMenu(Menu):
             print(f"User {user2}'s credit is now {user2.credit:d} kr")
             print(f"Comment: {comment}")
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not perform transfer: {e}")
             # self.pause()
 
@@ -171,6 +172,7 @@ class AdjustCreditMenu(Menu):
             self.sql_session.commit()
             print(f"User {user.name}'s credit is now {user.credit:d} kr")
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not store transaction: {e}")
             # self.pause()
 

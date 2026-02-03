@@ -187,6 +187,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         try:
             self.sql_session.commit()
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not store purchase: {e}")
         else:
             print("Purchase stored.")

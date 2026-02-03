@@ -35,6 +35,7 @@ class AddUserMenu(Menu):
             self.sql_session.commit()
             print(f"User {username} stored")
         except sqlalchemy.exc.IntegrityError as e:
+            self.sql_session.rollback()
             print(f"Could not store user {username}: {e}")
         self.pause()
 
@@ -74,6 +75,7 @@ user, then rfid (write an empty line to remove the card number or rfid).
             self.sql_session.commit()
             print(f"User {user.name} stored")
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not store user {user.name}: {e}")
         self.pause()
 
@@ -93,6 +95,7 @@ class AddProductMenu(Menu):
             self.sql_session.commit()
             print(f"Product {name} stored")
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not store product {name}: {e}")
         self.pause()
 
@@ -141,6 +144,7 @@ class EditProductMenu(Menu):
                     self.sql_session.commit()
                     print(f"Product {product.name} stored")
                 except sqlalchemy.exc.SQLAlchemyError as e:
+                    self.sql_session.rollback()
                     print(f"Could not store product {product.name}: {e}")
                 self.pause()
                 return
@@ -175,6 +179,7 @@ class AdjustStockMenu(Menu):
             print("Stock is now stored")
             self.pause()
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not store stock: {e}")
             self.pause()
             return
@@ -211,6 +216,7 @@ class CleanupStockMenu(Menu):
             print("New stocks are now stored.")
             self.pause()
         except sqlalchemy.exc.SQLAlchemyError as e:
+            self.sql_session.rollback()
             print(f"Could not store stock: {e}")
             self.pause()
             return
