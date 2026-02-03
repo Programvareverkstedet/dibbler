@@ -51,7 +51,7 @@ def main(sql_session: Session):
     if not config["general"]["stop_allowed"]:
         set_signal_handler(SIGTSTP, SIG_IGN)
 
-    main = MainMenu(
+    main_menu = MainMenu(
         sql_session,
         items=[
             BuyMenu(sql_session),
@@ -91,11 +91,11 @@ def main(sql_session: Session):
         exit_confirm_msg="Really quit Dibbler?",
     )
     if not config["general"]["quit_allowed"]:
-        main.exit_disallowed_msg = "You can check out any time you like, but you can never leave."
+        main_menu.exit_disallowed_msg = "You can check out any time you like, but you can never leave."
     while True:
         # noinspection PyBroadException
         try:
-            main.execute()
+            main_menu.execute()
         except KeyboardInterrupt:
             print("")
             print("Interrupted.")
