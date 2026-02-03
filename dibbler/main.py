@@ -34,7 +34,11 @@ def main():
     load_config(args.config)
 
     engine = create_engine(config_db_string())
-    sql_session = Session(engine)
+    sql_session = Session(
+      engine,
+      expire_on_commit=False,
+      autoflush=False,
+    )
 
     if args.subcommand == "loop":
         import dibbler.subcommands.loop as loop
