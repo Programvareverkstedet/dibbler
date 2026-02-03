@@ -1,4 +1,5 @@
 import sqlalchemy
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
@@ -12,7 +13,7 @@ class TransferMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Transfer credit between users", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         amount = self.input_int("Transfer amount", 1, 100000)
         self.set_context(f"Transferring {amount:d} kr", display=False)
@@ -35,7 +36,7 @@ class TransferMenu(Menu):
             print(f"User {user1}'s credit is now {user1.credit:d} kr")
             print(f"User {user2}'s credit is now {user2.credit:d} kr")
             print(f"Comment: {comment}")
-        except sqlalchemy.exc.SQLAlchemyError as e:
+        except SQLAlchemyError as e:
             self.sql_session.rollback()
             print(f"Could not perform transfer: {e}")
             # self.pause()
@@ -45,7 +46,7 @@ class ShowUserMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Show user", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         user = self.input_user("User name, card number or RFID")
         print(f"User name: {user.name}")
@@ -126,7 +127,7 @@ class UserListMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("User list", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         user_list = self.sql_session.query(User).all()
         total_credit = self.sql_session.query(sqlalchemy.func.sum(User.credit)).first()[0]
@@ -147,7 +148,7 @@ class AdjustCreditMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Adjust credit", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         user = self.input_user("User")
         print(f"User {user.name}'s credit is {user.credit:d} kr")
@@ -168,7 +169,7 @@ class AdjustCreditMenu(Menu):
         try:
             self.sql_session.commit()
             print(f"User {user.name}'s credit is now {user.credit:d} kr")
-        except sqlalchemy.exc.SQLAlchemyError as e:
+        except SQLAlchemyError as e:
             self.sql_session.rollback()
             print(f"Could not store transaction: {e}")
             # self.pause()
@@ -178,7 +179,7 @@ class ProductListMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Product list", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         text = ""
         product_list = (
@@ -208,7 +209,7 @@ class ProductSearchMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Product search", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         self.set_context("Enter (part of) product name or bar code")
         product = self.input_product()
@@ -220,7 +221,7 @@ class ProductSearchMenu(Menu):
                     f"bar code: {product.bar_code}",
                     f"stock: {product.stock}",
                     f"hidden: {'Y' if product.hidden else 'N'}",
-                ]
-            )
+                ],
+            ),
         )
         # self.pause()

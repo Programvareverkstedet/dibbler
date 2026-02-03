@@ -1,4 +1,5 @@
 import sqlalchemy
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
@@ -30,7 +31,7 @@ addition, and you can type 'what' at any time to redisplay it.
 When finished, write an empty line to confirm the purchase.\n"""
 
     @staticmethod
-    def credit_check(user: User):
+    def credit_check(user: User) -> bool:
         """
 
         :param user:
@@ -45,7 +46,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         self,
         user: User,
         timeout: bool = False,
-    ):
+    ) -> bool:
         assert isinstance(user, User)
 
         print(r"***********************************************************************")
@@ -110,7 +111,8 @@ When finished, write an empty line to confirm the purchase.\n"""
     def _execute(
         self,
         initial_contents: list[tuple[User | Product, int]] | None = None,
-    ):
+        **_kwargs,
+    ) -> bool:
         self.print_header()
         self.purchase = Purchase()
         self.exit_confirm_msg = None
@@ -185,7 +187,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         self.sql_session.add(self.purchase)
         try:
             self.sql_session.commit()
-        except sqlalchemy.exc.SQLAlchemyError as e:
+        except SQLAlchemyError as e:
             self.sql_session.rollback()
             print(f"Could not store purchase: {e}")
         else:
@@ -205,10 +207,10 @@ When finished, write an empty line to confirm the purchase.\n"""
             print("")
         return True
 
-    def complete_input(self):
+    def complete_input(self) -> bool:
         return self.purchase.is_complete()
 
-    def format_purchase(self):
+    def format_purchase(self) -> str | None:
         self.purchase.set_price()
         transactions = self.purchase.transactions
         entries = self.purchase.entries
@@ -247,7 +249,7 @@ When finished, write an empty line to confirm the purchase.\n"""
 
         return string
 
-    def print_purchase(self):
+    def print_purchase(self) -> None:
         info = self.format_purchase()
         if info is not None:
             self.set_context(info)

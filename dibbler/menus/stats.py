@@ -19,7 +19,7 @@ class ProductPopularityMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Products by popularity", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         text = ""
         sub = (
@@ -33,7 +33,7 @@ class ProductPopularityMenu(Menu):
         )
         product_list = (
             self.sql_session.query(Product, sub.c.purchase_count)
-            .outerjoin((sub, Product.product_id == sub.c.product_id))
+            .outerjoin(sub, Product.product_id == sub.c.product_id)
             .order_by(desc(sub.c.purchase_count))
             .filter(sub.c.purchase_count is not None)
             .all()
@@ -52,7 +52,7 @@ class ProductRevenueMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Products by revenue", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         text = ""
         sub = (
@@ -66,7 +66,7 @@ class ProductRevenueMenu(Menu):
         )
         product_list = (
             self.sql_session.query(Product, sub.c.purchase_count)
-            .outerjoin((sub, Product.product_id == sub.c.product_id))
+            .outerjoin(sub, Product.product_id == sub.c.product_id)
             .order_by(desc(sub.c.purchase_count * Product.price))
             .filter(sub.c.purchase_count is not None)
             .all()
@@ -90,7 +90,7 @@ class BalanceMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Total balance of PVVVV", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         text = ""
         total_value = 0
@@ -123,5 +123,5 @@ class LoggedStatisticsMenu(Menu):
     def __init__(self, sql_session: Session):
         super().__init__("Statistics from log", sql_session)
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         statisticsTextOnly(self.sql_session)

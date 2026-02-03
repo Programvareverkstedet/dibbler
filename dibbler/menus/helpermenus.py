@@ -129,9 +129,9 @@ class Menu:
         regex: str | None = None,
         length_range=(None, None),
         empty_string_is_none: bool = False,
-        timeout=None,
-        default=None,
-    ):
+        timeout: int | None = None,
+        default: str | None = None,
+    ) -> str | None:
         if prompt is None:
             prompt = self.prompt if self.prompt is not None else ""
         if default is not None:
@@ -225,6 +225,7 @@ class Menu:
     ):
         while True:
             result = self.input_str(prompt, end_prompt)
+            assert result is not None
             if result == "":
                 print("Please enter something")
             else:
@@ -247,8 +248,8 @@ class Menu:
         maximum: int | None = None,
         null_allowed: bool = False,
         zero_allowed: bool = True,
-        default: str | None = None,
-    ):
+        default: int | None = None,
+    ) -> int | Literal[False]:
         if minimum is not None and maximum is not None:
             end_prompt = f"({minimum}-{maximum})>"
         elif minimum is not None:
@@ -259,7 +260,11 @@ class Menu:
             end_prompt = ""
 
         while True:
-            result = self.input_str(prompt + end_prompt, default=default)
+            result = self.input_str(
+                prompt + end_prompt,
+                default=str(default) if default is not None else None,
+            )
+            assert result is not None
             if result == "" and null_allowed:
                 return False
             try:
@@ -284,7 +289,9 @@ class Menu:
     ) -> User:
         user = None
         while user is None:
-            user = self.retrieve_user(self.input_str(prompt, end_prompt))
+            search_string = self.input_str(prompt, end_prompt)
+            assert search_string is not None
+            user = self.retrieve_user(search_string)
         return user
 
     def retrieve_user(self, search_str: str) -> User | None:
@@ -297,7 +304,9 @@ class Menu:
     ) -> Product:
         product = None
         while product is None:
-            product = self.retrieve_product(self.input_str(prompt, end_prompt))
+            search_string = self.input_str(prompt, end_prompt)
+            assert search_string is not None
+            product = self.retrieve_product(search_string)
         return product
 
     def retrieve_product(self, search_str: str) -> Product | None:
@@ -315,6 +324,7 @@ class Menu:
         result = None
         while result is None:
             search_str = self.input_str(prompt, end_prompt)
+            assert search_str is not None
             if search_str == "" and empty_input_permitted:
                 return None
             result = self.search_for_thing(
@@ -338,6 +348,7 @@ class Menu:
         num = 0
         while result is None:
             search_str = self.input_str(prompt, end_prompt)
+            assert search_str is not None
             search_lst = search_str.split(" ")
             if search_str == "" and empty_input_permitted:
                 return None
@@ -438,6 +449,7 @@ class Menu:
                     regex=User.name_re,
                     length_range=(1, 10),
                 )
+                assert username is not None
                 user = User(username, string)
                 self.sql_session.add(user)
                 return user

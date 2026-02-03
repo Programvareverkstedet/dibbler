@@ -25,7 +25,7 @@ much money you're due in credits for the purchase when prompted.\n"""
         self.products = {}
         self.price = 0
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> bool | None:
         questions = {
             (
                 False,
@@ -88,10 +88,10 @@ much money you're due in credits for the purchase when prompted.\n"""
 
         self.perform_transaction()
 
-    def complete_input(self):
-        return bool(self.users) and len(self.products) and self.price
+    def complete_input(self) -> bool:
+        return self.users is not None and len(self.products) > 0 and self.price > 0
 
-    def print_info(self):
+    def print_info(self) -> None:
         width = 6 + Product.name_length
         print()
         print(width * "-")
