@@ -37,7 +37,9 @@ def main():
     sql_session = Session(
         engine,
         expire_on_commit=False,
+        autocommit=False,
         autoflush=False,
+        close_resets_only=True,
     )
 
     if args.subcommand == "loop":

@@ -108,3 +108,4 @@ def main(sql_session: Session):
         else:
             break
         print("Restarting main menu.")
+        main_menu.sql_session.reset()
