@@ -64,7 +64,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         print("***********************************************************************")
         print("")
         print(
-            f"USER {user.name} HAS LOWER CREDIT THAN {config['limits']['low_credit_warning_limit']:d}."
+            f"USER {user.name} HAS LOWER CREDIT THAN {config['limits']['low_credit_warning_limit']:d}.",
         )
         print("THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH.")
         print("CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS.")
@@ -74,8 +74,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         if timeout:
             print("THIS PURCHASE WILL AUTOMATICALLY BE PERFORMED IN 3 MINUTES!")
             return self.confirm(prompt=">", default=True, timeout=180)
-        else:
-            return self.confirm(prompt=">", default=True)
+        return self.confirm(prompt=">", default=True)
 
     def add_thing_to_purchase(
         self,
@@ -145,7 +144,7 @@ When finished, write an empty line to confirm the purchase.\n"""
                         True,
                         True,
                     ): "Enter more products or users, or an empty line to confirm",
-                }[(len(self.purchase.transactions) > 0, len(self.purchase.entries) > 0)]
+                }[(len(self.purchase.transactions) > 0, len(self.purchase.entries) > 0)],
             )
 
             # Read in a 'thing' (product or user):
@@ -163,16 +162,15 @@ When finished, write an empty line to confirm the purchase.\n"""
             if thing is None:
                 if not self.complete_input():
                     if self.confirm(
-                        "Not enough information entered. Abort purchase?", default=True
+                        "Not enough information entered. Abort purchase?", default=True,
                     ):
                         return False
                     continue
                 break
-            else:
-                # once we get something in the
-                # purchase, we want to protect the
-                # user from accidentally killing it
-                self.exit_confirm_msg = "Abort purchase?"
+            # once we get something in the
+            # purchase, we want to protect the
+            # user from accidentally killing it
+            self.exit_confirm_msg = "Abort purchase?"
 
             # Add the thing to our purchase object:
             if not self.add_thing_to_purchase(thing, amount=num):
@@ -221,7 +219,7 @@ When finished, write an empty line to confirm the purchase.\n"""
             string += "(empty)"
         else:
             string += ", ".join(
-                [t.user.name + ("*" if not self.credit_check(t.user) else "") for t in transactions]
+                [t.user.name + ("*" if not self.credit_check(t.user) else "") for t in transactions],
             )
         string += "\n  products: "
         if len(entries) == 0:
@@ -229,7 +227,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         else:
             string += "\n    "
             string += "\n    ".join(
-                [f"{e.amount:d}x {e.product.name} ({e.product.price:d} kr)" for e in entries]
+                [f"{e.amount:d}x {e.product.name} ({e.product.price:d} kr)" for e in entries],
             )
         if len(transactions) > 1:
             string += f"\n  price per person: {self.purchase.price_per_transaction():d} kr"

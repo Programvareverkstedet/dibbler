@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    Integer,
     ForeignKey,
+    Integer,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -14,8 +15,8 @@ from sqlalchemy.orm import (
 from .Base import Base
 
 if TYPE_CHECKING:
-    from .User import User
     from .Product import Product
+    from .User import User
 
 
 class UserProducts(Base):

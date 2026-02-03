@@ -2,8 +2,8 @@ import sqlalchemy
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
-from dibbler.models import Transaction, Product, User
 from dibbler.lib.helpers import less
+from dibbler.models import Product, Transaction, User
 
 from .helpermenus import Menu, Selector
 
@@ -90,10 +90,7 @@ class ShowUserMenu(Menu):
             if t.purchase:
                 products = []
                 for entry in t.purchase.entries:
-                    if abs(entry.amount) != 1:
-                        amount = f"{abs(entry.amount)}x "
-                    else:
-                        amount = ""
+                    amount = f"{abs(entry.amount)}x " if abs(entry.amount) != 1 else ""
                     product = f"{amount}{entry.product.name}"
                     products.append(product)
                 string += "purchase ("
@@ -215,14 +212,11 @@ class ProductSearchMenu(Menu):
         self.print_header()
         self.set_context("Enter (part of) product name or bar code")
         product = self.input_product()
-        print(
-            "Result: %s, price: %d kr, bar code: %s, stock: %d, hidden: %s"
-            % (
-                product.name,
-                product.price,
-                product.bar_code,
-                product.stock,
-                ("Y" if product.hidden else "N"),
-            )
-        )
+        print(", ".join([
+           f"Result: {product.name}",
+            f"price: {product.price} kr",
+            f"bar code: {product.bar_code}",
+            f"stock: {product.stock}",
+            f"hidden: {'Y' if product.hidden else 'N'}",
+        ]))
         # self.pause()

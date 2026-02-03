@@ -1,5 +1,3 @@
-import os
-import datetime
 
 # import barcode
 # from brother_ql.brother_ql_create import create_label

@@ -2,8 +2,8 @@ from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from dibbler.lib.helpers import less
-from dibbler.models import PurchaseEntry, Product, User
 from dibbler.lib.statistikkHelpers import statisticsTextOnly
+from dibbler.models import Product, PurchaseEntry, User
 
 from .helpermenus import Menu
 

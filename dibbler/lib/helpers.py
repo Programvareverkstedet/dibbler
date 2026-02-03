@@ -2,7 +2,8 @@ import os
 import pwd
 import signal
 import subprocess
-from typing import Any, Callable, Literal
+from collections.abc import Callable
+from typing import Any, Literal
 
 from sqlalchemy import and_, not_, or_
 from sqlalchemy.orm import Session
@@ -24,18 +25,17 @@ def search_user(
     )
     if exact_match:
         return exact_match
-    user_list = (
+    return (
         sql_session.query(User)
         .filter(
             or_(
                 User.name.ilike(f"%{string}%"),
                 User.card.ilike(f"%{string}%"),
                 User.rfid.ilike(f"%{string}%"),
-            )
+            ),
         )
         .all()
     )
-    return user_list
 
 
 def search_product(
@@ -60,7 +60,7 @@ def search_product(
                         Product.name == string,
                         not_(Product.hidden),
                     ),
-                )
+                ),
             )
             .first()
         )
@@ -73,7 +73,7 @@ def search_product(
                 or_(
                     Product.bar_code.ilike(f"%{string}%"),
                     Product.name.ilike(f"%{string}%"),
-                )
+                ),
             )
             .all()
         )
@@ -87,7 +87,7 @@ def search_product(
                         Product.name.ilike(f"%{string}%"),
                         not_(Product.hidden),
                     ),
-                )
+                ),
             )
             .all()
         )
@@ -121,7 +121,7 @@ def guess_data_type(string: str) -> Literal["card", "rfid", "bar_code", "usernam
 
 def argmax(
     d,
-    all: bool = False,
+    all_: bool = False,
     value: Callable[[Any], Any] | None = None,
 ):
     maxarg = None
@@ -133,7 +133,7 @@ def argmax(
     for key in list(d.keys()):
         if maxarg is None or d[key] > d[maxarg]:
             maxarg = key
-    if all:
+    if all_:
         return [k for k in list(d.keys()) if d[k] == d[maxarg]]
     return maxarg
 

@@ -1,5 +1,4 @@
 import json
-
 from pathlib import Path
 
 from sqlalchemy.orm import Session
@@ -21,7 +20,7 @@ def main(sql_session: Session):
     product_items = []
     user_items = []
 
-    with open(JSON_FILE) as f:
+    with Path.open(JSON_FILE) as f:
         json_obj = json.load(f)
 
         for product in json_obj["products"]:

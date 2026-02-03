@@ -43,8 +43,7 @@ class Purchase(Base):
     def price_per_transaction(self, round_up: bool = True) -> int:
         if round_up:
             return int(math.ceil(float(self.price) / len(self.transactions)))
-        else:
-            return int(math.floor(float(self.price) / len(self.transactions)))
+        return int(math.floor(float(self.price) / len(self.transactions)))
 
     def set_price(self, round_up: bool = True) -> None:
         self.price = 0

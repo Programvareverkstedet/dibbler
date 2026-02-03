@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 import re
 import sys
+from collections.abc import Callable, Iterable
 from select import select
-from typing import Any, Callable, Iterable, Literal, Self
+from typing import Any, Literal, Self
 
 from sqlalchemy.orm import Session
 
@@ -24,7 +24,7 @@ class ExitMenuException(Exception):
     pass
 
 
-class Menu(object):
+class Menu:
     name: str
     sql_session: Session
     items: list[Self | tuple | str]
@@ -111,10 +111,9 @@ class Menu(object):
     def item_name(self, i: int) -> str:
         if self.item_is_submenu(i):
             return self.items[i].name
-        elif isinstance(self.items[i], tuple):
+        if isinstance(self.items[i], tuple):
             return self.items[i][1]
-        else:
-            return self.items[i]
+        return self.items[i]
 
     def item_value(self, i: int):
         if isinstance(self.items[i], tuple):
@@ -189,7 +188,7 @@ class Menu(object):
                 ):
                     if length_range[0] and length_range[1]:
                         print(
-                            f"Value must have length in range [{length_range[0]:d}, {length_range[1]:d}]"
+                            f"Value must have length in range [{length_range[0]:d}, {length_range[1]:d}]",
                         )
                     elif length_range[0]:
                         print(f"Value must have length at least {length_range[0]:d}")
@@ -231,7 +230,7 @@ class Menu(object):
             else:
                 if result.isdigit():
                     choice = int(result)
-                    if choice == 0 and 10 <= number_of_choices:
+                    if choice == 0 and number_of_choices >= 10:
                         return 10
                     if 0 < choice <= number_of_choices:
                         return choice
@@ -342,29 +341,28 @@ class Menu(object):
             search_lst = search_str.split(" ")
             if search_str == "" and empty_input_permitted:
                 return None
-            else:
-                result = self.search_for_thing(
-                    search_str,
-                    permitted_things,
-                    add_nonexisting,
-                    find_hidden_products,
-                )
-                num = 1
+            result = self.search_for_thing(
+                search_str,
+                permitted_things,
+                add_nonexisting,
+                find_hidden_products,
+            )
+            num = 1
 
-                if (result is None) and (len(search_lst) > 1):
-                    print('Interpreting input as "<number> <product>"')
-                    try:
-                        num = int(search_lst[0])
-                        result = self.search_for_thing(
-                            " ".join(search_lst[1:]),
-                            permitted_things,
-                            add_nonexisting,
-                            find_hidden_products,
-                        )
-                    # Her kan det legges inn en except ValueError,
-                    # men da blir det fort mye plaging av brukeren
-                    except Exception as e:
-                        print(e)
+            if (result is None) and (len(search_lst) > 1):
+                print('Interpreting input as "<number> <product>"')
+                try:
+                    num = int(search_lst[0])
+                    result = self.search_for_thing(
+                        " ".join(search_lst[1:]),
+                        permitted_things,
+                        add_nonexisting,
+                        find_hidden_products,
+                    )
+                # Her kan det legges inn en except ValueError,
+                # men da blir det fort mye plaging av brukeren
+                except Exception as e:
+                    print(e)
         return result, num
 
     def search_for_thing(
@@ -544,7 +542,7 @@ class Menu(object):
        of money PVVVV owes the user.  This value decreases with the
        appropriate amount when you register a purchase, and you may increase
        it by putting money in the box and using the "Adjust credit" menu.
-       """
+       """,
         )
 
     def local_help(self):
@@ -627,17 +625,16 @@ class ConfirmMenu(Menu):
         options = {True: "[y]/n", False: "y/[n]", None: "y/n"}[self.default]
         while True:
             result = self.input_str(
-                f"{self.prompt} ({options})", end_prompt=": ", timeout=self.timeout
+                f"{self.prompt} ({options})", end_prompt=": ", timeout=self.timeout,
             )
             result = result.lower().strip()
             if result in ["y", "yes"]:
                 return True
-            elif result in ["n", "no"]:
+            if result in ["n", "no"]:
                 return False
-            elif self.default is not None and result == "":
+            if self.default is not None and result == "":
                 return self.default
-            else:
-                print("Please answer yes or no")
+            print("Please answer yes or no")
 
 
 class Selector(Menu):

@@ -26,28 +26,28 @@ __all__ = [
 from .addstock import AddStockMenu
 from .buymenu import BuyMenu
 from .editing import (
-    AddUserMenu,
-    EditUserMenu,
     AddProductMenu,
-    EditProductMenu,
+    AddUserMenu,
     AdjustStockMenu,
     CleanupStockMenu,
+    EditProductMenu,
+    EditUserMenu,
 )
 from .faq import FAQMenu
 from .helpermenus import Menu
 from .mainmenu import MainMenu
 from .miscmenus import (
-    ProductSearchMenu,
-    TransferMenu,
     AdjustCreditMenu,
-    UserListMenu,
-    ShowUserMenu,
     ProductListMenu,
+    ProductSearchMenu,
+    ShowUserMenu,
+    TransferMenu,
+    UserListMenu,
 )
 from .printermenu import PrintLabelMenu
 from .stats import (
-    ProductPopularityMenu,
-    ProductRevenueMenu,
     BalanceMenu,
     LoggedStatisticsMenu,
+    ProductPopularityMenu,
+    ProductRevenueMenu,
 )

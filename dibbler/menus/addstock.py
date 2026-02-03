@@ -139,10 +139,10 @@ much money you're due in credits for the purchase when prompted.\n"""
             old_price = product.price
             old_hidden = product.hidden
             product.price = int(
-                ceil(float(value) / (max(product.stock, 0) + self.products[product][0]))
+                ceil(float(value) / (max(product.stock, 0) + self.products[product][0])),
             )
             product.stock = max(
-                self.products[product][0], product.stock + self.products[product][0]
+                self.products[product][0], product.stock + self.products[product][0],
             )
             product.hidden = False
             print(

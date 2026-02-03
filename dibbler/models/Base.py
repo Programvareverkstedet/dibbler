@@ -18,7 +18,7 @@ class Base(DeclarativeBase):
             "ck": "ck_%(table_name)s_`%(constraint_name)s`",
             "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
             "pk": "pk_%(table_name)s",
-        }
+        },
     )
 
     @declared_attr.directive
@@ -38,7 +38,7 @@ class Base(DeclarativeBase):
                     isinstance(v, InstrumentedList),
                     isinstance(v, InstrumentedSet),
                     isinstance(v, InstrumentedDict),
-                ]
+                ],
             )
         )
         return f"<{self.__class__.__name__}({columns})>"

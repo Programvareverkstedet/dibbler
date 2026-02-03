@@ -4,7 +4,7 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from dibbler.conf import load_config, config_db_string
+from dibbler.conf import config_db_string, load_config
 
 parser = argparse.ArgumentParser()
 

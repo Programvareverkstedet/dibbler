@@ -1,8 +1,8 @@
 import sqlalchemy
-
 from sqlalchemy.orm import Session
 
-from dibbler.models import User, Product
+from dibbler.models import Product, User
+
 from .helpermenus import Menu, Selector
 
 __all__ = [

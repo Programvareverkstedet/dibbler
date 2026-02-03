@@ -1,8 +1,8 @@
-from typing import Any
-from pathlib import Path
-import tomllib
 import os
 import sys
+import tomllib
+from pathlib import Path
+from typing import Any
 
 DEFAULT_CONFIG_PATH = Path("/etc/dibbler/dibbler.toml")
 
@@ -19,11 +19,11 @@ def default_config_path_submissive_and_readable() -> bool:
                 and DEFAULT_CONFIG_PATH.stat().st_gid == os.getgid()
             ),
             (DEFAULT_CONFIG_PATH.stat().st_mode & 0o004),
-        ]
+        ],
     )
 
 
-config: dict[str, dict[str, Any]] = dict()
+config: dict[str, dict[str, Any]] = {}
 
 
 def load_config(config_path: Path | None = None):
@@ -49,7 +49,7 @@ def config_db_string() -> str:
         path = Path(config["database"]["sqlite"]["path"])
         return f"sqlite:///{path.absolute()}"
 
-    elif db_type == "postgresql":
+    if db_type == "postgresql":
         host = config["database"]["postgresql"]["host"]
         port = config["database"]["postgresql"].get("port", 5432)
         username = config["database"]["postgresql"].get("username", "dibbler")
@@ -65,8 +65,6 @@ def config_db_string() -> str:
 
         if host.startswith("/"):
             return f"postgresql+psycopg2://{username}:{password}@/{dbname}?host={host}"
-        else:
-            return f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}"
-    else:
-        print(f"Error: unknown database type '{db_type}'")
-        exit(1)
+        return f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}"
+    print(f"Error: unknown database type '{db_type}'")
+    exit(1)

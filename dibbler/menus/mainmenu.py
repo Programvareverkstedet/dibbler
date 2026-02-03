@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 import random
 import sys
@@ -48,18 +47,18 @@ class MainMenu(Menu):
                 restart()
                 pass
             return True
-        elif result == "c":
+        if result == "c":
             os.system(
                 'echo -e "\033['
                 + str(random.randint(40, 49))
                 + ";"
                 + str(random.randint(30, 37))
-                + ';5m"'
+                + ';5m"',
             )
             os.system("clear")
             self.show_context()
             return True
-        elif result == "cs":
+        if result == "cs":
             os.system('echo -e "\033[0m"')
             os.system("clear")
             self.show_context()

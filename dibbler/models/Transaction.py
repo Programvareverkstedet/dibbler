@@ -1,7 +1,7 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import (
     DateTime,
@@ -18,8 +18,8 @@ from sqlalchemy.orm import (
 from .Base import Base
 
 if TYPE_CHECKING:
-    from .User import User
     from .Purchase import Purchase
+    from .User import User
 
 
 class Transaction(Base):
@@ -36,7 +36,7 @@ class Transaction(Base):
     purchase_id: Mapped[int | None] = mapped_column(ForeignKey("purchases.id"))
 
     user: Mapped[User] = relationship(lazy="joined")
-    purchase: Mapped[Purchase] = relationship(back_populates='transactions', lazy="joined")
+    purchase: Mapped[Purchase] = relationship(back_populates="transactions", lazy="joined")
 
     def __init__(
         self,

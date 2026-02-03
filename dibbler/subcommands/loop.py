@@ -1,5 +1,4 @@
 #!/usr/bin/python
-# -*- coding: utf-8 -*-
 
 import random
 import sys
@@ -91,7 +90,9 @@ def main(sql_session: Session):
         exit_confirm_msg="Really quit Dibbler?",
     )
     if not config["general"]["quit_allowed"]:
-        main_menu.exit_disallowed_msg = "You can check out any time you like, but you can never leave."
+        main_menu.exit_disallowed_msg = (
+            "You can check out any time you like, but you can never leave."
+        )
     while True:
         # noinspection PyBroadException
         try:

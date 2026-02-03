@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from sqlalchemy.orm import Session
 
 from .helpermenus import Menu, MessageMenu

@@ -1,9 +1,10 @@
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
-    Integer,
     ForeignKey,
+    Integer,
 )
 from sqlalchemy.orm import (
     Mapped,
@@ -27,8 +28,8 @@ class PurchaseEntry(Base):
     product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"))
     purchase_id: Mapped[int] = mapped_column(ForeignKey("purchases.id"))
 
-    product: Mapped[Product] = relationship(back_populates='purchases', lazy="joined")
-    purchase: Mapped[Purchase] = relationship(back_populates='entries', lazy="joined")
+    product: Mapped[Product] = relationship(back_populates="purchases", lazy="joined")
+    purchase: Mapped[Purchase] = relationship(back_populates="entries", lazy="joined")
 
     def __init__(self, purchase, product, amount):
         self.product = product

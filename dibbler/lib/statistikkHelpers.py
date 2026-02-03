@@ -3,11 +3,12 @@
 
 import datetime
 from collections import defaultdict
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from .helpers import *
 from ..models import Transaction
+from .helpers import *
 
 
 def getUser(sql_session: Session):
@@ -176,7 +177,7 @@ def addLineToDatabase(database, inputLine):
     if abs(inputLine.price) > 90000:
         return database
     # fyller inn for varer
-    if (not inputLine.product == "") and (
+    if (inputLine.product != "") and (
         (inputLine.inputProduct == "") or (inputLine.inputProduct == inputLine.product)
     ):
         database.varePersonAntall[inputLine.product][inputLine.user] = (
@@ -190,7 +191,7 @@ def addLineToDatabase(database, inputLine):
         database.vareUkedagAntall[inputLine.product][inputLine.weekday] += 1
     # fyller inn for personer
     if (inputLine.inputUser == "") or (inputLine.inputUser == inputLine.user):
-        if not inputLine.product == "":
+        if inputLine.product != "":
             database.personVareAntall[inputLine.user][inputLine.product] = (
                 database.personVareAntall[inputLine.user].setdefault(inputLine.product, 0) + 1
             )
@@ -214,7 +215,7 @@ def addLineToDatabase(database, inputLine):
             database.personNegTransactions[inputLine.user] = (
                 database.personNegTransactions.setdefault(inputLine.user, 0) + inputLine.price
             )
-    elif not (inputLine.inputType == 1):
+    elif inputLine.inputType != 1:
         database.globalVareAntall[inputLine.product] = (
             database.globalVareAntall.setdefault(inputLine.product, 0) + 1
         )
@@ -225,7 +226,7 @@ def addLineToDatabase(database, inputLine):
     # fyller inn for global statistikk
     if (inputLine.inputType == 3) or (inputLine.inputType == 4):
         database.pengebeholdning[inputLine.dateNum] += inputLine.price
-        if not (inputLine.product == ""):
+        if inputLine.product != "":
             database.globalPersonAntall[inputLine.user] = (
                 database.globalPersonAntall.setdefault(inputLine.user, 0) + 1
             )
@@ -273,7 +274,7 @@ def buildDatabaseFromDb(inputType, inputProduct, inputUser, sql_session: Session
             inputLine.price = 0
 
     print("saving as default.dibblerlog...", end=" ")
-    f = open("default.dibblerlog", "w")
+    f = Path.open("default.dibblerlog", "w")
     line_format = "%s|%s|%s|%s|%s|%s\n"
     transaction_list = sql_session.query(Transaction).all()
     for transaction in transaction_list:
@@ -290,7 +291,7 @@ def buildDatabaseFromDb(inputType, inputProduct, inputUser, sql_session: Session
             transaction.description,
         )
         f.write(line.encode("utf8"))
-    f.close
+    f.close()
     # bygg database.pengebeholdning
     if (inputType == 3) or (inputType == 4):
         for i in range(inputLine.numberOfDays + 1):
@@ -310,7 +311,7 @@ def buildDatabaseFromFile(inputFile, inputType, inputProduct, inputUser):
     sdate = input("enter start date (yyyy-mm-dd)? ")
     edate = input("enter end date (yyyy-mm-dd)? ")
 
-    f = open(inputFile)
+    f = Path.open(inputFile)
     try:
         fileLines = f.readlines()
     finally:
@@ -328,7 +329,7 @@ def buildDatabaseFromFile(inputFile, inputType, inputProduct, inputUser):
         database.globalUkedagForbruk = [0] * 7
         database.pengebeholdning = [0] * (inputLine.numberOfDays + 1)
     for linje in fileLines:
-        if not (linje[0] == "#") and not (linje == "\n"):
+        if linje[0] != "#" and linje != "\n":
             # henter dateNum, products, user, price
             restDel = linje.partition("|")
             restDel = restDel[2].partition(" ")
@@ -406,7 +407,7 @@ def printWeekdays(week, days):
 def printBalance(database, user):
     forbruk = 0
     if user in database.personVareVerdi:
-        forbruk = sum([i for i in list(database.personVareVerdi[user].values())])
+        forbruk = sum(list(database.personVareVerdi[user].values()))
         print("totalt kjøpt for: ", forbruk, end=" ")
     if user in database.personNegTransactions:
         print("kr, totalt lagt til: ", -database.personNegTransactions[user], end=" ")
@@ -453,9 +454,9 @@ def printGlobal(database, dateLine, n):
         "Det er solgt varer til en verdi av: ",
         sum(database.globalDatoForbruk),
         "kr, det er lagt til",
-        -sum([i for i in list(database.personNegTransactions.values())]),
+        -sum(list(database.personNegTransactions.values())),
         "og tatt fra",
-        sum([i for i in list(database.personPosTransactions.values())]),
+        sum(list(database.personPosTransactions.values())),
         end=" ",
     )
     print(
@@ -470,12 +471,12 @@ def alt4menuTextOnly(database, dateLine, sql_session: Session):
     n = 10
     while 1:
         print(
-            "\n1: user-statistics, 2: product-statistics, 3:global-statistics, n: adjust amount of data shown q:quit"
+            "\n1: user-statistics, 2: product-statistics, 3:global-statistics, n: adjust amount of data shown q:quit",
         )
         inp = input("")
         if inp == "q":
             break
-        elif inp == "1":
+        if inp == "1":
             try:
                 printUser(database, dateLine, getUser(sql_session), n)
             except:
@@ -505,5 +506,5 @@ def statisticsTextOnly(sql_session: Session):
         database, dateLine = buildDatabaseFromDb(inputType, product, user, sql_session)
     elif inp == "0" or inp == "":
         database, dateLine = buildDatabaseFromFile("default.dibblerlog", inputType, product, user)
-    if not inp == "q":
+    if inp != "q":
         alt4menuTextOnly(database, dateLine, sql_session)
