@@ -242,12 +242,12 @@ class Menu:
 
     def input_int(
         self,
-        prompt=None,
-        minimum=None,
-        maximum=None,
-        null_allowed=False,
-        zero_allowed=True,
-        default=None,
+        prompt: str,
+        minimum: int | None = None,
+        maximum: int | None = None,
+        null_allowed: bool = False,
+        zero_allowed: bool = True,
+        default: str | None = None,
     ):
         if minimum is not None and maximum is not None:
             end_prompt = f"({minimum}-{maximum})>"
@@ -311,7 +311,7 @@ class Menu:
         add_nonexisting=(),
         empty_input_permitted: bool = False,
         find_hidden_products: bool = True,
-    ):
+    ) -> User | Product | None:
         result = None
         while result is None:
             search_str = self.input_str(prompt, end_prompt)
@@ -519,7 +519,7 @@ class Menu:
         self.input_str(".", end_prompt="")
 
     @staticmethod
-    def general_help():
+    def general_help() -> None:
         print(
             """
        DIBBLER HELP
@@ -545,7 +545,7 @@ class Menu:
        """,
         )
 
-    def local_help(self):
+    def local_help(self) -> None:
         if self.help_text is None:
             print("no help here")
         else:
@@ -553,7 +553,7 @@ class Menu:
             print(f"Help for {self.header()}:")
             print(self.help_text)
 
-    def execute(self, **kwargs):
+    def execute(self, **kwargs) -> Any:
         self.set_context(None)
         try:
             return self._execute(**kwargs)
@@ -561,7 +561,7 @@ class Menu:
             self.at_exit()
             return None
 
-    def _execute(self, **kwargs):
+    def _execute(self, **_kwargs) -> Any:
         while True:
             self.print_header()
             self.set_context(None)
@@ -594,7 +594,7 @@ class MessageMenu(Menu):
         self.message = message.strip()
         self.pause_after_message = pause_after_message
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         print("")
         print(self.message)
@@ -621,7 +621,7 @@ class ConfirmMenu(Menu):
         self.default = default
         self.timeout = timeout
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> bool:
         options = {True: "[y]/n", False: "y/[n]", None: "y/n"}[self.default]
         while True:
             result = self.input_str(
