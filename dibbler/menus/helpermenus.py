@@ -562,9 +562,6 @@ class Menu(object):
         except ExitMenuException:
             self.at_exit()
             return None
-        finally:
-            if self.sql_session is not None:
-                self.sql_session = None
 
     def _execute(self, **kwargs):
         while True:
