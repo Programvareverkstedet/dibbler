@@ -8,7 +8,7 @@ input_encoding = 'utf8'
 type = 'sqlite'
 
 [database.sqlite]
-path = 'sqlite:///test.db'
+path = 'test.db'
 
 [database.postgresql]
 host = 'localhost'
