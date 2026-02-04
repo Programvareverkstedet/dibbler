@@ -2,7 +2,6 @@
 , python3Packages
 , makeWrapper
 , less
-, toybox
 }:
 let
   pyproject = builtins.fromTOML (builtins.readFile ../pyproject.toml);
@@ -32,10 +31,7 @@ python3Packages.buildPythonApplication {
 
   postInstall = ''
     wrapProgram $out/bin/dibbler \
-    --prefix PATH : "${lib.makeBinPath [
-      less
-      toybox # Needs `clear`
-    ]}"
+    --prefix PATH : "${lib.makeBinPath [ less ]}"
   '';
 
   meta = {

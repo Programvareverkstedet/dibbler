@@ -48,19 +48,13 @@ class MainMenu(Menu):
                 pass
             return True
         if result == "c":
-            os.system(
-                'echo -e "\033['
-                + str(random.randint(40, 49))
-                + ";"
-                + str(random.randint(30, 37))
-                + ';5m"',
-            )
-            os.system("clear")
+            print(f"\033[{random.randint(40, 49)};{random.randint(30, 37)};5m")
+            print("\033[2J")
             self.show_context()
             return True
         if result == "cs":
-            os.system('echo -e "\033[0m"')
-            os.system("clear")
+            print("\033[0m")
+            print("\033[2J")
             self.show_context()
             return True
         return False
