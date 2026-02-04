@@ -6,6 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config_db_string, load_config
+from dibbler.lib.check_db_health import check_db_health
 
 parser = argparse.ArgumentParser()
 
@@ -41,6 +42,7 @@ def main() -> None:
 
     if args.version:
         from ._version import commit_id, version
+
         print(f"Dibbler version {version}, commit {commit_id if commit_id else '<unknown>'}")
         return
 
@@ -51,12 +53,18 @@ def main() -> None:
     load_config(args.config)
 
     engine = create_engine(config_db_string())
+
     sql_session = Session(
         engine,
         expire_on_commit=False,
         autocommit=False,
         autoflush=False,
         close_resets_only=True,
+    )
+
+    check_db_health(
+        engine,
+        verify_table_existence=args.subcommand != "create-db",
     )
 
     if args.subcommand == "loop":

@@ -3,6 +3,7 @@ import pwd
 import signal
 import subprocess
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Literal
 
 from sqlalchemy import and_, not_, or_
@@ -152,3 +153,13 @@ def less(string: str) -> None:
     proc = subprocess.Popen("less", env=env, encoding="utf-8", stdin=subprocess.PIPE)
     proc.communicate(string)
     signal.signal(signal.SIGINT, int_handler)
+
+
+def file_is_submissive_and_readable(file: Path) -> bool:
+    return file.is_file() and any(
+        [
+            file.stat().st_mode & 0o400 and file.stat().st_uid == os.getuid(),
+            file.stat().st_mode & 0o040 and file.stat().st_gid == os.getgid(),
+            file.stat().st_mode & 0o004,
+        ],
+    )
