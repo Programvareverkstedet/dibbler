@@ -14,6 +14,9 @@ from ..models import Product, User
 def search_user(
     string: str,
     sql_session: Session,
+    # NOTE: search_products has 3 parameters, but this one only have 2.
+    #       We need an extra parameter for polymorphic purposes.
+    ignore_this_flag: None = None,
 ) -> User | list[User] | None:
     assert sql_session is not None
     string = string.lower()
