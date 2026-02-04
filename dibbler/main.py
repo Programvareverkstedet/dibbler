@@ -1,4 +1,5 @@
 import argparse
+import sys
 from pathlib import Path
 
 from sqlalchemy import create_engine
@@ -17,10 +18,17 @@ parser.add_argument(
     required=False,
 )
 
+parser.add_argument(
+    "-V",
+    "--version",
+    help="Show program version",
+    action="store_true",
+    default=False,
+)
+
 subparsers = parser.add_subparsers(
     title="subcommands",
     dest="subcommand",
-    required=True,
 )
 subparsers.add_parser("loop", help="Run the dibbler loop")
 subparsers.add_parser("create-db", help="Create the database")
@@ -30,6 +38,15 @@ subparsers.add_parser("seed-data", help="Fill with mock data")
 
 def main() -> None:
     args = parser.parse_args()
+
+    if args.version:
+        from ._version import commit_id, version
+        print(f"Dibbler version {version}, commit {commit_id if commit_id else '<unknown>'}")
+        return
+
+    if not args.subcommand:
+        parser.print_help()
+        sys.exit(1)
 
     load_config(args.config)
 

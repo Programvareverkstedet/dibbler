@@ -1,10 +1,13 @@
 [build-system]
-requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
+requires = [
+  "setuptools",
+  "setuptools-scm",
+]
 
 [project]
 name = "dibbler"
-version = "1.0.0"
+dynamic = ["version"]
 authors = [
   { name = "Programvareverkstedet", email = "projects@pvv.ntnu.no" }
 ]
@@ -21,12 +24,13 @@ dependencies = [
     "psycopg2-binary >= 2.8, <2.10",
     # "python-barcode",
 ]
+scripts.dibbler = "dibbler.main:main"
 
 [tool.setuptools.packages.find]
 include = ["dibbler*"]
 
-[project.scripts]
-dibbler = "dibbler.main:main"
+[tool.setuptools_scm]
+version_file = "dibbler/_version.py"
 
 [tool.black]
 line-length = 100

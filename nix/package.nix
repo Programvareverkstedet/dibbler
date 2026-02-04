@@ -1,4 +1,5 @@
 { lib
+, sourceInfo
 , python3Packages
 , makeWrapper
 , less
@@ -8,7 +9,7 @@ let
 in
 python3Packages.buildPythonApplication {
   pname = pyproject.project.name;
-  version = pyproject.project.version;
+  version = "0.1";
   src = lib.cleanSource ../.;
 
   format = "pyproject";
@@ -17,9 +18,16 @@ python3Packages.buildPythonApplication {
   # https://github.com/NixOS/nixpkgs/issues/285234
   # dontCheckRuntimeDeps = true;
 
+  env.SETUPTOOLS_SCM_PRETEND_METADATA = (x: "{${x}}") (lib.concatStringsSep ", " [
+    "node=\"${sourceInfo.rev or (lib.substring 0 64 sourceInfo.dirtyRev)}\""
+    "node_date=${lib.substring 0 4 sourceInfo.lastModifiedDate}-${lib.substring 4 2 sourceInfo.lastModifiedDate}-${lib.substring 6 2 sourceInfo.lastModifiedDate}"
+    "dirty=${if sourceInfo ? dirtyRev then "true" else "false"}"
+  ]);
+
   nativeBuildInputs = with python3Packages; [
-    setuptools
     makeWrapper
+    setuptools
+    setuptools-scm
   ];
   propagatedBuildInputs = with python3Packages; [
     # brother-ql

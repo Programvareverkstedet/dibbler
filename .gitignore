@@ -9,3 +9,5 @@ test.db
 .ruff_cache
 
 *.qcow2
+
+dibbler/_version.py

@@ -66,6 +66,7 @@
         default = self.packages.${system}.dibbler;
         dibbler = pkgs.callPackage ./nix/package.nix {
           python3Packages = pkgs.python313Packages;
+          inherit (self) sourceInfo;
         };
       });
     };
