@@ -73,6 +73,8 @@ def verify_tables_and_columns(engine: Engine) -> None:
     iengine = inspect(engine)
     errors = False
     tables = iengine.get_table_names()
+    views = iengine.get_view_names()
+    tables.extend(views)
 
     for _name, klass in Base.registry._class_registry.items():
         if isinstance(klass, _ModuleMarker):
