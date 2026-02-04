@@ -5,7 +5,7 @@ from .helpermenus import Menu
 
 
 class PrintLabelMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Print a label", sql_session)
         self.help_text = """
 Prints out a product bar code on the printer
@@ -13,7 +13,7 @@ Prints out a product bar code on the printer
 Put it up somewhere in the vicinity.
 """
 
-    def _execute(self):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
 
         print("Printer menu is under renovation, please be patient")

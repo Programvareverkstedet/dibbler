@@ -15,7 +15,7 @@ from .helpermenus import Menu
 
 
 class AddStockMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Add stock and adjust credit", sql_session)
         self.help_text = """
 Enter what you have bought for PVVVV here, along with your user name and how
@@ -116,7 +116,7 @@ much money you're due in credits for the purchase when prompted.\n"""
         thing: User | Product,
         amount: int,
         price: int,
-    ):
+    ) -> None:
         if isinstance(thing, User):
             self.users.append(thing)
         elif thing in list(self.products.keys()):
@@ -126,7 +126,7 @@ much money you're due in credits for the purchase when prompted.\n"""
         else:
             self.products[thing] = [amount, price]
 
-    def perform_transaction(self):
+    def perform_transaction(self) -> None:
         print("Did you pay a different price?")
         if self.confirm(">", default=False):
             self.price = self.input_int("How much did you pay?", 0, self.price, default=self.price)

@@ -17,10 +17,10 @@ __all__ = [
 
 
 class AddUserMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Add user", sql_session)
 
-    def _execute(self, **_kwargs):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         username = self.input_str(
             "Username (should be same as PVV username)",
@@ -57,7 +57,7 @@ class AddUserMenu(Menu):
 
 
 class EditUserMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Edit user", sql_session)
         self.help_text = """
 The only editable part of a user is its card number and rfid.
@@ -66,7 +66,7 @@ First select an existing user, then enter a new card number for that
 user, then rfid (write an empty line to remove the card number or rfid).
 """
 
-    def _execute(self, **_kwargs):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         user = self.input_user("User")
         self.printc(f"Editing user {user.name}")
@@ -97,13 +97,17 @@ user, then rfid (write an empty line to remove the card number or rfid).
 
 
 class AddProductMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Add product", sql_session)
 
-    def _execute(self, **_kwargs):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         bar_code = self.input_str("Bar code", regex=Product.bar_code_re, length_range=(8, 13))
+        assert bar_code is not None
+
         name = self.input_str("Name", regex=Product.name_re, length_range=(1, Product.name_length))
+        assert name is not None
+
         price = self.input_int("Price", 1, 100000)
         product = Product(bar_code, name, price)
         self.sql_session.add(product)
@@ -117,10 +121,10 @@ class AddProductMenu(Menu):
 
 
 class EditProductMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Edit product", sql_session)
 
-    def _execute(self, **_kwargs):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         product = self.input_product("Product")
         self.printc(f"Editing product {product.name}")
@@ -172,10 +176,10 @@ class EditProductMenu(Menu):
 
 
 class AdjustStockMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Adjust stock", sql_session)
 
-    def _execute(self, **_kwargs):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
         product = self.input_product("Product")
 
@@ -203,10 +207,10 @@ class AdjustStockMenu(Menu):
 
 
 class CleanupStockMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Stock Cleanup", sql_session)
 
-    def _execute(self, **_kwargs):
+    def _execute(self, **_kwargs) -> None:
         self.print_header()
 
         products = self.sql_session.query(Product).filter(Product.stock != 0).all()

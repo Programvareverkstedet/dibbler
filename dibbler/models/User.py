@@ -42,7 +42,7 @@ class User(Base):
         card: str | None,
         rfid: str | None = None,
         credit: int = 0,
-    ):
+    ) -> None:
         self.name = name
         if card == "":
             card = None
@@ -52,8 +52,8 @@ class User(Base):
         self.rfid = rfid
         self.credit = credit
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def is_anonymous(self):
+    def is_anonymous(self) -> bool:
         return self.card == "11122233"

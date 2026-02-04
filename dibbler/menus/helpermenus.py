@@ -1,10 +1,9 @@
+from __future__ import annotations
+
 import re
 import sys
-from collections.abc import Callable, Iterable
 from select import select
-from typing import Any, Literal, Self
-
-from sqlalchemy.orm import Session
+from typing import TYPE_CHECKING, Any, Literal, Self, TypeVar
 
 from dibbler.lib.helpers import (
     argmax,
@@ -13,6 +12,11 @@ from dibbler.lib.helpers import (
     search_user,
 )
 from dibbler.models import Product, User
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
+
+    from sqlalchemy.orm import Session
 
 exit_commands: list[str] = ["exit", "abort", "quit", "bye", "eat flaming death", "q"]
 help_commands: list[str] = ["help", "?"]
@@ -24,10 +28,13 @@ class ExitMenuException(Exception):
     pass
 
 
+MenuItemType = TypeVar("MenuItemType", bound="Menu")
+
+
 class Menu:
     name: str
     sql_session: Session
-    items: list[Self | tuple | str]
+    items: list[Menu | tuple[MenuItemType, str] | str]
     prompt: str | None
     end_prompt: str | None
     return_index: bool
@@ -41,7 +48,7 @@ class Menu:
         self,
         name: str,
         sql_session: Session,
-        items: list[Self | tuple[Any, str] | str] | None = None,
+        items: list[Self | tuple[MenuItemType, str] | str] | None = None,
         prompt: str | None = None,
         end_prompt: str | None = "> ",
         return_index: bool = True,
@@ -49,7 +56,7 @@ class Menu:
         exit_confirm_msg: str | None = None,
         exit_disallowed_msg: str | None = None,
         help_text: str | None = None,
-    ):
+    ) -> None:
         self.name: str = name
         self.sql_session: Session = sql_session
         self.items = items if items is not None else []
@@ -115,7 +122,7 @@ class Menu:
             return self.items[i][1]
         return self.items[i]
 
-    def item_value(self, i: int):
+    def item_value(self, i: int) -> MenuItemType | int:
         if isinstance(self.items[i], tuple):
             return self.items[i][0]
         if self.return_index:
@@ -127,7 +134,7 @@ class Menu:
         prompt: str | None = None,
         end_prompt: str | None = None,
         regex: str | None = None,
-        length_range=(None, None),
+        length_range: tuple[int | None, int | None] = (None, None),
         empty_string_is_none: bool = False,
         timeout: int | None = None,
         default: str | None = None,
@@ -222,7 +229,7 @@ class Menu:
         number_of_choices: int,
         prompt: str | None = None,
         end_prompt: str | None = None,
-    ):
+    ) -> int:
         while True:
             result = self.input_str(prompt, end_prompt)
             assert result is not None
@@ -238,7 +245,7 @@ class Menu:
                 if not self.special_input_choice(result):
                     self.invalid_menu_choice(result)
 
-    def invalid_menu_choice(self, in_str: str):
+    def invalid_menu_choice(self, in_str: str) -> None:
         print("Please enter a valid choice.")
 
     def input_int(
@@ -317,7 +324,7 @@ class Menu:
         prompt: str | None = None,
         end_prompt: str | None = None,
         permitted_things: Iterable[str] = ("user", "product"),
-        add_nonexisting=(),
+        add_nonexisting: Iterable[str] = (),
         empty_input_permitted: bool = False,
         find_hidden_products: bool = True,
     ) -> User | Product | None:
@@ -340,7 +347,7 @@ class Menu:
         prompt: str | None = None,
         end_prompt: str | None = None,
         permitted_things: Iterable[str] = ("user", "product"),
-        add_nonexisting=(),
+        add_nonexisting: Iterable[str] = (),
         empty_input_permitted: bool = False,
         find_hidden_products: bool = True,
     ) -> tuple[User | Product, int] | None:
@@ -379,8 +386,8 @@ class Menu:
     def search_for_thing(
         self,
         search_str: str,
-        permitted_things=("user", "product"),
-        add_non_existing=(),
+        permitted_things: Iterable[str] = ("user", "product"),
+        add_non_existing: Iterable[str] = (),
         find_hidden_products: bool = True,
     ) -> User | Product | None:
         search_fun = {
@@ -566,15 +573,15 @@ class Menu:
             print(f"Help for {self.header()}:")
             print(self.help_text)
 
-    def execute(self, **kwargs) -> Any:
+    def execute(self, **_kwargs) -> MenuItemType | int | None:
         self.set_context(None)
         try:
-            return self._execute(**kwargs)
+            return self._execute(**_kwargs)
         except ExitMenuException:
             self.at_exit()
             return None
 
-    def _execute(self, **_kwargs) -> Any:
+    def _execute(self, **_kwargs) -> MenuItemType | int | None:
         while True:
             self.print_header()
             self.set_context(None)
@@ -602,7 +609,7 @@ class MessageMenu(Menu):
         message: str,
         sql_session: Session,
         pause_after_message: bool = True,
-    ):
+    ) -> None:
         super().__init__(name, sql_session)
         self.message = message.strip()
         self.pause_after_message = pause_after_message
@@ -623,7 +630,7 @@ class ConfirmMenu(Menu):
         end_prompt: str | None = ": ",
         default: bool | None = None,
         timeout: int | None = 0,
-    ):
+    ) -> None:
         super().__init__(
             "question",
             sql_session,
@@ -657,13 +664,13 @@ class Selector(Menu):
         self,
         name: str,
         sql_session: Session,
-        items=None,
-        prompt="select",
-        return_index=True,
-        exit_msg=None,
-        exit_confirm_msg=None,
-        help_text=None,
-    ):
+        items: list[Self | tuple[MenuItemType, str] | str] | None = None,
+        prompt: str | None = "select",
+        return_index: bool = True,
+        exit_msg: str | None = None,
+        exit_confirm_msg: str | None = None,
+        help_text: str | None = None,
+    ) -> None:
         if items is None:
             items = []
         super().__init__(
@@ -673,6 +680,7 @@ class Selector(Menu):
             prompt,
             return_index=return_index,
             exit_msg=exit_msg,
+            help_text=help_text,
         )
 
     def header(self) -> str:

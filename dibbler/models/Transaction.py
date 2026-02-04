@@ -45,7 +45,7 @@ class Transaction(Base):
         description: str | None = None,
         purchase: Purchase | None = None,
         penalty: int = 1,
-    ):
+    ) -> None:
         self.user = user
         self.amount = amount
         self.description = description

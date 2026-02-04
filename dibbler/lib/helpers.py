@@ -14,8 +14,7 @@ from ..models import Product, User
 def search_user(
     string: str,
     sql_session: Session,
-    ignorethisflag=None,
-):
+) -> User | list[User] | None:
     assert sql_session is not None
     string = string.lower()
     exact_match = (
@@ -42,7 +41,7 @@ def search_product(
     string: str,
     sql_session: Session,
     find_hidden_products: bool = True,
-):
+) -> Product | list[Product] | None:
     assert sql_session is not None
     if find_hidden_products:
         exact_match = (
@@ -120,10 +119,10 @@ def guess_data_type(string: str) -> Literal["card", "rfid", "bar_code", "usernam
 
 
 def argmax(
-    d,
+    d: dict[Any, Any],
     all_: bool = False,
     value: Callable[[Any], Any] | None = None,
-):
+) -> Any | list[Any] | None:
     maxarg = None
     if value is not None:
         dd = d

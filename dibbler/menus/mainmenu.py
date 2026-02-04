@@ -12,15 +12,15 @@ faq_commands = ["faq"]
 restart_commands = ["restart"]
 
 
-def restart():
+def restart() -> None:
     # Does not work if the script is not executable, or if it was
     # started by searching $PATH.
     os.execv(sys.argv[0], sys.argv)
 
 
 class MainMenu(Menu):
-    def __init__(self, sql_session: Session, **kwargs):
-        super().__init__("Dibbler main menu", sql_session, **kwargs)
+    def __init__(self, sql_session: Session, **_kwargs) -> None:
+        super().__init__("Dibbler main menu", sql_session, **_kwargs)
 
     def special_input_choice(self, in_str: str) -> bool:
         mv = in_str.split()

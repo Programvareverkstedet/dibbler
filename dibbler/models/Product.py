@@ -44,7 +44,7 @@ class Product(Base):
         price: int,
         stock: int = 0,
         hidden: bool = False,
-    ):
+    ) -> None:
         self.name = name
         self.bar_code = bar_code
         self.price = price

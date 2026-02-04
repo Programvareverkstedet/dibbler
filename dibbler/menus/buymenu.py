@@ -1,3 +1,5 @@
+from typing import Any
+
 import sqlalchemy
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -18,7 +20,7 @@ class BuyMenu(Menu):
     superfast_mode: bool
     purchase: Purchase
 
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Buy", sql_session)
         self.superfast_mode = False
         self.help_text = """
@@ -124,7 +126,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         for thing, num in initial_contents:
             self.add_thing_to_purchase(thing, num)
 
-        def is_product(candidate):
+        def is_product(candidate: Any) -> bool:
             return isinstance(candidate[0], Product)
 
         if len(initial_contents) > 0 and all(map(is_product, initial_contents)):

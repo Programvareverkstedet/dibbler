@@ -26,7 +26,7 @@ def default_config_path_submissive_and_readable() -> bool:
 config: dict[str, dict[str, Any]] = {}
 
 
-def load_config(config_path: Path | None = None):
+def load_config(config_path: Path | None = None) -> None:
     global config
     if config_path is not None:
         with Path(config_path).open("rb") as file:

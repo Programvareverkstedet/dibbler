@@ -31,7 +31,12 @@ class PurchaseEntry(Base):
     product: Mapped[Product] = relationship(back_populates="purchases", lazy="joined")
     purchase: Mapped[Purchase] = relationship(back_populates="entries", lazy="joined")
 
-    def __init__(self, purchase, product, amount):
+    def __init__(
+        self,
+        purchase: Purchase,
+        product: Product,
+        amount: int,
+    ) -> None:
         self.product = product
         self.product_bar_code = product.bar_code
         self.purchase = purchase

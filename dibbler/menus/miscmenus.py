@@ -10,7 +10,7 @@ from .helpermenus import Menu, Selector
 
 
 class TransferMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Transfer credit between users", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -43,7 +43,7 @@ class TransferMenu(Menu):
 
 
 class ShowUserMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Show user", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -124,7 +124,7 @@ class ShowUserMenu(Menu):
 
 
 class UserListMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("User list", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -145,7 +145,7 @@ class UserListMenu(Menu):
 
 
 class AdjustCreditMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Adjust credit", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -176,7 +176,7 @@ class AdjustCreditMenu(Menu):
 
 
 class ProductListMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Product list", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -206,7 +206,7 @@ class ProductListMenu(Menu):
 
 
 class ProductSearchMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Product search", sql_session)
 
     def _execute(self, **_kwargs) -> None:

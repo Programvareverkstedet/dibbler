@@ -11,7 +11,7 @@ from ..models import Transaction
 from .helpers import *
 
 
-def getUser(sql_session: Session):
+def getUser(sql_session: Session) -> str:
     assert sql_session is not None
     while 1:
         string = input("user? ")
@@ -39,7 +39,7 @@ def getUser(sql_session: Session):
             return user[n].name
 
 
-def getProduct(sql_session: Session):
+def getProduct(sql_session: Session) -> str:
     assert sql_session is not None
     while 1:
         string = input("product? ")
@@ -90,7 +90,7 @@ class Database:
 
 
 class InputLine:
-    def __init__(self, u, p, t):
+    def __init__(self, u, p, t) -> None:
         self.inputUser = u
         self.inputProduct = p
         self.inputType = t
@@ -123,17 +123,17 @@ def getInputType():
     return int(inp)
 
 
-def getProducts(products):
+def getProducts(products: str) -> list[tuple[str]]:
     product = []
-    products = products.partition("¤")
+    split_products = products.partition("¤")
     product.append(products[0])
     while products[1] == "¤":
-        products = products[2].partition("¤")
+        split_products = split_products[2].partition("¤")
         product.append(products[0])
     return product
 
 
-def getDateFile(date, inp):
+def getDateFile(date: str, inp: str) -> datetime.date:
     try:
         year = inp.partition("-")
         month = year[2].partition("-")
@@ -359,7 +359,7 @@ def buildDatabaseFromFile(inputFile, inputType, inputProduct, inputUser):
     return database, dateLine
 
 
-def printTopDict(dictionary, n, k):
+def printTopDict(dictionary: dict[str, Any], n: int, k: bool) -> None:
     i = 0
     for key in sorted(dictionary, key=dictionary.get, reverse=k):
         print(key, ": ", dictionary[key])
@@ -369,7 +369,7 @@ def printTopDict(dictionary, n, k):
             break
 
 
-def printTopDict2(dictionary, dictionary2, n):
+def printTopDict2(dictionary, dictionary2, n) -> None:
     print("")
     print("product :  price[kr] ( number )")
     i = 0
@@ -381,7 +381,7 @@ def printTopDict2(dictionary, dictionary2, n):
             break
 
 
-def printWeekdays(week, days):
+def printWeekdays(week, days) -> None:
     if week == [] or days == 0:
         return
     print(
@@ -404,10 +404,10 @@ def printWeekdays(week, days):
     print("")
 
 
-def printBalance(database, user):
+def printBalance(database, user) -> None:
     forbruk = 0
     if user in database.personVareVerdi:
-        forbruk = sum(list(database.personVareVerdi[user].values()))
+        forbruk = sum(database.personVareVerdi[user].values())
         print("totalt kjøpt for: ", forbruk, end=" ")
     if user in database.personNegTransactions:
         print("kr, totalt lagt til: ", -database.personNegTransactions[user], end=" ")
@@ -419,14 +419,14 @@ def printBalance(database, user):
     print("")
 
 
-def printUser(database, dateLine, user, n):
+def printUser(database, dateLine, user, n) -> None:
     printTopDict2(database.personVareVerdi[user], database.personVareAntall[user], n)
     print("\nforbruk per ukedag [kr/dag],", end=" ")
     printWeekdays(database.personUkedagVerdi[user], len(dateLine))
     printBalance(database, user)
 
 
-def printProduct(database, dateLine, product, n):
+def printProduct(database, dateLine, product, n) -> None:
     printTopDict(database.varePersonAntall[product], n, 1)
     print("\nforbruk per ukedag [antall/dag],", end=" ")
     printWeekdays(database.vareUkedagAntall[product], len(dateLine))
@@ -440,7 +440,7 @@ def printProduct(database, dateLine, product, n):
     )
 
 
-def printGlobal(database, dateLine, n):
+def printGlobal(database, dateLine, n) -> None:
     print("\nmest lagt til: ")
     printTopDict(database.personNegTransactions, n, 0)
     print("\nmest tatt fra:")
@@ -454,9 +454,9 @@ def printGlobal(database, dateLine, n):
         "Det er solgt varer til en verdi av: ",
         sum(database.globalDatoForbruk),
         "kr, det er lagt til",
-        -sum(list(database.personNegTransactions.values())),
+        -sum(database.personNegTransactions.values()),
         "og tatt fra",
-        sum(list(database.personPosTransactions.values())),
+        sum(database.personPosTransactions.values()),
         end=" ",
     )
     print(
@@ -466,7 +466,7 @@ def printGlobal(database, dateLine, n):
     )
 
 
-def alt4menuTextOnly(database, dateLine, sql_session: Session):
+def alt4menuTextOnly(database, dateLine, sql_session: Session) -> None:
     assert sql_session is not None
     n = 10
     while 1:
@@ -495,7 +495,7 @@ def alt4menuTextOnly(database, dateLine, sql_session: Session):
             n = int(input("set number to show "))
 
 
-def statisticsTextOnly(sql_session: Session):
+def statisticsTextOnly(sql_session: Session) -> None:
     assert sql_session is not None
     inputType = 4
     product = ""

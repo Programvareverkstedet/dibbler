@@ -28,7 +28,7 @@ subparsers.add_parser("slabbedasker", help="Find out who is slabbedasker")
 subparsers.add_parser("seed-data", help="Fill with mock data")
 
 
-def main():
+def main() -> None:
     args = parser.parse_args()
 
     load_config(args.config)

@@ -9,13 +9,13 @@ from dibbler.models.User import User
 JSON_FILE = Path(__file__).parent.parent.parent / "mock_data.json"
 
 
-def clear_db(sql_session: Session):
+def clear_db(sql_session: Session) -> None:
     sql_session.query(Product).delete()
     sql_session.query(User).delete()
     sql_session.commit()
 
 
-def main(sql_session: Session):
+def main(sql_session: Session) -> None:
     clear_db(sql_session)
     product_items = []
     user_items = []

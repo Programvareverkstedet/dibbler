@@ -43,7 +43,7 @@ from ..menus import (
 random.seed()
 
 
-def main(sql_session: Session):
+def main(sql_session: Session) -> None:
     if not config["general"]["stop_allowed"]:
         set_signal_handler(SIGQUIT, SIG_IGN)
 

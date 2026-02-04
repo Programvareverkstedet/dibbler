@@ -4,7 +4,7 @@ from .helpermenus import Menu, MessageMenu
 
 
 class FAQMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Frequently Asked Questions", sql_session)
         self.items = [
             MessageMenu(

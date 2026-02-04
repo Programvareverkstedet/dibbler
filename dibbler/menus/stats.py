@@ -16,7 +16,7 @@ __all__ = [
 
 
 class ProductPopularityMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Products by popularity", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -49,7 +49,7 @@ class ProductPopularityMenu(Menu):
 
 
 class ProductRevenueMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Products by revenue", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -87,7 +87,7 @@ class ProductRevenueMenu(Menu):
 
 
 class BalanceMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Total balance of PVVVV", sql_session)
 
     def _execute(self, **_kwargs) -> None:
@@ -124,7 +124,7 @@ class BalanceMenu(Menu):
 
 
 class LoggedStatisticsMenu(Menu):
-    def __init__(self, sql_session: Session):
+    def __init__(self, sql_session: Session) -> None:
         super().__init__("Statistics from log", sql_session)
 
     def _execute(self, **_kwargs) -> None:

@@ -34,7 +34,7 @@ class Purchase(Base):
     )
     entries: Mapped[set[PurchaseEntry]] = relationship(back_populates="purchase")
 
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     def is_complete(self) -> bool:
