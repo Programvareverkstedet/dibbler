@@ -642,7 +642,7 @@ class ConfirmMenu(Menu):
         self.timeout = timeout
 
     def _execute(self, **_kwargs) -> bool:
-        options = {True: "[y]/n", False: "y/[n]", None: "y/n"}[self.default]
+        options = {True: "[Y/n]", False: "[y/N]", None: "[y/n]"}[self.default]
         while True:
             result = self.input_str(
                 f"{self.prompt} ({options})",
