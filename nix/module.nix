@@ -182,7 +182,7 @@ in
 
                   # Set window name
                   "-t"
-                  "dibbler"
+                  "dibblerino"
                 ];
 
                 dibblerArgs = lib.cli.toCommandLineShellGNU { } {
