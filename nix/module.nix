@@ -199,7 +199,7 @@ in
                 "${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler height ${toString cfg.limitScreenHeight}"
               ]
               ++ [
-                "${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler -t worblehat bash -c 'echo \"This should be running worblehat.\"; sleep 3600'"
+                "${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler -t worblehat 'echo \"This should be running worblehat.\"; sleep 3600'"
               ];
           };
         };
