@@ -199,7 +199,9 @@ in
                 "${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler height ${toString cfg.limitScreenHeight}"
               ]
               ++ [
-                "${lib.getExe' cfg.screenPackage "screen"} -S dibbler -X screen -t worblehat bash"
+	      # screen -dm -S dibbler -t win1 bash
+	      # screen -S dibbler -X screen -t win2 bash
+                "${lib.getExe' cfg.screenPackage "screen"} -S dibbler -X screen -t worblehat ${lib.getExe pkgs.bash}"
               ];
           };
         };
