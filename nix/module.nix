@@ -6,6 +6,7 @@
 }:
 let
   cfg = config.services.dibbler;
+  worbleCfg = config.services.worblehat;
 
   format = pkgs.formats.toml { };
 in
@@ -73,7 +74,10 @@ in
         ];
       }
       {
-        environment.systemPackages = [ cfg.package ];
+        environment.systemPackages = [
+          cfg.package
+          worbleCfg.package
+        ];
 
         environment.etc."dibbler/dibbler.toml".source = format.generate "dibbler.toml" cfg.settings;
 
@@ -199,7 +203,7 @@ in
                 "${lib.getExe' cfg.screenPackage "screen"} -X -S dibbler height ${toString cfg.limitScreenHeight}"
               ]
               ++ [
-                "${lib.getExe' cfg.screenPackage "screen"} -S dibbler -X screen -t worblehat ${lib.getExe pkgs.bash}"
+                "${lib.getExe' cfg.screenPackage "screen"} -S dibbler -X screen -t worblehat ${lib.getExe worbleCfg.package}"
               ];
           };
         };
