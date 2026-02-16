@@ -645,7 +645,7 @@ class ConfirmMenu(Menu):
         options = {True: "[Y/n]", False: "[y/N]", None: "[y/n]"}[self.default]
         while True:
             result = self.input_str(
-                f"{self.prompt} ({options})",
+                f"{self.prompt} {options}",
                 end_prompt=": ",
                 timeout=self.timeout,
             )
