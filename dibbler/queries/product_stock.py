@@ -1,18 +1,21 @@
 from datetime import datetime
-from typing import Tuple
 
 from sqlalchemy import (
     BindParameter,
     Select,
+    and_,
     bindparam,
     case,
     func,
+    or_,
     select,
 )
 from sqlalchemy.orm import Session
 
 from dibbler.models import (
+    LastCacheTransaction,
     Product,
+    ProductCache,
     Transaction,
     TransactionType,
 )
@@ -30,9 +33,6 @@ def _product_stock_query(
     The inner query for calculating the product stock.
     """
 
-    if use_cache:
-        print("WARNING: Using cache for product stock query is not implemented yet.")
-
     if isinstance(product_id, int):
         product_id = BindParameter("product_id", value=product_id)
 
@@ -49,49 +49,111 @@ def _product_stock_query(
     else:
         until_transaction_id = None
 
-    query = select(
-        func.sum(
-            case(
-                (
-                    Transaction.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
-                    Transaction.product_count,
-                ),
-                (
-                    Transaction.type_ == TransactionType.ADJUST_STOCK.as_literal_column(),
-                    Transaction.product_count,
-                ),
-                (
-                    Transaction.type_ == TransactionType.BUY_PRODUCT.as_literal_column(),
-                    -Transaction.product_count,
-                ),
-                (
-                    Transaction.type_ == TransactionType.JOINT.as_literal_column(),
-                    -Transaction.product_count,
-                ),
-                (
-                    Transaction.type_ == TransactionType.THROW_PRODUCT.as_literal_column(),
-                    -Transaction.product_count,
-                ),
-                else_=0,
-            ),
-        ).label("stock"),
-    ).where(
-        Transaction.type_.in_(
-            [
-                TransactionType.ADD_PRODUCT.as_literal_column(),
-                TransactionType.ADJUST_STOCK.as_literal_column(),
-                TransactionType.BUY_PRODUCT.as_literal_column(),
-                TransactionType.JOINT.as_literal_column(),
-                TransactionType.THROW_PRODUCT.as_literal_column(),
-            ],
+    stock_delta = case(
+        (
+            Transaction.type_ == TransactionType.ADD_PRODUCT.as_literal_column(),
+            Transaction.product_count,
         ),
-        Transaction.product_id == product_id,
-        until_filter(
-            until_time=until_time,
-            until_transaction_id=until_transaction_id,
-            until_inclusive=until_inclusive,
+        (
+            Transaction.type_ == TransactionType.ADJUST_STOCK.as_literal_column(),
+            Transaction.product_count,
         ),
+        (
+            Transaction.type_ == TransactionType.BUY_PRODUCT.as_literal_column(),
+            -Transaction.product_count,
+        ),
+        (
+            Transaction.type_ == TransactionType.JOINT.as_literal_column(),
+            -Transaction.product_count,
+        ),
+        (
+            Transaction.type_ == TransactionType.THROW_PRODUCT.as_literal_column(),
+            -Transaction.product_count,
+        ),
+        else_=0,
     )
+
+    if use_cache:
+        latest_cache = (
+            select(
+                ProductCache.stock.label("stock"),
+                Transaction.time.label("transaction_time"),
+                Transaction.id.label("transaction_id"),
+            )
+            .select_from(ProductCache)
+            .join(
+                LastCacheTransaction,
+                ProductCache.last_cache_transaction_id == LastCacheTransaction.id,
+            )
+            .join(Transaction, LastCacheTransaction.transaction_id == Transaction.id)
+            .where(
+                ProductCache.product_id == product_id,
+                until_filter(
+                    until_time=until_time,
+                    until_transaction_id=until_transaction_id,
+                    until_inclusive=until_inclusive,
+                    transaction_time=Transaction.time,
+                ),
+            )
+            .order_by(Transaction.time.desc(), Transaction.id.desc(), ProductCache.id.desc())
+            .limit(1)
+            .subquery("latest_product_cache")
+        )
+
+        latest_cache_stock = select(latest_cache.c.stock).scalar_subquery()
+        latest_cache_time = select(latest_cache.c.transaction_time).scalar_subquery()
+        latest_cache_transaction_id = select(latest_cache.c.transaction_id).scalar_subquery()
+
+        query = select(
+            (
+                func.coalesce(latest_cache_stock, 0)
+                + func.coalesce(func.sum(stock_delta), 0)
+            ).label("stock"),
+        ).where(
+            Transaction.type_.in_(
+                [
+                    TransactionType.ADD_PRODUCT.as_literal_column(),
+                    TransactionType.ADJUST_STOCK.as_literal_column(),
+                    TransactionType.BUY_PRODUCT.as_literal_column(),
+                    TransactionType.JOINT.as_literal_column(),
+                    TransactionType.THROW_PRODUCT.as_literal_column(),
+                ],
+            ),
+            Transaction.product_id == product_id,
+            until_filter(
+                until_time=until_time,
+                until_transaction_id=until_transaction_id,
+                until_inclusive=until_inclusive,
+            ),
+            or_(
+                latest_cache_time.is_(None),
+                Transaction.time > latest_cache_time,
+                and_(
+                    Transaction.time == latest_cache_time,
+                    Transaction.id > latest_cache_transaction_id,
+                ),
+            ),
+        )
+    else:
+        query = select(
+            func.coalesce(func.sum(stock_delta), 0).label("stock"),
+        ).where(
+            Transaction.type_.in_(
+                [
+                    TransactionType.ADD_PRODUCT.as_literal_column(),
+                    TransactionType.ADJUST_STOCK.as_literal_column(),
+                    TransactionType.BUY_PRODUCT.as_literal_column(),
+                    TransactionType.JOINT.as_literal_column(),
+                    TransactionType.THROW_PRODUCT.as_literal_column(),
+                ],
+            ),
+            Transaction.product_id == product_id,
+            until_filter(
+                until_time=until_time,
+                until_transaction_id=until_transaction_id,
+                until_inclusive=until_inclusive,
+            ),
+        )
 
     return query
 

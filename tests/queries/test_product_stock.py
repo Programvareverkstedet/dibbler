@@ -3,7 +3,8 @@ from datetime import datetime, timedelta
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, Transaction, User
+from dibbler.models import Product, ProductCache, Transaction, User
+from dibbler.models.LastCacheTransaction import LastCacheTransaction
 from dibbler.queries import joint_buy_product, product_stock
 from tests.helpers import assert_id_order_similar_to_time_order, assign_times
 
@@ -282,4 +283,103 @@ def test_product_stock_until_time(sql_session: Session) -> None:
             until_time=transactions[-1].time - timedelta(seconds=1),
         )
         == 1
+    )
+
+
+def test_product_stock_uses_cached_checkpoint_as_base(sql_session: Session) -> None:
+    user, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            amount=50,
+            per_product=10,
+            user_id=user.id,
+            product_id=product.id,
+            product_count=5,
+        ),
+        Transaction.buy_product(
+            user_id=user.id,
+            product_id=product.id,
+            product_count=2,
+        ),
+        Transaction.adjust_stock(
+            user_id=user.id,
+            product_id=product.id,
+            product_count=4,
+        ),
+    ]
+
+    assign_times(transactions)
+
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    checkpoint = LastCacheTransaction(transaction_id=transactions[1].id)
+    sql_session.add(checkpoint)
+    sql_session.flush()
+
+    sql_session.add(
+        ProductCache(
+            product_id=product.id,
+            stock=100,
+            price=10,
+            last_cache_transaction_id=checkpoint.id,
+        ),
+    )
+    sql_session.commit()
+
+    assert product_stock(sql_session, product, use_cache=False) == 5 - 2 + 4
+    assert product_stock(sql_session, product, use_cache=True) == 100 + 4
+
+
+def test_product_stock_ignores_cache_after_until_time(sql_session: Session) -> None:
+    user, product = insert_test_data(sql_session)
+
+    transactions = [
+        Transaction.add_product(
+            amount=50,
+            per_product=10,
+            user_id=user.id,
+            product_id=product.id,
+            product_count=5,
+        ),
+        Transaction.buy_product(
+            user_id=user.id,
+            product_id=product.id,
+            product_count=2,
+        ),
+        Transaction.adjust_stock(
+            user_id=user.id,
+            product_id=product.id,
+            product_count=4,
+        ),
+    ]
+
+    assign_times(transactions)
+
+    sql_session.add_all(transactions)
+    sql_session.commit()
+
+    checkpoint = LastCacheTransaction(transaction_id=transactions[2].id)
+    sql_session.add(checkpoint)
+    sql_session.flush()
+
+    sql_session.add(
+        ProductCache(
+            product_id=product.id,
+            stock=100,
+            price=10,
+            last_cache_transaction_id=checkpoint.id,
+        ),
+    )
+    sql_session.commit()
+
+    assert (
+        product_stock(
+            sql_session,
+            product,
+            use_cache=True,
+            until_time=transactions[1].time,
+        )
+        == 5 - 2
     )
