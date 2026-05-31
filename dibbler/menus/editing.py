@@ -190,7 +190,7 @@ class AdjustStockMenu(Menu):
         if add_stock > 0:
             print(f"You added {add_stock:d} to the stock of {product}")
         else:
-            print(f"You removed {add_stock:d} from the stock of {product}")
+            print(f"You removed {(add_stock * -1):d} from the stock of {product}")
 
         product.stock += add_stock
 
