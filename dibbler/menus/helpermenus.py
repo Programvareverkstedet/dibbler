@@ -296,8 +296,10 @@ class Menu:
     ) -> User:
         user = None
         while user is None:
-            search_string = self.input_str(prompt, end_prompt)
-            assert search_string is not None
+            search_string = self.input_str(prompt, end_prompt, empty_string_is_none = True)
+            if search_string is None:
+                print("Please write something")
+                continue
             user = self.retrieve_user(search_string)
         return user
 
