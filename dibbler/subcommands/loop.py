@@ -3,6 +3,7 @@
 import random
 import sys
 import traceback
+from pathlib import Path
 from signal import (
     SIG_IGN,
     SIGQUIT,
@@ -11,6 +12,7 @@ from signal import (
 from signal import (
     signal as set_signal_handler,
 )
+from time import ctime, time
 
 from sqlalchemy.orm import Session
 
@@ -105,6 +107,15 @@ def main(sql_session: Session) -> None:
             print(f"{sys.exc_info()[0]}: {sys.exc_info()[1]}")
             if config["general"]["show_tracebacks"]:
                 traceback.print_tb(sys.exc_info()[2])
+            try:
+                crashlog_dir = Path('/var/lib/dibbler/crashdumps')
+                if not crashlog_dir.exists():
+                    crashlog_dir.mkdir(parents=True, exist_ok=True)
+                with (crashlog_dir / f"crashdump_{int(time())}.log").open("w") as f:
+                    f.write(f"Dibbler crashdump @ {ctime()}\n\n")
+                    traceback.print_exc(file=f)
+            except:  # noqa: S110
+                pass
         else:
             break
         print("Restarting main menu.")

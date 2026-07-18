@@ -102,7 +102,10 @@ in {
           Type = "oneshot";
           ExecStart = "${lib.getExe cfg.package} --config /etc/dibbler/dibbler.toml create-db";
           ExecStartPost = "${lib.getExe' pkgs.coreutils "touch"} /var/lib/dibbler/.db-setup-done";
-          StateDirectory = "dibbler";
+          StateDirectory = [
+            "dibbler"
+            "dibbler/crashdumps"
+          ];
 
           User = "dibbler";
           Group = "dibbler";
