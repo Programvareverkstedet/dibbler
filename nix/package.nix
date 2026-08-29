@@ -29,18 +29,13 @@ python3Packages.buildPythonApplication {
     setuptools
     setuptools-scm
   ];
-  propagatedBuildInputs = with python3Packages; [
+  propagatedBuildInputs = [ less ] ++ (with python3Packages; [
     # brother-ql
     # matplotlib
     psycopg2-binary
     # python-barcode
     sqlalchemy
-  ];
-
-  postInstall = ''
-    wrapProgram $out/bin/dibbler \
-    --prefix PATH : "${lib.makeBinPath [ less ]}"
-  '';
+  ]);
 
   meta = {
     description = "The little kiosk that could";
