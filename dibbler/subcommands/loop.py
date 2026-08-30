@@ -42,6 +42,12 @@ from ..menus import (
     UserListMenu,
 )
 
+try:
+    from .._version import commit_id, version
+except ImportError:
+    commit_id = None
+    version = None
+
 random.seed()
 
 
@@ -112,7 +118,13 @@ def main(sql_session: Session) -> None:
                 if not crashlog_dir.exists():
                     crashlog_dir.mkdir(parents=True, exist_ok=True)
                 with (crashlog_dir / f"crashdump_{int(time())}.log").open("w") as f:
-                    f.write(f"Dibbler crashdump @ {ctime()}\n\n")
+                    f.write(f"Dibbler crashdump @ {ctime()}\n")
+                    if version is not None:
+                        f.write(
+                            f"Dibbler version {version}, "
+                            f"commit {commit_id if commit_id else '<unknown>'}\n",
+                        )
+                    f.write("\n")
                     traceback.print_exc(file=f)
             except:  # noqa: S110
                 pass
