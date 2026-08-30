@@ -1,7 +1,6 @@
 from typing import Any
 
 import sqlalchemy
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
@@ -185,11 +184,11 @@ When finished, write an empty line to confirm the purchase.\n"""
             if self.superfast_mode and isinstance(thing, User):
                 break
 
-        self.purchase.perform_purchase()
         self.sql_session.add(self.purchase)
         try:
+            self.purchase.perform_purchase()
             self.sql_session.commit()
-        except SQLAlchemyError as e:
+        except Exception as e:
             self.sql_session.rollback()
             print(f"Could not store purchase: {e}")
         else:
