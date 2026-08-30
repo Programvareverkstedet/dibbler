@@ -119,4 +119,7 @@ def main(sql_session: Session) -> None:
         else:
             break
         print("Restarting main menu.")
-        main_menu.sql_session.reset()
+        try:
+            main_menu.sql_session.reset()
+        except:  # noqa: S110
+            pass
