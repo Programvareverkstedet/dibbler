@@ -69,5 +69,12 @@
           inherit (self) sourceInfo;
         };
       });
+
+      checks = forAllSystems (system: pkgs: {
+        verifyExampleConfig = pkgs.runCommand "verify-example-config" { } ''
+          ${lib.getExe self.packages.${system}.dibbler} -c ${./example-config.toml} verify-config
+          touch $out
+        '';
+      });
     };
 }

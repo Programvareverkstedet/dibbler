@@ -31,6 +31,7 @@ subparsers = parser.add_subparsers(
     title="subcommands",
     dest="subcommand",
 )
+subparsers.add_parser("verify-config", help="Statically verify the config file")
 subparsers.add_parser("loop", help="Run the dibbler loop")
 subparsers.add_parser("create-db", help="Create the database")
 subparsers.add_parser("slabbedasker", help="Find out who is slabbedasker")
@@ -51,6 +52,9 @@ def main() -> None:
         sys.exit(1)
 
     load_config(args.config)
+
+    if args.subcommand == "verify-config":
+        return
 
     engine = create_engine(config_db_string())
 

@@ -64,10 +64,21 @@ in {
         (lib.mapAttrsRecursive (_: lib.mkDefault))
       ];
     }
-    {
+    (let
+      settingsFile = format.generate "dibbler.toml" cfg.settings;
+    in {
       environment.systemPackages = [ cfg.package ];
 
-      environment.etc."dibbler/dibbler.toml".source = format.generate "dibbler.toml" cfg.settings;
+      environment.etc."dibbler/dibbler.toml".source = settingsFile;
+
+      system.checks = [(
+        pkgs.runCommand "dibbler-config-check" { } ''
+            ${lib.getExe cfg.package} --config ${settingsFile} verify-config
+            touch $out
+          ''
+      )];
+    })
+    {
 
       users = {
         users.dibbler = {
