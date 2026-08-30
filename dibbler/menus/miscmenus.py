@@ -1,5 +1,4 @@
 import sqlalchemy
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
@@ -26,17 +25,17 @@ class TransferMenu(Menu):
 
         t1 = Transaction(user1, amount, f'transfer to {user2.name} "{comment}"')
         t2 = Transaction(user2, -amount, f'transfer from {user1.name} "{comment}"')
-        t1.perform_transaction()
-        t2.perform_transaction()
-        self.sql_session.add(t1)
-        self.sql_session.add(t2)
         try:
+            t1.perform_transaction()
+            t2.perform_transaction()
+            self.sql_session.add(t1)
+            self.sql_session.add(t2)
             self.sql_session.commit()
             print(f"Transferred {amount:d} kr from {user1} to {user2}")
             print(f"User {user1}'s credit is now {user1.credit:d} kr")
             print(f"User {user2}'s credit is now {user2.credit:d} kr")
             print(f"Comment: {comment}")
-        except SQLAlchemyError as e:
+        except Exception as e:
             self.sql_session.rollback()
             print(f"Could not perform transfer: {e}")
             # self.pause()
@@ -164,12 +163,12 @@ class AdjustCreditMenu(Menu):
         if description == "":
             description = "manually adjusted credit"
         transaction = Transaction(user, -amount, description)
-        transaction.perform_transaction()
-        self.sql_session.add(transaction)
         try:
+            transaction.perform_transaction()
+            self.sql_session.add(transaction)
             self.sql_session.commit()
             print(f"User {user.name}'s credit is now {user.credit:d} kr")
-        except SQLAlchemyError as e:
+        except Exception as e:
             self.sql_session.rollback()
             print(f"Could not store transaction: {e}")
             # self.pause()
