@@ -148,11 +148,13 @@ def less(string: str) -> None:
     # If we don't ignore SIGINT while running the `less` process,
     # it will become a zombie when someone presses C-c.
     int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-    env = dict(os.environ)
-    env["LESSSECURE"] = "1"
-    proc = subprocess.Popen("less", env=env, encoding="utf-8", stdin=subprocess.PIPE)
-    proc.communicate(string)
-    signal.signal(signal.SIGINT, int_handler)
+    try:
+        env = dict(os.environ)
+        env["LESSSECURE"] = "1"
+        proc = subprocess.Popen("less", env=env, encoding="utf-8", stdin=subprocess.PIPE)
+        proc.communicate(string)
+    finally:
+        signal.signal(signal.SIGINT, int_handler)
 
 
 def file_is_submissive_and_readable(file: Path) -> bool:
