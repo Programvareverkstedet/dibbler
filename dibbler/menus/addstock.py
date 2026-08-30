@@ -1,6 +1,5 @@
 from math import ceil
 
-import sqlalchemy
 from sqlalchemy.orm import Session
 
 from dibbler.models import (
@@ -134,39 +133,39 @@ much money you're due in credits for the purchase when prompted.\n"""
         description = self.input_str("Log message", length_range=(0, 50))
         if description == "":
             description = "Purchased products for PVVVV, adjusted credit " + str(self.price)
-        for product in self.products:
-            value = max(product.stock, 0) * product.price + self.products[product][1]
-            old_price = product.price
-            old_hidden = product.hidden
-            product.price = int(
-                ceil(float(value) / (max(product.stock, 0) + self.products[product][0])),
-            )
-            product.stock = max(
-                self.products[product][0],
-                product.stock + self.products[product][0],
-            )
-            product.hidden = False
-            print(
-                f"New stock for {product.name}: {product.stock:d}",
-                f"- New price: {product.price}" if old_price != product.price else "",
-                "- Removed hidden status" if old_hidden != product.hidden else "",
-            )
-
-        purchase = Purchase()
-        for user in self.users:
-            Transaction(user, purchase=purchase, amount=-self.price, description=description)
-        for product in self.products:
-            PurchaseEntry(purchase, product, -self.products[product][0])
-
-        purchase.perform_soft_purchase(-self.price, round_up=False)
-        self.sql_session.add(purchase)
-
         try:
+            for product in self.products:
+                value = max(product.stock, 0) * product.price + self.products[product][1]
+                old_price = product.price
+                old_hidden = product.hidden
+                product.price = int(
+                    ceil(float(value) / (max(product.stock, 0) + self.products[product][0])),
+                )
+                product.stock = max(
+                    self.products[product][0],
+                    product.stock + self.products[product][0],
+                )
+                product.hidden = False
+                print(
+                    f"New stock for {product.name}: {product.stock:d}",
+                    f"- New price: {product.price}" if old_price != product.price else "",
+                    "- Removed hidden status" if old_hidden != product.hidden else "",
+                )
+
+            purchase = Purchase()
+            for user in self.users:
+                Transaction(user, purchase=purchase, amount=-self.price, description=description)
+            for product in self.products:
+                PurchaseEntry(purchase, product, -self.products[product][0])
+
+            purchase.perform_soft_purchase(-self.price, round_up=False)
+            self.sql_session.add(purchase)
+
             self.sql_session.commit()
             print("Success! Transaction performed:")
             # self.print_info()
             for user in self.users:
                 print(f"User {user.name}'s credit is now {user.credit:d}")
-        except sqlalchemy.exc.SQLAlchemyError as e:
+        except Exception as e:
             self.sql_session.rollback()
             print(f"Could not perform transaction: {e}")
