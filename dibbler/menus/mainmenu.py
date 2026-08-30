@@ -15,7 +15,10 @@ restart_commands = ["restart"]
 def restart() -> None:
     # Does not work if the script is not executable, or if it was
     # started by searching $PATH.
-    os.execv(sys.argv[0], sys.argv)
+    try:
+        os.execv(sys.argv[0], sys.argv)
+    except OSError as e:
+        print(f"Restart failed: {e}")
 
 
 class MainMenu(Menu):
