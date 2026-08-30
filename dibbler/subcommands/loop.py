@@ -17,6 +17,7 @@ from time import ctime, time
 from sqlalchemy.orm import Session
 
 from ..conf import config
+from ..lib.syslog import get_syslog_logger
 from ..menus import (
     AddProductMenu,
     AddStockMenu,
@@ -50,8 +51,15 @@ except ImportError:
 
 random.seed()
 
+logger = get_syslog_logger()
+
 
 def main(sql_session: Session) -> None:
+    logger.info(
+        "Starting dibbler loop"
+        + (f" (version {version}, commit {commit_id or '<unknown>'})" if version else ""),
+    )
+
     if not config["general"]["stop_allowed"]:
         set_signal_handler(SIGQUIT, SIG_IGN)
 
@@ -117,7 +125,8 @@ def main(sql_session: Session) -> None:
                 crashlog_dir = Path('/var/lib/dibbler/crashdumps')
                 if not crashlog_dir.exists():
                     crashlog_dir.mkdir(parents=True, exist_ok=True)
-                with (crashlog_dir / f"crashdump_{int(time())}.log").open("w") as f:
+                crashlog_path = crashlog_dir / f"crashdump_{int(time())}.log"
+                with crashlog_path.open("w") as f:
                     f.write(f"Dibbler crashdump @ {ctime()}\n")
                     if version is not None:
                         f.write(
@@ -126,6 +135,12 @@ def main(sql_session: Session) -> None:
                         )
                     f.write("\n")
                     traceback.print_exc(file=f)
+                logger.error(
+                    "Unhandled exception in main loop: %s: %s (see %s for full traceback)",
+                    sys.exc_info()[0].__name__,
+                    sys.exc_info()[1],
+                    crashlog_path,
+                )
             except:  # noqa: S110
                 pass
         else:
