@@ -26,6 +26,13 @@ dependencies = [
 ]
 scripts.dibbler = "dibbler.main:main"
 
+[dependency-groups]
+test = [
+  "pytest",
+  "pytest-cov",
+  "sqlparse>=0.5.4",
+]
+
 [tool.setuptools.packages.find]
 include = ["dibbler*"]
 

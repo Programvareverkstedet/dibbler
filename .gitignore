@@ -11,3 +11,9 @@ test.db
 *.qcow2
 
 dibbler/_version.py
+
+.coverage
+.coverage.*
+htmlcov
+test-report
+/benchmark
