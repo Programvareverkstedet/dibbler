@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import logging
+import uuid
+from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import psycopg2
 import pytest
 import sqlparse
-from sqlalchemy import create_engine, event
+from psycopg2 import sql as pg_sql
+from sqlalchemy import URL, Engine, create_engine, event
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 
@@ -23,6 +28,38 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--debug-sql",
         action="store_true",
         help="Enable SQLAlchemy 'echo' mode for debugging",
+    )
+    parser.addoption(
+        "--db-driver",
+        action="store",
+        choices=["sqlite", "postgresql"],
+        default="sqlite",
+    )
+    parser.addoption(
+        "--pg-username",
+        action="store",
+        default=None,
+    )
+    parser.addoption(
+        "--pg-password",
+        action="store",
+        default=None,
+    )
+    parser.addoption(
+        "--pg-admin-database",
+        action="store",
+        default="postgres",
+    )
+    parser.addoption(
+        "--pg-host",
+        action="store",
+        default="localhost",
+    )
+    parser.addoption(
+        "--pg-port",
+        action="store",
+        type=int,
+        default=5432,
     )
 
 
@@ -57,10 +94,82 @@ def pytest_configure(config: pytest.Config) -> None:
     if config.getoption("--debug-sql"):
         logger.setLevel(logging.INFO)
 
+    if (
+        config.getoption("--db-driver") == "postgresql"
+        and config.getoption("--pg-username") is None
+    ):
+        raise pytest.UsageError("--pg-username is required when --db-driver=postgresql")
 
-@pytest.fixture(scope="function")
-def sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
-    """Create a new SQLAlchemy session backed by an in-memory sqlite database."""
+
+@dataclass(frozen=True)
+class PgOptions:
+    host: str
+    port: int
+    username: str
+    password: str | None
+    admin_database: str
+
+    @classmethod
+    def from_args(cls, config: pytest.Config) -> PgOptions:
+        return cls(
+            host=config.getoption("--pg-host"),
+            port=config.getoption("--pg-port"),
+            username=config.getoption("--pg-username"),
+            password=config.getoption("--pg-password"),
+            admin_database=config.getoption("--pg-admin-database"),
+        )
+
+
+@contextmanager
+def _postgres_engine(pg_options: PgOptions) -> Iterator[Engine]:
+    """Create a throwaway PostgreSQL database and yield a SQLAlchemy engine
+    pointing at it, dropping the database again on exit."""
+
+    db_name = f"dibbler_test_{uuid.uuid4().hex}"
+
+    admin_conn = psycopg2.connect(
+        host=pg_options.host,
+        port=pg_options.port,
+        user=pg_options.username,
+        password=pg_options.password,
+        dbname=pg_options.admin_database,
+    )
+    admin_conn.autocommit = True
+    try:
+        with admin_conn.cursor() as cursor:
+            cursor.execute(pg_sql.SQL("CREATE DATABASE {}").format(pg_sql.Identifier(db_name)))
+
+        url = URL.create(
+            "postgresql+psycopg2",
+            username=pg_options.username,
+            password=pg_options.password,
+            host=pg_options.host,
+            port=pg_options.port,
+            database=db_name,
+        )
+        engine = create_engine(url)
+        try:
+            yield engine
+        finally:
+            engine.dispose()
+            with admin_conn.cursor() as cursor:
+                # Forcefully terminate all connections to the database
+                cursor.execute(
+                    "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                    "WHERE datname = %s AND pid != pg_backend_pid()",
+                    (db_name,),
+                )
+
+                cursor.execute(
+                    pg_sql.SQL("DROP DATABASE IF EXISTS {}").format(pg_sql.Identifier(db_name)),
+                )
+    finally:
+        admin_conn.close()
+
+
+@contextmanager
+def _sqlite_engine() -> Iterator[Engine]:
+    """Yield a SQLAlchemy engine for a fresh in-memory SQLite database."""
 
     engine = create_engine("sqlite:///:memory:")
 
@@ -74,11 +183,27 @@ def sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
         cursor.close()
 
     try:
+        yield engine
+    finally:
+        engine.dispose()
+
+
+@pytest.fixture(scope="function")
+def sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
+    """Create a new SQLAlchemy session for testing."""
+
+    db_driver = request.config.getoption("--db-driver")
+    engine_context = (
+        _postgres_engine(PgOptions.from_args(request.config))
+        if db_driver == "postgresql"
+        else _sqlite_engine()
+    )
+
+    with engine_context as engine:
         Base.metadata.create_all(engine)
         with Session(engine) as sql_session:
             yield sql_session
-    finally:
-        engine.dispose()
+        sql_session.close()
 
 
 @pytest.hookimpl(wrapper=True)
