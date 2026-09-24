@@ -3,6 +3,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
+from dibbler.queries import create_user, edit_user
 
 from .helpermenus import Menu, Selector
 
@@ -45,9 +46,8 @@ class AddUserMenu(Menu):
             empty_string_is_none=True,
         )
 
-        user = User(username, cardnum, rfid)
-        self.sql_session.add(user)
         try:
+            create_user(self.sql_session, username, cardnum, rfid)
             self.sql_session.commit()
             print(f"User {username} stored")
         except IntegrityError as e:
@@ -71,23 +71,24 @@ user, then rfid (write an empty line to remove the card number or rfid).
         user = self.input_user("User")
         self.printc(f"Editing user {user.name}")
         card_str = f'"{user.card}"' if user.card is not None else "empty"
-        user.card = self.input_str(
+        card = self.input_str(
             f"Card number (currently {card_str})",
             regex=User.card_re,
             length_range=(0, 10),
             empty_string_is_none=True,
         )
-        if user.card:
-            user.card = user.card.lower()
+        if card:
+            card = card.lower()
 
         rfid_str = f'"{user.rfid}"' if user.rfid is not None else "empty"
-        user.rfid = self.input_str(
+        rfid = self.input_str(
             f"RFID (currently {rfid_str})",
             regex=User.rfid_re,
             length_range=(0, 10),
             empty_string_is_none=True,
         )
         try:
+            edit_user(self.sql_session, user, card=card, rfid=rfid)
             self.sql_session.commit()
             print(f"User {user.name} stored")
         except SQLAlchemyError as e:
