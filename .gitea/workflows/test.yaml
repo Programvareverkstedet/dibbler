@@ -1,0 +1,221 @@
+name: Run tests
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+    inputs:
+      debug_sql:
+        description: "Print SQL statements executed by SQLAlchemy during tests"
+        type: boolean
+        default: True
+      enable_sqlite:
+        description: "Run the test suite against SQLite"
+        type: boolean
+        default: True
+      enable_postgresql:
+        description: "Run the test suite against PostgreSQL"
+        type: boolean
+        default: True
+      publish_test_report:
+        description: "Publish the test report to pages.pvv.ntnu.no"
+        type: boolean
+        default: True
+      publish_coverage_report:
+        description: "Publish the coverage report to pages.pvv.ntnu.no"
+        type: boolean
+        default: True
+
+env:
+  DEBUG_SQL: ${{ inputs.debug_sql || true }}
+
+jobs:
+  test-sqlite:
+    runs-on: debian-latest
+    if: ${{ inputs.enable_sqlite != 'false' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --locked --group test
+
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          set -x
+
+          export COVERAGE_FILE=coverage-data.sqlite
+
+          PYTEST_ARGS=(
+            -vv
+            --db-driver=sqlite
+            --html=./test-report/index.html
+          )
+
+          if [ "$DEBUG_SQL" == "true" ]; then
+            PYTEST_ARGS+=(
+              --debug-sql
+            )
+          fi
+
+          uv run -- pytest "${PYTEST_ARGS[@]}"
+
+      - name: Upload coverage data
+        uses: ChristopherHX/gitea-upload-artifact@v7
+        with:
+          name: coverage-sqlite
+          path: coverage-data.sqlite
+          if-no-files-found: error
+
+      - name: Upload test report
+        if: ${{ success() && inputs.publish_test_report != 'false' }}
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+        with:
+          source: ./test-report/
+          target: ${{ gitea.ref_name }}/test-report/sqlite/
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+
+      - name: Check failure
+        if: failure()
+        run: |
+          echo "Tests failed"
+          exit 1
+
+  test-postgresql:
+    runs-on: debian-latest
+    if: ${{ inputs.enable_postgresql != 'false' }}
+
+    # https://docs.github.com/en/actions/tutorials/use-containerized-services/create-postgresql-service-containers
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dibbler_test
+          POSTGRES_PASSWORD: dibbler_test
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --locked --group test
+
+      - name: Run tests
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          set -x
+
+          export COVERAGE_FILE=coverage-data.postgresql
+
+          PYTEST_ARGS=(
+            -vv
+            --db-driver=postgresql
+            --pg-host=postgres
+            --pg-port=5432
+            --pg-username=dibbler_test
+            --pg-password=dibbler_test
+            --html=./test-report/index.html
+          )
+
+          if [ "$DEBUG_SQL" == "true" ]; then
+            PYTEST_ARGS+=(
+              --debug-sql
+            )
+          fi
+
+          uv run -- pytest "${PYTEST_ARGS[@]}"
+
+      - name: Upload coverage data
+        uses: ChristopherHX/gitea-upload-artifact@v7
+        with:
+          name: coverage-postgresql
+          path: coverage-data.postgresql
+          if-no-files-found: error
+
+      - name: Upload test report
+        if: ${{ success() && inputs.publish_test_report != 'false' }}
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+        with:
+          source: ./test-report/
+          target: ${{ gitea.ref_name }}/test-report/postgresql/
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+
+      - name: Check failure
+        if: failure()
+        run: |
+          echo "Tests failed"
+          exit 1
+
+  coverage:
+    runs-on: debian-latest
+    needs:
+      - test-sqlite
+      - test-postgresql
+    if: always()
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --locked --group test
+
+      - name: Download SQLite coverage data
+        if: needs.test-sqlite.result != 'skipped'
+        uses: ChristopherHX/gitea-download-artifact@v8
+        with:
+          name: coverage-sqlite
+
+      - name: Download PostgreSQL coverage data
+        if: needs.test-postgresql.result != 'skipped'
+        uses: ChristopherHX/gitea-download-artifact@v8
+        with:
+          name: coverage-postgresql
+
+      - name: Combine coverage
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          coverage_data_files=(coverage-data.*)
+          if [ ${#coverage_data_files[@]} -eq 0 ]; then
+            echo "No coverage data to combine (both backends were disabled)"
+            exit 1
+          fi
+          uv run -- coverage combine "${coverage_data_files[@]}"
+          uv run -- coverage html
+          uv run -- coverage xml
+
+      - name: Generate badge
+        run: uv run -- genbadge coverage -i coverage.xml -o htmlcov/badge.svg
+
+      - name: Upload coverage report
+        if: ${{ success() && inputs.publish_coverage_report != 'false' }}
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+        with:
+          source: ./htmlcov/
+          target: ${{ gitea.ref_name }}/coverage/
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"

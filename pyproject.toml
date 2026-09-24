@@ -28,8 +28,10 @@ scripts.dibbler = "dibbler.main:main"
 
 [dependency-groups]
 test = [
+  "genbadge[coverage]>=1.1.2",
   "pytest",
   "pytest-cov",
+  "pytest-html>=4.1.1",
   "sqlparse>=0.5.4",
 ]
 
@@ -76,3 +78,15 @@ ignore = [
 [tool.ruff.lint.flake8-annotations]
 suppress-dummy-args = true
 ignore-fully-untyped = true
+
+[tool.pytest.ini_options]
+addopts = [
+    "--cov=dibbler.queries",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-report=term-missing",
+    "--cov-branch",
+
+    "--self-contained-html",
+    "--html=./test-report/index.html",
+]
