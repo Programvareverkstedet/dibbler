@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
-from dibbler.queries import create_user, edit_user
+from dibbler.queries import create_product, create_user, edit_product, edit_user
 
 from .helpermenus import Menu, Selector
 
@@ -110,9 +110,8 @@ class AddProductMenu(Menu):
         assert name is not None
 
         price = self.input_int("Price", 1, 100000)
-        product = Product(bar_code, name, price)
-        self.sql_session.add(product)
         try:
+            create_product(self.sql_session, bar_code, name, price)
             self.sql_session.commit()
             print(f"Product {name} stored")
         except SQLAlchemyError as e:
@@ -143,23 +142,29 @@ class EditProductMenu(Menu):
             )
             what = selector.execute()
             if what == "name":
-                product.name = self.input_str(
+                name = self.input_str(
                     "Name",
                     default=product.name,
                     regex=Product.name_re,
                     length_range=(1, product.name_length),
                 )
+                assert name is not None
+                edit_product(self.sql_session, product, name=name)
             elif what == "price":
-                product.price = self.input_int("Price", 1, 100000, default=product.price)
+                price = self.input_int("Price", 1, 100000, default=product.price)
+                edit_product(self.sql_session, product, price=price)
             elif what == "barcode":
-                product.bar_code = self.input_str(
+                bar_code = self.input_str(
                     "Bar code",
                     default=product.bar_code,
                     regex=Product.bar_code_re,
                     length_range=(8, 13),
                 )
+                assert bar_code is not None
+                edit_product(self.sql_session, product, bar_code=bar_code)
             elif what == "hidden":
-                product.hidden = self.confirm(f"Hidden(currently {product.hidden})", default=False)
+                hidden = self.confirm(f"Hidden(currently {product.hidden})", default=False)
+                edit_product(self.sql_session, product, hidden=hidden)
             elif what == "store":
                 try:
                     self.sql_session.commit()
