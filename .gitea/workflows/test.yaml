@@ -42,6 +42,7 @@ jobs:
         run: uv sync --locked --group test
 
       - name: Run tests
+        id: run_tests
         continue-on-error: true
         run: |
           set -euo pipefail
@@ -82,7 +83,7 @@ jobs:
           known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
 
       - name: Check failure
-        if: failure()
+        if: always() && steps.run_tests.outcome == 'failure'
         run: |
           echo "Tests failed"
           exit 1
@@ -117,6 +118,7 @@ jobs:
         run: uv sync --locked --group test
 
       - name: Run tests
+        id: run_tests
         continue-on-error: true
         run: |
           set -euo pipefail
@@ -161,17 +163,20 @@ jobs:
           known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
 
       - name: Check failure
-        if: failure()
+        if: always() && steps.run_tests.outcome == 'failure'
         run: |
           echo "Tests failed"
           exit 1
 
   coverage:
     runs-on: debian-latest
+
+    # NOTE: if `always()` ensures that this job runs even if the `needs` jobs fail.
+    if: always()
     needs:
       - test-sqlite
       - test-postgresql
-    if: always()
+
     steps:
       - uses: actions/checkout@v6
 
