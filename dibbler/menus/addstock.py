@@ -81,7 +81,7 @@ much money you're due in credits for the purchase when prompted.\n"""
         self.perform_transaction()
 
     def complete_input(self) -> bool:
-        return self.users is not None and len(self.products) > 0 and self.price > 0
+        return len(self.users) > 0 and len(self.products) > 0 and self.price > 0
 
     def print_info(self) -> None:
         width = 6 + Product.name_length
