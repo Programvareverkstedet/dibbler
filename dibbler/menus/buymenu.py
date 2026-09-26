@@ -1,23 +1,21 @@
+import math
 from typing import Any
 
-import sqlalchemy
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
-from dibbler.models import (
-    Product,
-    Purchase,
-    PurchaseEntry,
-    Transaction,
-    User,
-)
+from dibbler.models import Product, User
+from dibbler.queries import buy_products
 
 from .helpermenus import Menu
+
+PENALTY_MULTIPLIER = 2
 
 
 class BuyMenu(Menu):
     superfast_mode: bool
-    purchase: Purchase
+    buyers: list[tuple[User, int]]
+    products: dict[Product, int]
 
     def __init__(self, sql_session: Session) -> None:
         super().__init__("Buy", sql_session)
@@ -95,18 +93,13 @@ When finished, write an empty line to confirm the purchase.\n"""
                     user=thing,
                     timeout=self.superfast_mode,
                 ):
-                    Transaction(thing, purchase=self.purchase, penalty=2)
+                    self.buyers.append((thing, PENALTY_MULTIPLIER))
                 else:
                     return False
             else:
-                Transaction(thing, purchase=self.purchase)
+                self.buyers.append((thing, 1))
         elif isinstance(thing, Product):
-            if self.purchase.entries:
-                for entry in self.purchase.entries:
-                    if entry.product == thing:
-                        entry.amount += amount
-                        return True
-            PurchaseEntry(self.purchase, thing, amount)
+            self.products[thing] = self.products.get(thing, 0) + amount
         return True
 
     def _execute(
@@ -115,7 +108,8 @@ When finished, write an empty line to confirm the purchase.\n"""
         **_kwargs,
     ) -> bool:
         self.print_header()
-        self.purchase = Purchase()
+        self.buyers = []
+        self.products = {}
         self.exit_confirm_msg = None
         self.superfast_mode = False
 
@@ -147,7 +141,7 @@ When finished, write an empty line to confirm the purchase.\n"""
                         True,
                         True,
                     ): "Enter more products or users, or an empty line to confirm",
-                }[(len(self.purchase.transactions) > 0, len(self.purchase.entries) > 0)],
+                }[(len(self.buyers) > 0, len(self.products) > 0)],
             )
 
             # Read in a 'thing' (product or user):
@@ -184,9 +178,12 @@ When finished, write an empty line to confirm the purchase.\n"""
             if self.superfast_mode and isinstance(thing, User):
                 break
 
-        self.sql_session.add(self.purchase)
         try:
-            self.purchase.perform_purchase()
+            purchase = buy_products(
+                self.sql_session,
+                self.buyers,
+                list(self.products.items()),
+            )
             self.sql_session.commit()
         except Exception as e:
             self.sql_session.rollback()
@@ -194,7 +191,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         else:
             print("Purchase stored.")
             self.print_purchase()
-            for t in self.purchase.transactions:
+            for t in purchase.transactions:
                 if not t.user.is_anonymous():
                     print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
                     if t.user.credit < config["limits"]["low_credit_warning_limit"]:
@@ -209,43 +206,47 @@ When finished, write an empty line to confirm the purchase.\n"""
         return True
 
     def complete_input(self) -> bool:
-        return self.purchase.is_complete()
+        return len(self.buyers) > 0 and len(self.products) > 0
 
     def format_purchase(self) -> str | None:
-        self.purchase.set_price()
-        transactions = self.purchase.transactions
-        entries = self.purchase.entries
-        if len(transactions) == 0 and len(entries) == 0:
+        if len(self.buyers) == 0 and len(self.products) == 0:
             return None
+
+        price = sum(amount * product.price for product, amount in self.products.items())
         string = "Purchase:"
         string += "\n  buyers: "
-        if len(transactions) == 0:
+        if len(self.buyers) == 0:
             string += "(empty)"
         else:
             string += ", ".join(
                 [
-                    t.user.name + ("*" if not self.credit_check(t.user) else "")
-                    for t in transactions
+                    user.name + ("*" if not self.credit_check(user) else "")
+                    for user, _penalty in self.buyers
                 ],
             )
         string += "\n  products: "
-        if len(entries) == 0:
+
+        if len(self.products) == 0:
             string += "(empty)"
         else:
             string += "\n    "
             string += "\n    ".join(
-                [f"{e.amount:d}x {e.product.name} ({e.product.price:d} kr)" for e in entries],
+                [
+                    f"{amount:d}x {product.name} ({product.price:d} kr)"
+                    for product, amount in self.products.items()
+                ],
             )
-        if len(transactions) > 1:
-            string += f"\n  price per person: {self.purchase.price_per_transaction():d} kr"
-            if any(t.penalty > 1 for t in transactions):
-                # TODO: Use penalty multiplier instead of 2
-                string += f" *({self.purchase.price_per_transaction() * 2:d} kr)"
 
-        string += f"\n  total price: {self.purchase.price:d} kr"
+        price_per_transaction = math.ceil(price / len(self.buyers))
+        if len(self.buyers) > 1:
+            string += f"\n  price per person: {price_per_transaction:d} kr"
+            if any(penalty > 1 for _, penalty in self.buyers):
+                string += f" *({price_per_transaction * PENALTY_MULTIPLIER:d} kr)"
 
-        if any(t.penalty > 1 for t in transactions):
-            total = sum(self.purchase.price_per_transaction() * t.penalty for t in transactions)
+        string += f"\n  total price: {price:d} kr"
+
+        if any(penalty > 1 for _, penalty in self.buyers):
+            total = sum(price_per_transaction * penalty for _, penalty in self.buyers)
             string += f"\n  *total with penalty: {total} kr"
 
         return string
