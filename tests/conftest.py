@@ -180,6 +180,7 @@ def _sqlite_engine() -> Iterator[Engine]:
     ) -> None:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA reverse_unordered_selects=ON")
         cursor.close()
 
     try:
