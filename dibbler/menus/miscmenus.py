@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from dibbler.conf import config
 from dibbler.lib.helpers import less
 from dibbler.models import Product, Transaction, User
+from dibbler.queries import adjust_balance
 
 from .helpermenus import Menu, Selector
 
@@ -162,10 +163,8 @@ class AdjustCreditMenu(Menu):
         description = self.input_str("Log message", length_range=(0, 50))
         if description == "":
             description = "manually adjusted credit"
-        transaction = Transaction(user, -amount, description)
         try:
-            transaction.perform_transaction()
-            self.sql_session.add(transaction)
+            adjust_balance(self.sql_session, user, -amount, description=description)
             self.sql_session.commit()
             print(f"User {user.name}'s credit is now {user.credit:d} kr")
         except Exception as e:

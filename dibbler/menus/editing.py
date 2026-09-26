@@ -3,7 +3,13 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
-from dibbler.queries import create_product, create_user, edit_product, edit_user
+from dibbler.queries import (
+    adjust_stock,
+    create_product,
+    create_user,
+    edit_product,
+    edit_user,
+)
 
 from .helpermenus import Menu, Selector
 
@@ -198,9 +204,8 @@ class AdjustStockMenu(Menu):
         else:
             print(f"You removed {(add_stock * -1):d} from the stock of {product}")
 
-        product.stock += add_stock
-
         try:
+            adjust_stock(self.sql_session, product, add_stock)
             self.sql_session.commit()
             print("Stock is now stored")
             self.pause()
@@ -232,9 +237,9 @@ class CleanupStockMenu(Menu):
 
         for product in products:
             oldstock = product.stock
-            product.stock = self.input_int(product.name, 0, 10000, default=max(0, oldstock))
-            self.sql_session.add(product)
-            if oldstock != product.stock:
+            newstock = self.input_int(product.name, 0, 10000, default=max(0, oldstock))
+            if newstock != oldstock:
+                adjust_stock(self.sql_session, product, newstock - oldstock)
                 changed_products.append((product, oldstock))
 
         try:
