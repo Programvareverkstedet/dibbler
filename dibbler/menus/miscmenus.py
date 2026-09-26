@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from dibbler.conf import config
 from dibbler.lib.helpers import less
-from dibbler.models import Product, Transaction, User
-from dibbler.queries import adjust_balance
+from dibbler.models import Product, User
+from dibbler.queries import adjust_balance, transfer
 
 from .helpermenus import Menu, Selector
 
@@ -22,15 +22,11 @@ class TransferMenu(Menu):
         user2 = self.input_user("To user")
         self.add_to_context(f" to {user2.name}")
         comment = self.input_str("Comment")
+        assert comment is not None
         self.add_to_context(f" (comment) {user2.name}")
 
-        t1 = Transaction(user1, amount, f'transfer to {user2.name} "{comment}"')
-        t2 = Transaction(user2, -amount, f'transfer from {user1.name} "{comment}"')
         try:
-            t1.perform_transaction()
-            t2.perform_transaction()
-            self.sql_session.add(t1)
-            self.sql_session.add(t2)
+            transfer(self.sql_session, user1, user2, amount, comment=comment)
             self.sql_session.commit()
             print(f"Transferred {amount:d} kr from {user1} to {user2}")
             print(f"User {user1}'s credit is now {user1.credit:d} kr")
