@@ -70,6 +70,7 @@ jobs:
           name: coverage-sqlite
           path: coverage-data.sqlite
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload test report
         if: ${{ success() && inputs.publish_test_report != 'false' }}
@@ -150,6 +151,7 @@ jobs:
           name: coverage-postgresql
           path: coverage-data.postgresql
           if-no-files-found: error
+          retention-days: 1
 
       - name: Upload test report
         if: ${{ success() && inputs.publish_test_report != 'false' }}
