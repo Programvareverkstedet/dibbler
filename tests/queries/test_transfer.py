@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import User
+from dibbler.models import TransactionLog, User
+from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import transfer
 
 
@@ -41,6 +42,18 @@ def test_transfer_records_linked_transactions_for_both_users(sql_session: Sessio
     assert "bob" in outgoing.description and "rent" in outgoing.description
     assert incoming.description is not None
     assert "alice" in incoming.description and "rent" in incoming.description
+
+
+def test_transfer_records_a_transaction_log_entry(sql_session: Session) -> None:
+    alice = _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob")
+
+    transfer(sql_session, alice, bob, 30, comment="rent")
+
+    sql_session.expire_all()
+
+    log = sql_session.query(TransactionLog).one()
+    assert log.type == TransactionLogEntryType.TRANSFER
 
 
 def test_transfer_rejects_non_positive_amount(sql_session: Session) -> None:

@@ -1,8 +1,19 @@
+from datetime import datetime
 from math import ceil
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, Purchase, PurchaseEntry, Transaction, User
+from dibbler.models import (
+    Product,
+    Purchase,
+    PurchaseEntry,
+    Transaction,
+    TransactionLog,
+    TransactionLogProduct,
+    TransactionLogUser,
+    User,
+)
+from dibbler.models.enums import TransactionLogEntryType
 
 
 def add_stock(
@@ -33,14 +44,34 @@ def add_stock(
     purchase = Purchase()
     sql_session.add(purchase)
 
-    sql_session.add_all(
-        Transaction(user, purchase=purchase, description=description) for user in users
-    )
+    transactions = [Transaction(user, purchase=purchase, description=description) for user in users]
+    sql_session.add_all(transactions)
     sql_session.add_all(
         PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
     )
 
     purchase.perform_soft_purchase(-total_price, round_up=False)
+    sql_session.flush()
+
+    header = TransactionLog(
+        type=TransactionLogEntryType.ADD_PRODUCT,
+        time=datetime.now(),
+        description=description,
+    )
+    sql_session.add(header)
+    sql_session.add_all(
+        TransactionLogUser(transaction=header, user=transaction.user, amount=transaction.amount)
+        for transaction in transactions
+    )
+    sql_session.add_all(
+        TransactionLogProduct(
+            transaction=header,
+            product=product,
+            amount=amount,
+            price_at_time=product.price,
+        )
+        for product, amount, _paid_amount in products
+    )
     sql_session.flush()
 
     return purchase

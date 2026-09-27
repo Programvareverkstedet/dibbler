@@ -3,7 +3,8 @@ import math
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, User
+from dibbler.models import Product, TransactionLog, User
+from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import add_stock
 
 
@@ -127,6 +128,18 @@ def test_add_stock_records_a_purchase_linking_entries_and_transactions(
     assert [entry.amount for entry in purchase.entries] == [-5]
     assert {t.user for t in purchase.transactions} == {alice, bob}
     assert all(t.description == "restocked" for t in purchase.transactions)
+
+
+def test_add_stock_records_a_transaction_log_entry(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+    alice = _make_user(sql_session, "alice")
+
+    add_stock(sql_session, [alice], [(product, 5, 100)], total_price=100)
+
+    sql_session.expire_all()
+
+    log = sql_session.query(TransactionLog).one()
+    assert log.type == TransactionLogEntryType.ADD_PRODUCT
 
 
 def test_add_stock_rejects_no_users(sql_session: Session) -> None:

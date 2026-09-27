@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
-from dibbler.models import Transaction, User
+from dibbler.models import Transaction, TransactionLog, TransactionLogUser, User
+from dibbler.models.enums import TransactionLogEntryType
 
 
 def transfer(
@@ -22,6 +25,19 @@ def transfer(
     incoming.perform_transaction()
     sql_session.add(outgoing)
     sql_session.add(incoming)
+
+    header = TransactionLog(
+        type=TransactionLogEntryType.TRANSFER,
+        time=datetime.now(),
+        description=comment or None,
+    )
+    sql_session.add(header)
+    sql_session.add_all(
+        [
+            TransactionLogUser(transaction=header, user=from_user, amount=outgoing.amount),
+            TransactionLogUser(transaction=header, user=to_user, amount=incoming.amount),
+        ],
+    )
     sql_session.flush()
 
     return outgoing, incoming
