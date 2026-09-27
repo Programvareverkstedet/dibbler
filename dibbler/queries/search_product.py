@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product
 
+_LIKE_ESCAPE_CHAR = "\\"
+
 
 def search_product(
     string: str,
@@ -14,10 +16,21 @@ def search_product(
     if not string:
         raise ValueError("Search string cannot be empty.")
 
+    escaped = (
+        string.replace(_LIKE_ESCAPE_CHAR, _LIKE_ESCAPE_CHAR * 2)
+        .replace("%", f"{_LIKE_ESCAPE_CHAR}%")
+        .replace("_", f"{_LIKE_ESCAPE_CHAR}_")
+    )
+
     if find_hidden_products:
         exact_match = (
             sql_session.query(Product)
-            .filter(or_(Product.bar_code == string, Product.name == string))
+            .filter(
+                or_(
+                    Product.bar_code == string,
+                    Product.name.ilike(escaped, escape=_LIKE_ESCAPE_CHAR),
+                ),
+            )
             .first()
         )
     else:
@@ -27,22 +40,24 @@ def search_product(
                 or_(
                     Product.bar_code == string,
                     and_(
-                        Product.name == string,
+                        Product.name.ilike(escaped, escape=_LIKE_ESCAPE_CHAR),
                         not_(Product.hidden),
                     ),
                 ),
             )
             .first()
         )
+
     if exact_match:
         return exact_match
+
     if find_hidden_products:
         product_list = (
             sql_session.query(Product)
             .filter(
                 or_(
-                    Product.bar_code.ilike(f"%{string}%"),
-                    Product.name.ilike(f"%{string}%"),
+                    Product.bar_code.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
+                    Product.name.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
                 ),
             )
             .all()
@@ -52,13 +67,14 @@ def search_product(
             sql_session.query(Product)
             .filter(
                 or_(
-                    Product.bar_code.ilike(f"%{string}%"),
+                    Product.bar_code.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
                     and_(
-                        Product.name.ilike(f"%{string}%"),
+                        Product.name.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
                         not_(Product.hidden),
                     ),
                 ),
             )
             .all()
         )
+
     return product_list
