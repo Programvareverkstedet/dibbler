@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product
@@ -13,6 +15,9 @@ def create_product(
 ) -> Product:
     if not bar_code:
         raise ValueError("Bar code cannot be empty.")
+
+    if not re.fullmatch(Product.bar_code_re, bar_code):
+        raise ValueError("Bar code must consist of digits only.")
 
     if not name:
         raise ValueError("Name cannot be empty.")

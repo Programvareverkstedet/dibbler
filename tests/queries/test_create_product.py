@@ -41,3 +41,8 @@ def test_create_product_rejects_empty_name(sql_session: Session) -> None:
 def test_create_product_rejects_non_positive_price(sql_session: Session) -> None:
     with pytest.raises(ValueError, match="Price must be positive"):
         create_product(sql_session, "1234567890", "Cola", 0)
+
+
+def test_create_product_rejects_non_digit_bar_code(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="digits only"):
+        create_product(sql_session, "123abc", "Cola", 15)

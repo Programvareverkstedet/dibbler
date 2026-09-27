@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -21,8 +22,11 @@ def edit_product(
     if price is not UNSET and price <= 0:
         raise ValueError("Price must be positive.")
 
-    if bar_code is not UNSET and not bar_code:
-        raise ValueError("Bar code cannot be empty.")
+    if bar_code is not UNSET:
+        if not bar_code:
+            raise ValueError("Bar code cannot be empty.")
+        if not re.fullmatch(Product.bar_code_re, bar_code):
+            raise ValueError("Bar code must consist of digits only.")
 
     if name is not UNSET:
         product.name = name

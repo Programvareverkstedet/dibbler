@@ -71,3 +71,14 @@ def test_edit_product_rejects_non_positive_price(sql_session: Session) -> None:
 
     with pytest.raises(ValueError, match="Price must be positive"):
         edit_product(sql_session, product, price=0)
+
+
+def test_edit_product_rejects_non_digit_bar_code(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+
+    with pytest.raises(ValueError, match="digits only"):
+        edit_product(sql_session, product, bar_code="123abc")
+
+    sql_session.expire_all()
+
+    assert product.bar_code == "1234567890"

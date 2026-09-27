@@ -1,3 +1,4 @@
+import re
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -23,6 +24,20 @@ def edit_user(
             )
         if not name:
             raise ValueError("Name cannot be empty.")
+        if not re.fullmatch(User.name_re, name):
+            raise ValueError("Name must consist of lowercase letters only.")
+
+    if card is not UNSET and card:
+        if not re.fullmatch(User.card_re, card):
+            raise ValueError("Card number has an invalid format.")
+        card = card.lower()
+
+    if rfid is not UNSET and rfid:
+        if not re.fullmatch(User.rfid_re, rfid):
+            raise ValueError("RFID has an invalid format.")
+        rfid = rfid.lower()
+
+    if name is not UNSET:
         user.name = name
 
     if card is not UNSET:

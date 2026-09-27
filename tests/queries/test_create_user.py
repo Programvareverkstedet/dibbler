@@ -38,3 +38,30 @@ def test_create_user_rejects_duplicate_name(sql_session: Session) -> None:
 
     with pytest.raises(IntegrityError):
         create_user(sql_session, "alice")
+
+
+def test_create_user_rejects_uppercase_name(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="lowercase letters only"):
+        create_user(sql_session, "Alice")
+
+
+def test_create_user_rejects_name_with_digits(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="lowercase letters only"):
+        create_user(sql_session, "alice1")
+
+
+def test_create_user_lowercases_card_and_rfid(sql_session: Session) -> None:
+    user = create_user(sql_session, "alice", card="NTNU123", rfid="DEADBEEF")
+
+    assert user.card == "ntnu123"
+    assert user.rfid == "deadbeef"
+
+
+def test_create_user_rejects_invalid_card(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="invalid format"):
+        create_user(sql_session, "alice", card="not-a-card")
+
+
+def test_create_user_rejects_invalid_rfid(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="invalid format"):
+        create_user(sql_session, "alice", rfid="not-hex!")
