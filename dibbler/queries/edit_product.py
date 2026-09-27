@@ -16,6 +16,9 @@ def edit_product(
     bar_code: str = UNSET,
     hidden: bool = UNSET,
 ) -> Product:
+    if name is UNSET and price is UNSET and bar_code is UNSET and hidden is UNSET:
+        raise ValueError("Nothing to edit.")
+
     if name is not UNSET and not name:
         raise ValueError("Name cannot be empty.")
 

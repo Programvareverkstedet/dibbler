@@ -25,17 +25,11 @@ def test_edit_product_updates_only_the_given_fields(sql_session: Session) -> Non
     assert product.hidden is True
 
 
-def test_edit_product_leaves_product_untouched_when_nothing_is_passed(sql_session: Session) -> None:
+def test_edit_product_rejects_editing_nothing(sql_session: Session) -> None:
     product = _make_product(sql_session)
 
-    edit_product(sql_session, product)
-
-    sql_session.expire_all()
-
-    assert product.name == "Cola"
-    assert product.price == 15
-    assert product.bar_code == "1234567890"
-    assert product.hidden is False
+    with pytest.raises(ValueError, match="Nothing to edit"):
+        edit_product(sql_session, product)
 
 
 def test_edit_product_does_not_apply_any_change_when_one_field_is_invalid(

@@ -16,6 +16,9 @@ def edit_user(
     rfid: str | None = UNSET,
     _allow_rename: bool = False,
 ) -> User:
+    if name is UNSET and card is UNSET and rfid is UNSET:
+        raise ValueError("Nothing to edit.")
+
     if name is not UNSET:
         # TODO: Have users be identified by a primary integer id instead of their name.
         if not _allow_rename:

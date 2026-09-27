@@ -24,15 +24,11 @@ def test_edit_user_updates_only_the_given_fields(sql_session: Session) -> None:
     assert user.rfid is None
 
 
-def test_edit_user_leaves_user_untouched_when_nothing_is_passed(sql_session: Session) -> None:
+def test_edit_user_rejects_editing_nothing(sql_session: Session) -> None:
     user = _make_user(sql_session)
 
-    edit_user(sql_session, user)
-
-    sql_session.expire_all()
-
-    assert user.card == "ntnu123"
-    assert user.rfid == "deadbeef"
+    with pytest.raises(ValueError, match="Nothing to edit"):
+        edit_user(sql_session, user)
 
 
 def test_edit_user_does_not_apply_any_change_when_the_call_fails(sql_session: Session) -> None:
