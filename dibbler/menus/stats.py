@@ -33,7 +33,7 @@ class ProductPopularityMenu(Menu):
         )
         product_list = (
             self.sql_session.query(Product, sub.c.purchase_count)
-            .outerjoin(sub, Product.product_id == sub.c.product_id)
+            .outerjoin(sub, Product.id == sub.c.product_id)
             .order_by(desc(sub.c.purchase_count))
             .filter(sub.c.purchase_count.isnot(None))
             .all()
@@ -66,7 +66,7 @@ class ProductRevenueMenu(Menu):
         )
         product_list = (
             self.sql_session.query(Product, sub.c.purchase_count)
-            .outerjoin(sub, Product.product_id == sub.c.product_id)
+            .outerjoin(sub, Product.id == sub.c.product_id)
             .order_by(desc(sub.c.purchase_count * Product.price))
             .filter(sub.c.purchase_count.isnot(None))
             .all()

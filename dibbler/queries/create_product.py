@@ -35,7 +35,7 @@ def create_product(
         ProductLog(
             type=ProductLogEntryType.CREATE,
             time=datetime.now(),
-            product_id=product.product_id,
+            product_id=product.id,
             bar_code=product.bar_code,
             name=product.name,
             price=product.price,

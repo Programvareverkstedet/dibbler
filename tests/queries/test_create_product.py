@@ -11,7 +11,7 @@ def test_create_product_persists_a_queryable_product(sql_session: Session) -> No
 
     sql_session.expire_all()
 
-    fetched = sql_session.get(Product, product.product_id)
+    fetched = sql_session.get(Product, product.id)
     assert fetched is not None
     assert fetched.bar_code == "1234567890"
     assert fetched.name == "Cola"
@@ -36,7 +36,7 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
 
     log = sql_session.query(ProductLog).one()
     assert log.type == ProductLogEntryType.CREATE
-    assert log.product_id == product.product_id
+    assert log.product_id == product.id
     assert log.bar_code == "1234567890"
     assert log.name == "Cola"
     assert log.price == 15

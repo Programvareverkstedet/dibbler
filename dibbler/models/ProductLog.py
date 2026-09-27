@@ -65,7 +65,7 @@ class ProductLog(Base, UidMixin):
     # NOTE: Technically a foreign key, but we don't enforce so we can delete products.
     product_id: Mapped[int] = mapped_column(Integer)
     product: Mapped[Product | None] = relationship(
-        primaryjoin=lambda: foreign(ProductLog.product_id) == Product.product_id,
+        primaryjoin=lambda: foreign(ProductLog.product_id) == Product.id,
         viewonly=True,
     )
 

@@ -14,18 +14,18 @@ from sqlalchemy.orm import (
 )
 
 from .Base import Base
+from .mixins import UidMixin
 
 if TYPE_CHECKING:
     from .PurchaseEntry import PurchaseEntry
 
 
-class Product(Base):
+class Product(Base, UidMixin):
     __tablename__ = "products"
 
     bar_code_length = 13
     name_length = 45
 
-    product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
     bar_code: Mapped[str] = mapped_column(String(bar_code_length))
     name: Mapped[str] = mapped_column(String(name_length))
     price: Mapped[int] = mapped_column(Integer)

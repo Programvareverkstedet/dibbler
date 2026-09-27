@@ -51,7 +51,7 @@ def test_edit_product_records_an_edit_log_entry_with_only_touched_fields(
 
     log = sql_session.query(ProductLog).one()
     assert log.type == ProductLogEntryType.EDIT
-    assert log.product_id == product.product_id
+    assert log.product_id == product.id
     assert log.price == 20
     assert log.name is None
     assert log.bar_code is None

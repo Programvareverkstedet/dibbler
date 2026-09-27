@@ -55,7 +55,7 @@ def edit_product(
         ProductLog(
             type=ProductLogEntryType.EDIT,
             time=datetime.now(),
-            product_id=product.product_id,
+            product_id=product.id,
             name=name if name is not UNSET else None,
             price=price if price is not UNSET else None,
             bar_code=bar_code if bar_code is not UNSET else None,

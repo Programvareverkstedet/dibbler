@@ -25,7 +25,7 @@ class PurchaseEntry(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     amount: Mapped[int] = mapped_column(Integer)
 
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.product_id"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
     purchase_id: Mapped[int] = mapped_column(ForeignKey("purchases.id"))
 
     product: Mapped[Product] = relationship(back_populates="purchases", lazy="joined")
