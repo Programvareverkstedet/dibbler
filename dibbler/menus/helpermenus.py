@@ -8,10 +8,9 @@ from typing import TYPE_CHECKING, Any, Literal, Self, TypeVar
 from dibbler.lib.helpers import (
     argmax,
     guess_data_type,
-    search_product,
-    search_user,
 )
 from dibbler.models import Product, User
+from dibbler.queries import search_product, search_user
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable

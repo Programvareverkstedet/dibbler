@@ -8,6 +8,7 @@ from pathlib import Path
 from sqlalchemy.orm import Session
 
 from ..models import Transaction
+from ..queries import search_product, search_user
 from .helpers import *
 
 
