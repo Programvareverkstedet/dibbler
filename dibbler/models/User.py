@@ -20,10 +20,15 @@ if TYPE_CHECKING:
 
 class User(Base):
     __tablename__ = "users"
-    name: Mapped[str] = mapped_column(String(10), primary_key=True)
+
+    name_length = 10
+    card_length = 20
+    rfid_length = 20
+
+    name: Mapped[str] = mapped_column(String(name_length), primary_key=True)
     credit: Mapped[int] = mapped_column(Integer)
-    card: Mapped[str | None] = mapped_column(String(20))
-    rfid: Mapped[str | None] = mapped_column(String(20))
+    card: Mapped[str | None] = mapped_column(String(card_length))
+    rfid: Mapped[str | None] = mapped_column(String(rfid_length))
 
     transactions: Mapped[list[Transaction]] = relationship(
         back_populates="user",

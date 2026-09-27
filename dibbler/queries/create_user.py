@@ -1,8 +1,10 @@
 import re
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import User
+from dibbler.models import User, UserLog
+from dibbler.models.enums import UserLogEntryType
 
 
 def create_user(
@@ -30,6 +32,19 @@ def create_user(
 
     user = User(name, card, rfid, credit)
     sql_session.add(user)
+
+    sql_session.add(
+        UserLog(
+            type=UserLogEntryType.CREATE,
+            time=datetime.now(),
+            user_id=user.name,
+            name=user.name,
+            card=user.card,
+            rfid=user.rfid,
+            credit=user.credit,
+        ),
+    )
+
     sql_session.flush()
 
     return user

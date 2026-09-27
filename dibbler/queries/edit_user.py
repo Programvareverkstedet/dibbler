@@ -1,9 +1,11 @@
 import re
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import User
+from dibbler.models import User, UserLog
+from dibbler.models.enums import UserLogEntryType
 
 UNSET: Any = object()
 
@@ -40,7 +42,10 @@ def edit_user(
             raise ValueError("RFID has an invalid format.")
         rfid = rfid.lower()
 
+    touched_something = name is not UNSET or card is not UNSET or rfid is not UNSET
+
     if name is not UNSET:
+        assert name
         user.name = name
 
     if card is not UNSET:
@@ -48,6 +53,20 @@ def edit_user(
 
     if rfid is not UNSET:
         user.rfid = rfid
+
+    if touched_something:
+        sql_session.add(
+            UserLog(
+                type=UserLogEntryType.EDIT,
+                time=datetime.now(),
+                user_id=user.name,
+                name=name if name is not UNSET else None,
+                card=card if card is not UNSET else None,
+                card_touched=card is not UNSET,
+                rfid=rfid if rfid is not UNSET else None,
+                rfid_touched=rfid is not UNSET,
+            ),
+        )
 
     sql_session.flush()
 
