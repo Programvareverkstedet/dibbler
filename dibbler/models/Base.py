@@ -9,6 +9,8 @@ from sqlalchemy.orm.collections import (
     InstrumentedSet,
 )
 
+from dibbler.lib.helpers import pascal_case_to_snake_case
+
 
 class Base(DeclarativeBase):
     metadata = MetaData(
@@ -23,7 +25,10 @@ class Base(DeclarativeBase):
 
     @declared_attr.directive
     def __tablename__(cls) -> str:
-        return cls.__name__
+        if hasattr(cls, "__table_name__"):
+            assert isinstance(cls.__table_name__, str)
+            return cls.__table_name__
+        return pascal_case_to_snake_case(cls.__name__)
 
     def __repr__(self) -> str:
         columns = ", ".join(

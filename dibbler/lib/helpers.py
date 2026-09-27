@@ -67,6 +67,10 @@ def less(string: str) -> None:
         signal.signal(signal.SIGINT, int_handler)
 
 
+def pascal_case_to_snake_case(name: str) -> str:
+    return "".join(["_" + i.lower() if i.isupper() else i for i in name]).lstrip("_")
+
+
 def file_is_submissive_and_readable(file: Path) -> bool:
     return file.is_file() and any(
         [
