@@ -57,11 +57,10 @@ class UserLog(Base, UidMixin):
     time: Mapped[datetime] = mapped_column(DateTime)
     type: Mapped[UserLogEntryType] = mapped_column(UserLogEntryTypeSQL)
 
-    # TODO: Have this refer to the proper integer key instead of the name
-    # NOTE: Technically a foreign key, but we don't enforce so we can delete products.
-    user_id: Mapped[str] = mapped_column(String(User.name_length))
+    # NOTE: Technically a foreign key, but we don't enforce so we can delete users.
+    user_id: Mapped[int] = mapped_column(Integer)
     user: Mapped[User | None] = relationship(
-        primaryjoin=lambda: foreign(UserLog.user_id) == User.name,
+        primaryjoin=lambda: foreign(UserLog.user_id) == User.id,
         viewonly=True,
     )
 

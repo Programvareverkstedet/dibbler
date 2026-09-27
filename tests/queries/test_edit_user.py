@@ -39,7 +39,7 @@ def test_edit_user_rejects_resubmitting_the_same_card_and_rfid(sql_session: Sess
         edit_user(sql_session, user, card="ntnu123", rfid="deadbeef")
 
 
-def test_edit_user_records_the_users_current_name_as_user_id(sql_session: Session) -> None:
+def test_edit_user_records_the_users_id_as_user_id(sql_session: Session) -> None:
     user = _make_user(sql_session)
 
     edit_user(sql_session, user, card="ntnu456")
@@ -48,14 +48,14 @@ def test_edit_user_records_the_users_current_name_as_user_id(sql_session: Sessio
 
     log = sql_session.query(UserLog).one()
     assert log.type == UserLogEntryType.EDIT
-    assert log.user_id == "alice"
+    assert log.user_id == user.id
     assert log.card == "ntnu456"
     assert log.card_touched is True
     assert log.rfid is None
     assert log.rfid_touched is False
 
 
-def test_edit_user_rename_logs_the_new_name_as_user_id(sql_session: Session) -> None:
+def test_edit_user_rename_keeps_the_same_user_id(sql_session: Session) -> None:
     user = create_user(sql_session, "alice")
 
     edit_user(sql_session, user, name="alicia", _allow_rename=True)
@@ -64,9 +64,9 @@ def test_edit_user_rename_logs_the_new_name_as_user_id(sql_session: Session) -> 
 
     logs = sql_session.query(UserLog).order_by(UserLog.id).all()
     create_entry, rename_entry = logs
-    assert create_entry.user_id == "alice"
+    assert create_entry.user_id == user.id
     assert rename_entry.name == "alicia"
-    assert rename_entry.user_id == "alicia"
+    assert rename_entry.user_id == user.id
 
 
 def test_edit_user_does_not_apply_any_change_when_the_call_fails(sql_session: Session) -> None:
@@ -174,5 +174,6 @@ def test_edit_user_can_rename_with_explicit_guard(sql_session: Session) -> None:
 
     sql_session.expire_all()
 
-    assert sql_session.get(User, "alicia") is user
-    assert sql_session.get(User, "alice") is None
+    assert sql_session.get(User, user.id) is user
+    assert user.name == "alicia"
+    assert sql_session.query(User).filter_by(name="alice").first() is None

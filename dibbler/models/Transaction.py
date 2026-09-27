@@ -32,7 +32,7 @@ class Transaction(Base):
     penalty: Mapped[int] = mapped_column(Integer)
     description: Mapped[str | None] = mapped_column(String(50))
 
-    user_name: Mapped[str] = mapped_column(ForeignKey("users.name"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     purchase_id: Mapped[int | None] = mapped_column(ForeignKey("purchases.id"))
 
     user: Mapped[User] = relationship(lazy="joined")

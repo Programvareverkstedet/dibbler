@@ -13,19 +13,20 @@ from sqlalchemy.orm import (
 )
 
 from .Base import Base
+from .mixins import UidMixin
 
 if TYPE_CHECKING:
     from .Transaction import Transaction
 
 
-class User(Base):
+class User(Base, UidMixin):
     __tablename__ = "users"
 
     name_length = 10
     card_length = 20
     rfid_length = 20
 
-    name: Mapped[str] = mapped_column(String(name_length), primary_key=True)
+    name: Mapped[str] = mapped_column(String(name_length), unique=True, index=True)
     credit: Mapped[int] = mapped_column(Integer)
     card: Mapped[str | None] = mapped_column(String(card_length))
     rfid: Mapped[str | None] = mapped_column(String(rfid_length))

@@ -32,12 +32,13 @@ def create_user(
 
     user = User(name, card, rfid, credit)
     sql_session.add(user)
+    sql_session.flush()
 
     sql_session.add(
         UserLog(
             type=UserLogEntryType.CREATE,
             time=datetime.now(),
-            user_id=user.name,
+            user_id=user.id,
             name=user.name,
             card=user.card,
             rfid=user.rfid,

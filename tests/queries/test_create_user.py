@@ -8,12 +8,13 @@ from dibbler.queries import create_user
 
 
 def test_create_user_persists_a_queryable_user(sql_session: Session) -> None:
-    create_user(sql_session, "alice", card="ntnu123", rfid="deadbeef", credit=50)
+    created = create_user(sql_session, "alice", card="ntnu123", rfid="deadbeef", credit=50)
 
     sql_session.expire_all()
 
-    user = sql_session.get(User, "alice")
+    user = sql_session.get(User, created.id)
     assert user is not None
+    assert user.name == "alice"
     assert user.card == "ntnu123"
     assert user.rfid == "deadbeef"
     assert user.credit == 50
@@ -30,13 +31,13 @@ def test_create_user_defaults_to_no_card_rfid_and_zero_credit(sql_session: Sessi
 
 
 def test_create_user_records_a_create_log_entry(sql_session: Session) -> None:
-    create_user(sql_session, "alice", card="ntnu123", rfid="deadbeef", credit=50)
+    created = create_user(sql_session, "alice", card="ntnu123", rfid="deadbeef", credit=50)
 
     sql_session.expire_all()
 
     log = sql_session.query(UserLog).one()
     assert log.type == UserLogEntryType.CREATE
-    assert log.user_id == "alice"
+    assert log.user_id == created.id
     assert log.name == "alice"
     assert log.card == "ntnu123"
     assert log.rfid == "deadbeef"

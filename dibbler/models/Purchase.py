@@ -30,7 +30,7 @@ class Purchase(Base):
 
     transactions: Mapped[set[Transaction]] = relationship(
         back_populates="purchase",
-        order_by=Transaction.user_name,
+        order_by=Transaction.user_id,
     )
     entries: Mapped[set[PurchaseEntry]] = relationship(back_populates="purchase")
 

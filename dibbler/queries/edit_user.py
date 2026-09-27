@@ -19,7 +19,6 @@ def edit_user(
     _allow_rename: bool = False,
 ) -> User:
     if name is not UNSET:
-        # TODO: Have users be identified by a primary integer id instead of their name.
         if not _allow_rename:
             raise ValueError(
                 "Renaming a user is not supported atm, just complain to someone about it if you really need it.",
@@ -61,7 +60,7 @@ def edit_user(
         UserLog(
             type=UserLogEntryType.EDIT,
             time=datetime.now(),
-            user_id=user.name,
+            user_id=user.id,
             name=name if name is not UNSET else None,
             card=card if card is not UNSET else None,
             card_touched=card is not UNSET,

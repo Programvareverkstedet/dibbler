@@ -24,7 +24,7 @@ class TransactionLogUser(XrefMixin, Base, UidMixin):
     transaction_log_id: Mapped[int] = mapped_column(ForeignKey("transaction_log.id"))
     transaction: Mapped[TransactionLog] = relationship(back_populates="users")
 
-    user_id: Mapped[str] = mapped_column(ForeignKey("users.name"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped[User] = relationship()
 
     amount: Mapped[int] = mapped_column(Integer)
