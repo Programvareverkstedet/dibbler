@@ -1,0 +1,75 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Integer,
+    String,
+    column,
+    or_,
+)
+from sqlalchemy.orm import (
+    Mapped,
+    foreign,
+    mapped_column,
+    relationship,
+)
+
+from dibbler.lib.sql_helpers import type_field_constraints
+
+from .Base import Base
+from .enums import ProductLogEntryType, ProductLogEntryTypeSQL
+from .mixins import UidMixin
+from .Product import Product
+
+
+class ProductLog(Base, UidMixin):
+    __tablename__ = "product_log"
+    __table_args__ = (
+        *type_field_constraints(
+            {
+                ProductLogEntryType.CREATE: {
+                    "bar_code": True,
+                    "name": True,
+                    "price": True,
+                    "hidden": True,
+                },
+                ProductLogEntryType.DELETE: {
+                    "bar_code": False,
+                    "name": False,
+                    "price": False,
+                    "hidden": False,
+                },
+            },
+        ),
+        CheckConstraint(
+            or_(
+                column("type") != ProductLogEntryType.EDIT.value,
+                or_(
+                    column("bar_code").is_not(None),
+                    column("name").is_not(None),
+                    column("price").is_not(None),
+                    column("hidden").is_not(None),
+                ),
+            ),
+            name="ck_edit_touches_something",
+        ),
+    )
+
+    time: Mapped[datetime] = mapped_column(DateTime)
+    type: Mapped[ProductLogEntryType] = mapped_column(ProductLogEntryTypeSQL)
+
+    # NOTE: Technically a foreign key, but we don't enforce so we can delete products.
+    product_id: Mapped[int] = mapped_column(Integer)
+    product: Mapped[Product | None] = relationship(
+        primaryjoin=lambda: foreign(ProductLog.product_id) == Product.product_id,
+        viewonly=True,
+    )
+
+    bar_code: Mapped[str | None] = mapped_column(String(Product.bar_code_length))
+    name: Mapped[str | None] = mapped_column(String(Product.name_length))
+    price: Mapped[int | None] = mapped_column(Integer)
+    hidden: Mapped[bool | None] = mapped_column(Boolean)

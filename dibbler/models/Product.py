@@ -22,9 +22,12 @@ if TYPE_CHECKING:
 class Product(Base):
     __tablename__ = "products"
 
+    bar_code_length = 13
+    name_length = 45
+
     product_id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    bar_code: Mapped[str] = mapped_column(String(13))
-    name: Mapped[str] = mapped_column(String(45))
+    bar_code: Mapped[str] = mapped_column(String(bar_code_length))
+    name: Mapped[str] = mapped_column(String(name_length))
     price: Mapped[int] = mapped_column(Integer)
     stock: Mapped[int] = mapped_column(Integer)
     hidden: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -33,7 +36,6 @@ class Product(Base):
 
     bar_code_re = r"[0-9]+"
     name_re = r".+"
-    name_length = 45
 
     def __init__(
         self,

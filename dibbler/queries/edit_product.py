@@ -1,9 +1,11 @@
 import re
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product
+from dibbler.models import Product, ProductLog
+from dibbler.models.enums import ProductLogEntryType
 
 UNSET: Any = object()
 
@@ -42,6 +44,19 @@ def edit_product(
 
     if hidden is not UNSET:
         product.hidden = hidden
+
+    if name is not UNSET or price is not UNSET or bar_code is not UNSET or hidden is not UNSET:
+        sql_session.add(
+            ProductLog(
+                type=ProductLogEntryType.EDIT,
+                time=datetime.now(),
+                product_id=product.product_id,
+                name=name if name is not UNSET else None,
+                price=price if price is not UNSET else None,
+                bar_code=bar_code if bar_code is not UNSET else None,
+                hidden=hidden if hidden is not UNSET else None,
+            ),
+        )
 
     sql_session.flush()
 

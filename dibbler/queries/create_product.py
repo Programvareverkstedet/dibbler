@@ -1,8 +1,10 @@
 import re
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product
+from dibbler.models import Product, ProductLog
+from dibbler.models.enums import ProductLogEntryType
 
 
 def create_product(
@@ -27,6 +29,19 @@ def create_product(
 
     product = Product(bar_code, name, price, stock, hidden)
     sql_session.add(product)
+    sql_session.flush()
+
+    sql_session.add(
+        ProductLog(
+            type=ProductLogEntryType.CREATE,
+            time=datetime.now(),
+            product_id=product.product_id,
+            bar_code=product.bar_code,
+            name=product.name,
+            price=product.price,
+            hidden=product.hidden,
+        ),
+    )
     sql_session.flush()
 
     return product
