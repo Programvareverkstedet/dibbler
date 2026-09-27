@@ -12,6 +12,10 @@ def search_user(
     ignore_this_flag: None = None,
 ) -> User | list[User] | None:
     assert sql_session is not None
+
+    if not string:
+        raise ValueError("Search string cannot be empty.")
+
     string = string.lower()
     exact_match = (
         sql_session.query(User)

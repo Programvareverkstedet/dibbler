@@ -10,6 +10,10 @@ def search_product(
     find_hidden_products: bool = True,
 ) -> Product | list[Product] | None:
     assert sql_session is not None
+
+    if not string:
+        raise ValueError("Search string cannot be empty.")
+
     if find_hidden_products:
         exact_match = (
             sql_session.query(Product)
