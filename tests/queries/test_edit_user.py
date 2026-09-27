@@ -2,8 +2,9 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from dibbler.models import User
-from dibbler.queries import edit_user
+from dibbler.models import User, UserLog
+from dibbler.models.enums import UserLogEntryType
+from dibbler.queries import create_user, edit_user
 
 
 def _make_user(sql_session: Session, name: str = "alice") -> User:
@@ -29,6 +30,36 @@ def test_edit_user_rejects_editing_nothing(sql_session: Session) -> None:
 
     with pytest.raises(ValueError, match="Nothing to edit"):
         edit_user(sql_session, user)
+
+
+def test_edit_user_records_the_users_current_name_as_user_id(sql_session: Session) -> None:
+    user = _make_user(sql_session)
+
+    edit_user(sql_session, user, card="ntnu456")
+
+    sql_session.expire_all()
+
+    log = sql_session.query(UserLog).one()
+    assert log.type == UserLogEntryType.EDIT
+    assert log.user_id == "alice"
+    assert log.card == "ntnu456"
+    assert log.card_touched is True
+    assert log.rfid is None
+    assert log.rfid_touched is False
+
+
+def test_edit_user_rename_logs_the_new_name_as_user_id(sql_session: Session) -> None:
+    user = create_user(sql_session, "alice")
+
+    edit_user(sql_session, user, name="alicia", _allow_rename=True)
+
+    sql_session.expire_all()
+
+    logs = sql_session.query(UserLog).order_by(UserLog.id).all()
+    create_entry, rename_entry = logs
+    assert create_entry.user_id == "alice"
+    assert rename_entry.name == "alicia"
+    assert rename_entry.user_id == "alicia"
 
 
 def test_edit_user_does_not_apply_any_change_when_the_call_fails(sql_session: Session) -> None:

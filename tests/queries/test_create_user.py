@@ -2,7 +2,8 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from dibbler.models import User
+from dibbler.models import User, UserLog
+from dibbler.models.enums import UserLogEntryType
 from dibbler.queries import create_user
 
 
@@ -26,6 +27,20 @@ def test_create_user_defaults_to_no_card_rfid_and_zero_credit(sql_session: Sessi
     assert user.card is None
     assert user.rfid is None
     assert user.credit == 0
+
+
+def test_create_user_records_a_create_log_entry(sql_session: Session) -> None:
+    create_user(sql_session, "alice", card="ntnu123", rfid="deadbeef", credit=50)
+
+    sql_session.expire_all()
+
+    log = sql_session.query(UserLog).one()
+    assert log.type == UserLogEntryType.CREATE
+    assert log.user_id == "alice"
+    assert log.name == "alice"
+    assert log.card == "ntnu123"
+    assert log.rfid == "deadbeef"
+    assert log.credit == 50
 
 
 def test_create_user_rejects_empty_name(sql_session: Session) -> None:

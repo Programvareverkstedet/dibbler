@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product
+from dibbler.models import Product, ProductLog
+from dibbler.models.enums import ProductLogEntryType
 from dibbler.queries import create_product
 
 
@@ -26,6 +27,20 @@ def test_create_product_defaults_to_zero_stock_and_not_hidden(sql_session: Sessi
 
     assert product.stock == 0
     assert product.hidden is False
+
+
+def test_create_product_records_a_create_log_entry(sql_session: Session) -> None:
+    product = create_product(sql_session, "1234567890", "Cola", 15, stock=10, hidden=True)
+
+    sql_session.expire_all()
+
+    log = sql_session.query(ProductLog).one()
+    assert log.type == ProductLogEntryType.CREATE
+    assert log.product_id == product.product_id
+    assert log.bar_code == "1234567890"
+    assert log.name == "Cola"
+    assert log.price == 15
+    assert log.hidden is True
 
 
 def test_create_product_rejects_empty_bar_code(sql_session: Session) -> None:

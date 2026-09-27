@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product
+from dibbler.models import Product, ProductLog
+from dibbler.models.enums import ProductLogEntryType
 from dibbler.queries import edit_product
 
 
@@ -30,6 +31,24 @@ def test_edit_product_rejects_editing_nothing(sql_session: Session) -> None:
 
     with pytest.raises(ValueError, match="Nothing to edit"):
         edit_product(sql_session, product)
+
+
+def test_edit_product_records_an_edit_log_entry_with_only_touched_fields(
+    sql_session: Session,
+) -> None:
+    product = _make_product(sql_session)
+
+    edit_product(sql_session, product, price=20)
+
+    sql_session.expire_all()
+
+    log = sql_session.query(ProductLog).one()
+    assert log.type == ProductLogEntryType.EDIT
+    assert log.product_id == product.product_id
+    assert log.price == 20
+    assert log.name is None
+    assert log.bar_code is None
+    assert log.hidden is None
 
 
 def test_edit_product_does_not_apply_any_change_when_one_field_is_invalid(
