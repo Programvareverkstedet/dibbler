@@ -37,6 +37,17 @@ python3Packages.buildPythonApplication {
     sqlalchemy
   ]);
 
+  pythonImportsCheck = [ "dibbler" ];
+
+  doCheck = true;
+  nativeCheckInputs = with python3Packages; [
+    pytest
+    pytestCheckHook
+    sqlparse
+    pytest-html
+    pytest-cov
+  ];
+
   meta = {
     description = "The little kiosk that could";
     mainProgram = "dibbler";
