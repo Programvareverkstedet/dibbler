@@ -46,6 +46,7 @@ python3Packages.buildPythonApplication {
     sqlparse
     pytest-html
     pytest-cov
+    pytest-md-report
   ];
 
   meta = {

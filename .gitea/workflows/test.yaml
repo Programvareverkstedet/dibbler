@@ -54,6 +54,12 @@ jobs:
             -vv
             --db-driver=sqlite
             --html=./test-report/index.html
+            --md-report
+            --md-report-output=./test-report/report.md
+            --md-report-flavor=gfm
+            --md-report-color=never
+            --md-report-verbose=0
+            --md-report-show-duration
           )
 
           if [ "$DEBUG_SQL" == "true" ]; then
@@ -63,6 +69,21 @@ jobs:
           fi
 
           uv run -- pytest "${PYTEST_ARGS[@]}"
+
+      - name: Add test report to job summary
+        if: always()
+        run: |
+          if [ -f ./test-report/report.md ]; then
+            {
+              echo "<details><summary><b>SQLite Test Report</b> <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/test-report/sqlite/\">(HTML report)</a></summary>"
+              echo
+              cat ./test-report/report.md
+              echo
+              echo "</details>"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "**SQLite Test Report**: no report generated" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
@@ -135,6 +156,12 @@ jobs:
             --pg-username=dibbler_test
             --pg-password=dibbler_test
             --html=./test-report/index.html
+            --md-report
+            --md-report-output=./test-report/report.md
+            --md-report-flavor=gfm
+            --md-report-color=never
+            --md-report-verbose=0
+            --md-report-show-duration
           )
 
           if [ "$DEBUG_SQL" == "true" ]; then
@@ -144,6 +171,21 @@ jobs:
           fi
 
           uv run -- pytest "${PYTEST_ARGS[@]}"
+
+      - name: Add test report to job summary
+        if: always()
+        run: |
+          if [ -f ./test-report/report.md ]; then
+            {
+              echo "<details><summary><b>PostgreSQL Test Report</b> <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/test-report/postgresql/\">(HTML report)</a></summary>"
+              echo
+              cat ./test-report/report.md
+              echo
+              echo "</details>"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "**PostgreSQL Test Report**: no report generated" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload coverage data
         uses: actions/upload-artifact@v7
@@ -212,6 +254,16 @@ jobs:
           uv run -- coverage combine "${coverage_data_files[@]}"
           uv run -- coverage html
           uv run -- coverage xml
+
+      - name: Add coverage report to job summary
+        run: |
+          {
+            echo "<details><summary><b>Coverage Report</b> <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/coverage/\">(HTML report)</a></summary>"
+            echo
+            uv run -- coverage report --format=markdown
+            echo
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Generate badge
         run: uv run -- genbadge coverage -i coverage.xml -o htmlcov/badge.svg
