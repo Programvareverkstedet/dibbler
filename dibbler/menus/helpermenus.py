@@ -312,8 +312,10 @@ class Menu:
     ) -> Product:
         product = None
         while product is None:
-            search_string = self.input_str(prompt, end_prompt)
-            assert search_string is not None
+            search_string = self.input_str(prompt, end_prompt, empty_string_is_none=True)
+            if search_string is None:
+                print("Please write something")
+                continue
             product = self.retrieve_product(search_string)
         return product
 
@@ -333,8 +335,11 @@ class Menu:
         while result is None:
             search_str = self.input_str(prompt, end_prompt)
             assert search_str is not None
-            if search_str == "" and empty_input_permitted:
-                return None
+            if search_str == "":
+                if empty_input_permitted:
+                    return None
+                print("Please write something")
+                continue
             result = self.search_for_thing(
                 search_str,
                 permitted_things,
@@ -358,8 +363,11 @@ class Menu:
             search_str = self.input_str(prompt, end_prompt)
             assert search_str is not None
             search_lst = search_str.split(" ")
-            if search_str == "" and empty_input_permitted:
-                return None
+            if search_str == "":
+                if empty_input_permitted:
+                    return None
+                print("Please write something")
+                continue
             result = self.search_for_thing(
                 search_str,
                 permitted_things,
