@@ -17,7 +17,6 @@ from .Base import Base
 
 if TYPE_CHECKING:
     from .PurchaseEntry import PurchaseEntry
-    from .UserProducts import UserProducts
 
 
 class Product(Base):
@@ -31,7 +30,6 @@ class Product(Base):
     hidden: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     purchases: Mapped[set[PurchaseEntry]] = relationship(back_populates="product")
-    users: Mapped[set[UserProducts]] = relationship(back_populates="product")
 
     bar_code_re = r"[0-9]+"
     name_re = r".+"

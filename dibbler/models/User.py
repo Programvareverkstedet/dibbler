@@ -16,7 +16,6 @@ from .Base import Base
 
 if TYPE_CHECKING:
     from .Transaction import Transaction
-    from .UserProducts import UserProducts
 
 
 class User(Base):
@@ -26,7 +25,6 @@ class User(Base):
     card: Mapped[str | None] = mapped_column(String(20))
     rfid: Mapped[str | None] = mapped_column(String(20))
 
-    products: Mapped[list[UserProducts]] = relationship(back_populates="user")
     transactions: Mapped[list[Transaction]] = relationship(
         back_populates="user",
         order_by="Transaction.time",

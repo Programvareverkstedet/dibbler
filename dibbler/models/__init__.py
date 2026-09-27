@@ -5,7 +5,6 @@ __all__ = [
     "PurchaseEntry",
     "Transaction",
     "User",
-    "UserProducts",
 ]
 
 from .Base import Base
@@ -14,4 +13,3 @@ from .Purchase import Purchase
 from .PurchaseEntry import PurchaseEntry
 from .Transaction import Transaction
 from .User import User
-from .UserProducts import UserProducts
