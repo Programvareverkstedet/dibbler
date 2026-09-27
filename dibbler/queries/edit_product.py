@@ -18,9 +18,6 @@ def edit_product(
     bar_code: str = UNSET,
     hidden: bool = UNSET,
 ) -> Product:
-    if name is UNSET and price is UNSET and bar_code is UNSET and hidden is UNSET:
-        raise ValueError("Nothing to edit.")
-
     if name is not UNSET and not name:
         raise ValueError("Name cannot be empty.")
 
@@ -32,6 +29,15 @@ def edit_product(
             raise ValueError("Bar code cannot be empty.")
         if not re.fullmatch(Product.bar_code_re, bar_code):
             raise ValueError("Bar code must consist of digits only.")
+
+    changed = (
+        (name is not UNSET and name != product.name)
+        or (price is not UNSET and price != product.price)
+        or (bar_code is not UNSET and bar_code != product.bar_code)
+        or (hidden is not UNSET and hidden != product.hidden)
+    )
+    if not changed:
+        raise ValueError("Nothing to edit.")
 
     if name is not UNSET:
         product.name = name
@@ -45,18 +51,17 @@ def edit_product(
     if hidden is not UNSET:
         product.hidden = hidden
 
-    if name is not UNSET or price is not UNSET or bar_code is not UNSET or hidden is not UNSET:
-        sql_session.add(
-            ProductLog(
-                type=ProductLogEntryType.EDIT,
-                time=datetime.now(),
-                product_id=product.product_id,
-                name=name if name is not UNSET else None,
-                price=price if price is not UNSET else None,
-                bar_code=bar_code if bar_code is not UNSET else None,
-                hidden=hidden if hidden is not UNSET else None,
-            ),
-        )
+    sql_session.add(
+        ProductLog(
+            type=ProductLogEntryType.EDIT,
+            time=datetime.now(),
+            product_id=product.product_id,
+            name=name if name is not UNSET else None,
+            price=price if price is not UNSET else None,
+            bar_code=bar_code if bar_code is not UNSET else None,
+            hidden=hidden if hidden is not UNSET else None,
+        ),
+    )
 
     sql_session.flush()
 

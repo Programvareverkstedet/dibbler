@@ -32,6 +32,13 @@ def test_edit_user_rejects_editing_nothing(sql_session: Session) -> None:
         edit_user(sql_session, user)
 
 
+def test_edit_user_rejects_resubmitting_the_same_card_and_rfid(sql_session: Session) -> None:
+    user = _make_user(sql_session)
+
+    with pytest.raises(ValueError, match="Nothing to edit"):
+        edit_user(sql_session, user, card="ntnu123", rfid="deadbeef")
+
+
 def test_edit_user_records_the_users_current_name_as_user_id(sql_session: Session) -> None:
     user = _make_user(sql_session)
 

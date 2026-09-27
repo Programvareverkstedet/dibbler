@@ -18,9 +18,6 @@ def edit_user(
     rfid: str | None = UNSET,
     _allow_rename: bool = False,
 ) -> User:
-    if name is UNSET and card is UNSET and rfid is UNSET:
-        raise ValueError("Nothing to edit.")
-
     if name is not UNSET:
         # TODO: Have users be identified by a primary integer id instead of their name.
         if not _allow_rename:
@@ -42,7 +39,13 @@ def edit_user(
             raise ValueError("RFID has an invalid format.")
         rfid = rfid.lower()
 
-    touched_something = name is not UNSET or card is not UNSET or rfid is not UNSET
+    changed = (
+        (name is not UNSET and name != user.name)
+        or (card is not UNSET and card != user.card)
+        or (rfid is not UNSET and rfid != user.rfid)
+    )
+    if not changed:
+        raise ValueError("Nothing to edit.")
 
     if name is not UNSET:
         assert name
@@ -54,19 +57,18 @@ def edit_user(
     if rfid is not UNSET:
         user.rfid = rfid
 
-    if touched_something:
-        sql_session.add(
-            UserLog(
-                type=UserLogEntryType.EDIT,
-                time=datetime.now(),
-                user_id=user.name,
-                name=name if name is not UNSET else None,
-                card=card if card is not UNSET else None,
-                card_touched=card is not UNSET,
-                rfid=rfid if rfid is not UNSET else None,
-                rfid_touched=rfid is not UNSET,
-            ),
-        )
+    sql_session.add(
+        UserLog(
+            type=UserLogEntryType.EDIT,
+            time=datetime.now(),
+            user_id=user.name,
+            name=name if name is not UNSET else None,
+            card=card if card is not UNSET else None,
+            card_touched=card is not UNSET,
+            rfid=rfid if rfid is not UNSET else None,
+            rfid_touched=rfid is not UNSET,
+        ),
+    )
 
     sql_session.flush()
 

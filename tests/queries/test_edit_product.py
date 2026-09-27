@@ -33,6 +33,13 @@ def test_edit_product_rejects_editing_nothing(sql_session: Session) -> None:
         edit_product(sql_session, product)
 
 
+def test_edit_product_rejects_resubmitting_the_same_price(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+
+    with pytest.raises(ValueError, match="Nothing to edit"):
+        edit_product(sql_session, product, price=15)
+
+
 def test_edit_product_records_an_edit_log_entry_with_only_touched_fields(
     sql_session: Session,
 ) -> None:
@@ -49,6 +56,18 @@ def test_edit_product_records_an_edit_log_entry_with_only_touched_fields(
     assert log.name is None
     assert log.bar_code is None
     assert log.hidden is None
+
+
+def test_edit_product_can_touch_only_hidden(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+
+    edit_product(sql_session, product, hidden=True)
+
+    sql_session.expire_all()
+
+    assert product.hidden is True
+    assert product.name == "Cola"
+    assert product.price == 15
 
 
 def test_edit_product_does_not_apply_any_change_when_one_field_is_invalid(
