@@ -122,7 +122,7 @@ def main(sql_session: Session) -> None:
                 print(f"{sys.exc_info()[0]}: {sys.exc_info()[1]}")
                 if config["general"]["show_tracebacks"]:
                     traceback.print_tb(sys.exc_info()[2])
-                crashlog_dir = Path('/var/lib/dibbler/crashdumps')
+                crashlog_dir = Path("/var/lib/dibbler/crashdumps")
                 if not crashlog_dir.exists():
                     crashlog_dir.mkdir(parents=True, exist_ok=True)
                 crashlog_path = crashlog_dir / f"crashdump_{int(time())}.log"

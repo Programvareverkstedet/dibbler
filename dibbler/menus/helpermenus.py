@@ -295,7 +295,7 @@ class Menu:
     ) -> User:
         user = None
         while user is None:
-            search_string = self.input_str(prompt, end_prompt, empty_string_is_none = True)
+            search_string = self.input_str(prompt, end_prompt, empty_string_is_none=True)
             if search_string is None:
                 print("Please write something")
                 continue

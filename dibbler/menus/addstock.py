@@ -54,7 +54,9 @@ much money you're due in credits for the purchase when prompted.\n"""
                 (thing, amount) = line
 
                 if isinstance(thing, User) and amount != 1:
-                    self.printc(f'"{thing.name}" is a user, not a product, and cannot be given a numbered amount.')
+                    self.printc(
+                        f'"{thing.name}" is a user, not a product, and cannot be given a numbered amount.'
+                    )
                     continue
 
                 if isinstance(thing, Product):
