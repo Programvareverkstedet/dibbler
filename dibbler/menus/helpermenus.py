@@ -5,12 +5,14 @@ import sys
 from select import select
 from typing import TYPE_CHECKING, Any, Literal, Self, TypeVar
 
+from sqlalchemy.exc import SQLAlchemyError
+
 from dibbler.lib.helpers import (
     argmax,
     guess_data_type,
 )
 from dibbler.models import Product, User
-from dibbler.queries import search_product, search_user
+from dibbler.queries import create_user, edit_user, search_product, search_user
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -440,45 +442,67 @@ class Menu:
         return 1
 
     def search_add(self, string: str) -> User | None:
-        type_guess = guess_data_type(string)
-        if type_guess == "username":
-            print(f'"{string}" looks like a username, but no such user exists.')
-            if self.confirm(f"Create user {string}?"):
-                user = User(string, None)
-                self.sql_session.add(user)
+        match guess_data_type(string):
+            case "username":
+                print(f'"{string}" looks like a username, but no such user exists.')
+                if not self.confirm(f"Create user {string}?"):
+                    return None
+                try:
+                    user = create_user(self.sql_session, string)
+                except (SQLAlchemyError, ValueError) as e:
+                    print(f"Could not create user {string}: {e}")
+                    return None
                 return user
-            return None
-        if type_guess == "card":
-            selector = Selector(
-                f'"{string}" looks like a card number, but no user with that card number exists.',
-                self.sql_session,
-                [
-                    ("create", f"Create user with card number {string}"),
-                    ("set", f"Set card number of an existing user to {string}"),
-                ],
-            )
-            selection = selector.execute()
-            if selection == "create":
-                username = self.input_str(
-                    prompt="Username for new user (should be same as PVV username)",
-                    end_prompt=None,
-                    regex=User.name_re,
-                    length_range=(1, 10),
+
+            case "card":
+                selector = Selector(
+                    f'"{string}" looks like a card number, '
+                    "but no user with that card number exists.",
+                    self.sql_session,
+                    [
+                        ("create", f"Create user with card number {string}"),
+                        ("set", f"Set card number of an existing user to {string}"),
+                    ],
                 )
-                assert username is not None
-                user = User(username, string)
-                self.sql_session.add(user)
-                return user
-            if selection == "set":
-                user = self.input_user("User to set card number for")
-                old_card = user.card
-                user.card = string
-                print(f"Card number of {user.name} set to {string} (was {old_card})")
-                return user
-            return None
-        if type_guess == "bar_code":
-            print(f'"{string}" looks like the bar code for a product, but no such product exists.')
-            return None
+                match selector.execute():
+                    case "create":
+                        username = self.input_str(
+                            prompt="Username for new user (should be same as PVV username)",
+                            end_prompt=None,
+                            regex=User.name_re,
+                            length_range=(1, 10),
+                        )
+                        assert username is not None
+                        try:
+                            user = create_user(self.sql_session, username, card=string)
+                        except (SQLAlchemyError, ValueError) as e:
+                            print(f"Could not create user {username}: {e}")
+                            return None
+                        return user
+
+                    case "set":
+                        user = self.input_user("User to set card number for")
+                        old_card = user.card
+                        try:
+                            edit_user(self.sql_session, user, card=string)
+                        except (SQLAlchemyError, ValueError) as e:
+                            print(f"Could not set card number of {user.name}: {e}")
+                            return None
+                        print(f"Card number of {user.name} set to {string} (was {old_card})")
+                        return user
+
+                    case _:
+                        return None
+
+            case "bar_code":
+                print(
+                    f'"{string}" looks like the bar code for a product, '
+                    "but no such product exists.",
+                )
+                return None
+
+            case _:
+                return None
 
     def search_ui(
         self,
