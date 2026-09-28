@@ -16,17 +16,16 @@ def edit_user(
     name: str | None = UNSET,
     card: str | None = UNSET,
     rfid: str | None = UNSET,
-    _allow_rename: bool = False,
 ) -> User:
     if name is not UNSET:
-        if not _allow_rename:
-            raise ValueError(
-                "Renaming a user is not supported atm, just complain to someone about it if you really need it.",
-            )
         if not name:
             raise ValueError("Name cannot be empty.")
         if not re.fullmatch(User.name_re, name):
             raise ValueError("Name must consist of lowercase letters only.")
+        if name != user.name:
+            existing = sql_session.query(User).filter(User.name == name).first()
+            if existing is not None:
+                raise ValueError(f'A user named "{name}" already exists.')
 
     if card is not UNSET and card:
         if not re.fullmatch(User.card_re, card):

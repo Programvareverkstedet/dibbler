@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dibbler.models import User, UserLog
@@ -58,7 +57,7 @@ def test_edit_user_records_the_users_id_as_user_id(sql_session: Session) -> None
 def test_edit_user_rename_keeps_the_same_user_id(sql_session: Session) -> None:
     user = create_user(sql_session, "alice")
 
-    edit_user(sql_session, user, name="alicia", _allow_rename=True)
+    edit_user(sql_session, user, name="alicia")
 
     sql_session.expire_all()
 
@@ -73,7 +72,7 @@ def test_edit_user_does_not_apply_any_change_when_the_call_fails(sql_session: Se
     user = _make_user(sql_session)
 
     with pytest.raises(ValueError):
-        edit_user(sql_session, user, card="ntnu456", name="alicia")
+        edit_user(sql_session, user, card="ntnu456", name="Alicia")
 
     sql_session.expire_all()
 
@@ -81,34 +80,38 @@ def test_edit_user_does_not_apply_any_change_when_the_call_fails(sql_session: Se
     assert user.name == "alice"
 
 
-def test_edit_user_rejects_rename_without_explicit_guard(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="not supported"):
-        edit_user(sql_session, user, name="alicia")
-
-    sql_session.expire_all()
-
-    assert user.name == "alice"
-
-
-def test_edit_user_rejects_empty_name_even_with_guard(sql_session: Session) -> None:
+def test_edit_user_rejects_empty_name(sql_session: Session) -> None:
     user = _make_user(sql_session)
 
     with pytest.raises(ValueError, match="Name cannot be empty"):
-        edit_user(sql_session, user, name="", _allow_rename=True)
+        edit_user(sql_session, user, name="")
 
     sql_session.expire_all()
 
     assert user.name == "alice"
 
 
-def test_edit_user_rejects_duplicate_name_even_with_guard(sql_session: Session) -> None:
+def test_edit_user_rejects_duplicate_name(sql_session: Session) -> None:
     _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
 
-    with pytest.raises(IntegrityError):
-        edit_user(sql_session, bob, name="alice", _allow_rename=True)
+    with pytest.raises(ValueError, match="already exists"):
+        edit_user(sql_session, bob, name="alice")
+
+    sql_session.expire_all()
+
+    assert bob.name == "bob"
+
+
+def test_edit_user_allows_resubmitting_the_same_name(sql_session: Session) -> None:
+    user = _make_user(sql_session, "alice")
+
+    edit_user(sql_session, user, name="alice", card="ntnu456")
+
+    sql_session.expire_all()
+
+    assert user.name == "alice"
+    assert user.card == "ntnu456"
 
 
 def test_edit_user_lowercases_card_and_rfid(sql_session: Session) -> None:
@@ -156,21 +159,21 @@ def test_edit_user_does_not_apply_card_change_when_rfid_is_invalid(sql_session: 
     assert user.rfid == "deadbeef"
 
 
-def test_edit_user_rejects_uppercase_rename_even_with_guard(sql_session: Session) -> None:
+def test_edit_user_rejects_uppercase_rename(sql_session: Session) -> None:
     user = _make_user(sql_session)
 
     with pytest.raises(ValueError, match="lowercase letters only"):
-        edit_user(sql_session, user, name="Alicia", _allow_rename=True)
+        edit_user(sql_session, user, name="Alicia")
 
     sql_session.expire_all()
 
     assert user.name == "alice"
 
 
-def test_edit_user_can_rename_with_explicit_guard(sql_session: Session) -> None:
+def test_edit_user_can_rename(sql_session: Session) -> None:
     user = _make_user(sql_session, "alice")
 
-    edit_user(sql_session, user, name="alicia", _allow_rename=True)
+    edit_user(sql_session, user, name="alicia")
 
     sql_session.expire_all()
 

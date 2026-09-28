@@ -70,16 +70,25 @@ class EditUserMenu(Menu):
     def __init__(self, sql_session: Session) -> None:
         super().__init__("Edit user", sql_session)
         self.help_text = """
-The only editable part of a user is its card number and rfid.
+The editable parts of a user are its name, card number and rfid.
 
-First select an existing user, then enter a new card number for that
-user, then rfid (write an empty line to remove the card number or rfid).
+First select an existing user, then enter a new name (accept the
+default to keep the current one), then a new card number, then rfid
+(write an empty line to remove the card number or rfid).
 """
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
         user = self.input_user("User")
         self.printc(f"Editing user {user.name}")
+        name = self.input_str(
+            "Name",
+            default=user.name,
+            regex=User.name_re,
+            length_range=(1, User.name_length),
+        )
+        assert name is not None
+
         card_str = f'"{user.card}"' if user.card is not None else "empty"
         card = self.input_str(
             f"Card number (currently {card_str})",
@@ -97,11 +106,17 @@ user, then rfid (write an empty line to remove the card number or rfid).
             length_range=(0, 10),
             empty_string_is_none=True,
         )
+
+        if name == user.name and card == user.card and rfid == user.rfid:
+            print("Nothing to edit.")
+            self.pause()
+            return
+
         try:
-            edit_user(self.sql_session, user, card=card, rfid=rfid)
+            edit_user(self.sql_session, user, name=name, card=card, rfid=rfid)
             self.sql_session.commit()
             print(f"User {user.name} stored")
-        except SQLAlchemyError as e:
+        except (SQLAlchemyError, ValueError) as e:
             self.sql_session.rollback()
             print(f"Could not store user {user.name}: {e}")
         self.pause()
