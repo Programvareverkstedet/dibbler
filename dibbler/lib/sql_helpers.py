@@ -1,11 +1,12 @@
 from collections.abc import Iterator, Mapping
 from enum import Enum
-from typing import TypeVar
+from typing import Any, TypeVar
 
-from sqlalchemy import CheckConstraint, ColumnElement, Select, and_, column, or_
+from sqlalchemy import CheckConstraint, ColumnElement, Row, Select, and_, column, or_
 from sqlalchemy.orm import Session
 
 T = TypeVar("T")
+TupleT = TypeVar("TupleT", bound=tuple[Any, ...])
 
 DEFAULT_STREAMING_ITER_CHUNK_SIZE = 64
 
@@ -48,22 +49,34 @@ def type_field_constraints(
     return constraints
 
 
+def iter_rows_in_chunks(
+    sql_session: Session,
+    query: Select[TupleT],
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[Row[TupleT]]:
+    """
+    Create a chunked iterator of rows from an SQLAlchemy select.
+
+    This is particularly useful in combination with the streaming pager.
+
+    The select should have a stable order, the offset and select may return same items multiple times.
+    Any limit or offset already set on the select is overridden.
+    """
+    offset = 0
+    while True:
+        chunk = list(sql_session.execute(query.offset(offset).limit(chunk_size)))
+        yield from chunk
+        if len(chunk) < chunk_size:
+            return
+        offset += chunk_size
+
+
 def iter_in_chunks(
     sql_session: Session,
     query: Select[tuple[T]],
     chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
 ) -> Iterator[T]:
     """
-    Create a chunked iterator from an SQLAlchemy select.
-
-    This is particularly useful in combination with the streaming pager.
-
-    The select should have a stable order, the offset and select may return same items multiple times.
+    `iter_rows_in_chunks`, but yields the first column only.
     """
-    offset = 0
-    while True:
-        chunk = list(sql_session.scalars(query.offset(offset).limit(chunk_size)))
-        yield from chunk
-        if len(chunk) < chunk_size:
-            return
-        offset += chunk_size
+    return (row[0] for row in iter_rows_in_chunks(sql_session, query, chunk_size))

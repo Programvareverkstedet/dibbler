@@ -1,14 +1,19 @@
 from collections.abc import Iterator
+from itertools import chain
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from dibbler.conf import config
-from dibbler.lib.pager import pager, streaming_pager
+from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
-from dibbler.lib.sql_helpers import iter_in_chunks
+from dibbler.lib.sql_helpers import iter_in_chunks, iter_rows_in_chunks
 from dibbler.models import Product, User
-from dibbler.queries import adjust_balance, transaction_log_query, transfer
+from dibbler.queries import (
+    adjust_balance,
+    transaction_log_query,
+    transfer,
+    user_product_stats_query,
+)
 
 from .helpermenus import Menu, Selector
 
@@ -59,70 +64,52 @@ class ShowUserMenu(Menu):
             f"What do you want to know about {user.name}?",
             self.sql_session,
             items=[
-                (
-                    "transactions",
-                    "Recent transactions (List of last "
-                    + str(config["limits"]["user_recent_transaction_limit"])
-                    + ")",
-                ),
+                ("transactions", "Transactions"),
                 ("products", f"Which products {user.name} has bought, and how many"),
-                ("transactions-all", "Everything (List of all transactions)"),
             ],
         )
         what = selector.execute()
         if what == "transactions":
-            self.print_transactions(user, config["limits"]["user_recent_transaction_limit"])
-        elif what == "products":
-            self.print_purchased_products(user)
-        elif what == "transactions-all":
             self.print_transactions(user)
+        elif what == "products":
+            self.print_product_stats(user)
         else:
             print("What what?")
 
-    @staticmethod
-    def print_transactions(user: User, limit: int | None = None) -> None:
-        num_trans = len(user.transactions)
-        if limit is None:
-            limit = num_trans
-        if num_trans <= limit:
-            string = f"{user.name}'s transactions ({num_trans:d}):\n"
-        else:
-            string = f"{user.name}'s transactions ({num_trans:d}, showing only last {limit:d}):\n"
-        for t in user.transactions[-1 : -limit - 1 : -1]:
-            string += f" * {t.time.isoformat(' ')}: {'in' if t.amount < 0 else 'out'} {abs(t.amount)} kr, "
-            if t.purchase:
-                products = []
-                for entry in t.purchase.entries:
-                    amount = f"{abs(entry.amount)}x " if abs(entry.amount) != 1 else ""
-                    product = f"{amount}{entry.product.name}"
-                    products.append(product)
-                string += "purchase ("
-                string += ", ".join(products)
-                string += ")"
-                if t.penalty > 1:
-                    string += f" * {t.penalty:d}x penalty applied"
-            elif t.description is not None:
-                string += t.description
-            string += "\n"
-        pager(string)
+    def print_transactions(self, user: User) -> None:
+        query = transaction_log_query(user=user, newest_first=True)
+        entries = iter_in_chunks(self.sql_session, query)
+        first = next(entries, None)
+        if first is None:
+            print("No transactions yet")
+            return
 
-    @staticmethod
-    def print_purchased_products(user: User) -> None:
-        products = []
-        for ref in user.products:
-            product = ref.product
-            count = ref.count
-            if count > 0:
-                products.append((product, count))
-        num_products = len(products)
-        if num_products == 0:
-            print("No products purchased yet")
-        else:
-            text = ""
-            text += "Products purchased:\n"
-            for product, count in products:
-                text += f"{product.name:<47} {count:>3}\n"
-            pager(text)
+        streaming_pager(render_transaction_log(chain([first], entries), ascii_only=True))
+
+    def print_product_stats(self, user: User) -> None:
+        query = user_product_stats_query(user=user)
+        rows = iter_rows_in_chunks(self.sql_session, query)
+        first = next(rows, None)
+        if first is None:
+            print("No products bought or added yet")
+            return
+
+        count_width = len("bought")
+        name_width = MAX_SCREEN_SIZE - 2 * (count_width + 1)
+
+        def line(
+            name: str,
+            bought: int | str,
+            added: int | str,
+        ) -> str:
+            return f"{name[:name_width]:<{name_width}} {bought:>{count_width}} {added:>{count_width}}\n"
+
+        def lines() -> Iterator[str]:
+            yield line("product", "bought", "added")
+            for product, bought, added in chain([first], rows):
+                yield line(product.name, bought, added)
+
+        streaming_pager(lines())
 
 
 class UserListMenu(Menu):
