@@ -151,61 +151,68 @@ class EditProductMenu(Menu):
                     ("store", "Store"),
                 ],
             )
-            what = selector.execute()
-            if what == "name":
-                name = self.input_str(
-                    "Name",
-                    default=product.name,
-                    regex=Product.name_re,
-                    length_range=(1, product.name_length),
-                )
-                assert name is not None
-                edit_product(self.sql_session, product, name=name)
-            elif what == "price":
-                price = self.input_int("Price", 1, 100000, default=product.price)
-                edit_product(self.sql_session, product, price=price)
-            elif what == "add_barcode":
-                bar_code = self.input_str(
-                    "New barcode",
-                    regex=Product.bar_code_re,
-                    length_range=(8, 13),
-                )
-                assert bar_code is not None
-                try:
-                    add_bar_code(self.sql_session, product, bar_code)
-                except ValueError as e:
-                    print(e)
-            elif what == "remove_barcode":
-                print("Current barcodes:")
-                for code in sorted(bc.code for bc in product.barcodes):
-                    print(f"  - {code}")
-                bar_code = self.input_str(
-                    "Barcode to remove",
-                    regex=Product.bar_code_re,
-                    length_range=(8, 13),
-                )
-                assert bar_code is not None
-                try:
-                    remove_bar_code(self.sql_session, product, bar_code)
-                except ValueError as e:
-                    print(e)
-            elif what == "hidden":
-                hidden = self.confirm(f"Hidden(currently {product.hidden})", default=False)
-                edit_product(self.sql_session, product, hidden=hidden)
-            elif what == "store":
-                try:
-                    self.sql_session.commit()
-                    print(f"Product {product.name} stored")
-                except SQLAlchemyError as e:
-                    self.sql_session.rollback()
-                    print(f"Could not store product {product.name}: {e}")
-                self.pause()
-                return
-            elif what is None:
-                print("Edit aborted")
-                return
-            else:
-                print("What what?")
+            match selector.execute():
+                case "name":
+                    name = self.input_str(
+                        "Name",
+                        default=product.name,
+                        regex=Product.name_re,
+                        length_range=(1, product.name_length),
+                    )
+                    assert name is not None
+                    edit_product(self.sql_session, product, name=name)
+
+                case "price":
+                    price = self.input_int("Price", 1, 100000, default=product.price)
+                    edit_product(self.sql_session, product, price=price)
+
+                case "add_barcode":
+                    bar_code = self.input_str(
+                        "New barcode",
+                        regex=Product.bar_code_re,
+                        length_range=(8, 13),
+                    )
+                    assert bar_code is not None
+                    try:
+                        add_bar_code(self.sql_session, product, bar_code)
+                    except ValueError as e:
+                        print(e)
+
+                case "remove_barcode":
+                    print("Current barcodes:")
+                    for code in sorted(bc.code for bc in product.barcodes):
+                        print(f"  - {code}")
+                    bar_code = self.input_str(
+                        "Barcode to remove",
+                        regex=Product.bar_code_re,
+                        length_range=(8, 13),
+                    )
+                    assert bar_code is not None
+                    try:
+                        remove_bar_code(self.sql_session, product, bar_code)
+                    except ValueError as e:
+                        print(e)
+
+                case "hidden":
+                    hidden = self.confirm(f"Hidden(currently {product.hidden})", default=False)
+                    edit_product(self.sql_session, product, hidden=hidden)
+
+                case "store":
+                    try:
+                        self.sql_session.commit()
+                        print(f"Product {product.name} stored")
+                    except SQLAlchemyError as e:
+                        self.sql_session.rollback()
+                        print(f"Could not store product {product.name}: {e}")
+                    self.pause()
+                    return
+
+                case None:
+                    print("Edit aborted")
+                    return
+
+                case _:
+                    print("What what?")
 
 
 class MergeProductsMenu(Menu):
