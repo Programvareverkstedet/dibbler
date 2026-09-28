@@ -58,6 +58,12 @@ def main() -> None:
 
     engine = create_engine(config_db_string())
 
+    if args.subcommand == "create-db":
+        import dibbler.subcommands.makedb as makedb
+
+        makedb.main(engine)
+        return
+
     sql_session = Session(
         engine,
         expire_on_commit=False,
@@ -66,20 +72,12 @@ def main() -> None:
         close_resets_only=True,
     )
 
-    check_db_health(
-        engine,
-        verify_table_existence=args.subcommand != "create-db",
-    )
+    check_db_health(engine, verify_table_existence=True)
 
     if args.subcommand == "loop":
         import dibbler.subcommands.loop as loop
 
         loop.main(sql_session)
-
-    elif args.subcommand == "create-db":
-        import dibbler.subcommands.makedb as makedb
-
-        makedb.main(engine)
 
     elif args.subcommand == "slabbedasker":
         import dibbler.subcommands.slabbedasker as slabbedasker
