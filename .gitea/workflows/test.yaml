@@ -65,7 +65,7 @@ jobs:
           uv run -- pytest "${PYTEST_ARGS[@]}"
 
       - name: Upload coverage data
-        uses: ChristopherHX/gitea-upload-artifact@v7
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-sqlite
           path: coverage-data.sqlite
@@ -146,7 +146,7 @@ jobs:
           uv run -- pytest "${PYTEST_ARGS[@]}"
 
       - name: Upload coverage data
-        uses: ChristopherHX/gitea-upload-artifact@v7
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-postgresql
           path: coverage-data.postgresql
@@ -190,13 +190,13 @@ jobs:
 
       - name: Download SQLite coverage data
         if: needs.test-sqlite.result != 'skipped'
-        uses: ChristopherHX/gitea-download-artifact@v8
+        uses: actions/download-artifact@v8
         with:
           name: coverage-sqlite
 
       - name: Download PostgreSQL coverage data
         if: needs.test-postgresql.result != 'skipped'
-        uses: ChristopherHX/gitea-download-artifact@v8
+        uses: actions/download-artifact@v8
         with:
           name: coverage-postgresql
 
