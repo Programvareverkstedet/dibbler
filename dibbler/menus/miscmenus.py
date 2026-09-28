@@ -188,7 +188,8 @@ class ProductListMenu(Menu):
         text += line_format % ("bar code", "price", "name", "stock")
         text += 78 * "-" + "\n"
         for p in product_list:
-            text += line_format % (p.bar_code, p.price, p.name, p.stock)
+            barcodes = ", ".join(bc.code for bc in p.barcodes)
+            text += line_format % (barcodes, p.price, p.name, p.stock)
         text += 78 * "-" + "\n"
         text += line_format % (
             "Total value",
@@ -212,7 +213,7 @@ class ProductSearchMenu(Menu):
                 [
                     f"Result: {product.name}",
                     f"price: {product.price} kr",
-                    f"bar code: {product.bar_code}",
+                    f"barcodes: {', '.join(bc.code for bc in product.barcodes)}",
                     f"stock: {product.stock}",
                     f"hidden: {'Y' if product.hidden else 'N'}",
                 ],

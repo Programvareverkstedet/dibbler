@@ -15,6 +15,7 @@ from sqlalchemy.orm import (
 
 from .Base import Base
 from .mixins import UidMixin
+from .ProductBarcode import ProductBarcode
 
 if TYPE_CHECKING:
     from .PurchaseEntry import PurchaseEntry
@@ -26,13 +27,16 @@ class Product(Base, UidMixin):
     bar_code_length = 13
     name_length = 45
 
-    bar_code: Mapped[str] = mapped_column(String(bar_code_length))
     name: Mapped[str] = mapped_column(String(name_length))
     price: Mapped[int] = mapped_column(Integer)
     stock: Mapped[int] = mapped_column(Integer)
     hidden: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     purchases: Mapped[set[PurchaseEntry]] = relationship(back_populates="product")
+    barcodes: Mapped[set[ProductBarcode]] = relationship(
+        back_populates="product",
+        cascade="all, delete-orphan",
+    )
 
     bar_code_re = r"[0-9]+"
     name_re = r".+"
@@ -46,7 +50,7 @@ class Product(Base, UidMixin):
         hidden: bool = False,
     ) -> None:
         self.name = name
-        self.bar_code = bar_code
+        self.barcodes = {ProductBarcode(code=bar_code)}
         self.price = price
         self.stock = stock
         self.hidden = hidden

@@ -13,7 +13,7 @@ def test_create_product_persists_a_queryable_product(sql_session: Session) -> No
 
     fetched = sql_session.get(Product, product.id)
     assert fetched is not None
-    assert fetched.bar_code == "1234567890"
+    assert {bc.code for bc in fetched.barcodes} == {"1234567890"}
     assert fetched.name == "Cola"
     assert fetched.price == 15
     assert fetched.stock == 10
@@ -44,7 +44,7 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
 
 
 def test_create_product_rejects_empty_bar_code(sql_session: Session) -> None:
-    with pytest.raises(ValueError, match="Bar code cannot be empty"):
+    with pytest.raises(ValueError, match="Barcode cannot be empty"):
         create_product(sql_session, "", "Cola", 15)
 
 
@@ -61,3 +61,10 @@ def test_create_product_rejects_non_positive_price(sql_session: Session) -> None
 def test_create_product_rejects_non_digit_bar_code(sql_session: Session) -> None:
     with pytest.raises(ValueError, match="digits only"):
         create_product(sql_session, "123abc", "Cola", 15)
+
+
+def test_create_product_rejects_duplicate_bar_code(sql_session: Session) -> None:
+    create_product(sql_session, "1234567890", "Cola", 15)
+
+    with pytest.raises(ValueError, match="already in use"):
+        create_product(sql_session, "1234567890", "Pepsi", 20)

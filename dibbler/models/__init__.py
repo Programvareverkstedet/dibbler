@@ -1,6 +1,7 @@
 __all__ = [
     "Base",
     "Product",
+    "ProductBarcode",
     "ProductLog",
     "Purchase",
     "PurchaseEntry",
@@ -14,6 +15,7 @@ __all__ = [
 
 from .Base import Base
 from .Product import Product
+from .ProductBarcode import ProductBarcode
 from .ProductLog import ProductLog
 from .Purchase import Purchase
 from .PurchaseEntry import PurchaseEntry

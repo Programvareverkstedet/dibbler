@@ -38,6 +38,5 @@ class PurchaseEntry(Base):
         amount: int,
     ) -> None:
         self.product = product
-        self.product_bar_code = product.bar_code
         self.purchase = purchase
         self.amount = amount

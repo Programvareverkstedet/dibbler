@@ -1,7 +1,7 @@
 from sqlalchemy import and_, not_, or_
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product
+from dibbler.models import Product, ProductBarcode
 
 _LIKE_ESCAPE_CHAR = "\\"
 
@@ -27,7 +27,7 @@ def search_product(
             sql_session.query(Product)
             .filter(
                 or_(
-                    Product.bar_code == string,
+                    Product.barcodes.any(ProductBarcode.code == string),
                     Product.name.ilike(escaped, escape=_LIKE_ESCAPE_CHAR),
                 ),
             )
@@ -38,7 +38,7 @@ def search_product(
             sql_session.query(Product)
             .filter(
                 or_(
-                    Product.bar_code == string,
+                    Product.barcodes.any(ProductBarcode.code == string),
                     and_(
                         Product.name.ilike(escaped, escape=_LIKE_ESCAPE_CHAR),
                         not_(Product.hidden),
@@ -56,7 +56,9 @@ def search_product(
             sql_session.query(Product)
             .filter(
                 or_(
-                    Product.bar_code.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
+                    Product.barcodes.any(
+                        ProductBarcode.code.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
+                    ),
                     Product.name.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
                 ),
             )
@@ -67,7 +69,9 @@ def search_product(
             sql_session.query(Product)
             .filter(
                 or_(
-                    Product.bar_code.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
+                    Product.barcodes.any(
+                        ProductBarcode.code.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
+                    ),
                     and_(
                         Product.name.ilike(f"%{escaped}%", escape=_LIKE_ESCAPE_CHAR),
                         not_(Product.hidden),

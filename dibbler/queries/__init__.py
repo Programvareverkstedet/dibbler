@@ -1,4 +1,5 @@
 __all__ = [
+    "add_bar_code",
     "add_stock",
     "adjust_balance",
     "adjust_stock",
@@ -7,11 +8,13 @@ __all__ = [
     "create_user",
     "edit_product",
     "edit_user",
+    "remove_bar_code",
     "search_product",
     "search_user",
     "transfer",
 ]
 
+from .add_bar_code import add_bar_code
 from .add_stock import add_stock
 from .adjust_balance import adjust_balance
 from .adjust_stock import adjust_stock
@@ -20,6 +23,7 @@ from .create_product import create_product
 from .create_user import create_user
 from .edit_product import edit_product
 from .edit_user import edit_user
+from .remove_bar_code import remove_bar_code
 from .search_product import search_product
 from .search_user import search_user
 from .transfer import transfer

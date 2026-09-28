@@ -4,11 +4,13 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
 from dibbler.queries import (
+    add_bar_code,
     adjust_stock,
     create_product,
     create_user,
     edit_product,
     edit_user,
+    remove_bar_code,
 )
 
 from .helpermenus import Menu, Selector
@@ -109,7 +111,7 @@ class AddProductMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        bar_code = self.input_str("Bar code", regex=Product.bar_code_re, length_range=(8, 13))
+        bar_code = self.input_str("Barcode", regex=Product.bar_code_re, length_range=(8, 13))
         assert bar_code is not None
 
         name = self.input_str("Name", regex=Product.name_re, length_range=(1, Product.name_length))
@@ -141,7 +143,8 @@ class EditProductMenu(Menu):
                 items=[
                     ("name", "Edit name"),
                     ("price", "Edit price"),
-                    ("barcode", "Edit barcode"),
+                    ("add_barcode", "Add a barcode"),
+                    ("remove_barcode", "Remove a barcode"),
                     ("hidden", "Edit hidden status"),
                     ("store", "Store"),
                 ],
@@ -159,15 +162,30 @@ class EditProductMenu(Menu):
             elif what == "price":
                 price = self.input_int("Price", 1, 100000, default=product.price)
                 edit_product(self.sql_session, product, price=price)
-            elif what == "barcode":
+            elif what == "add_barcode":
                 bar_code = self.input_str(
-                    "Bar code",
-                    default=product.bar_code,
+                    "New barcode",
                     regex=Product.bar_code_re,
                     length_range=(8, 13),
                 )
                 assert bar_code is not None
-                edit_product(self.sql_session, product, bar_code=bar_code)
+                try:
+                    add_bar_code(self.sql_session, product, bar_code)
+                except ValueError as e:
+                    print(e)
+            elif what == "remove_barcode":
+                current_codes = ", ".join(bc.code for bc in product.barcodes)
+                print(f"Current barcodes: {current_codes}")
+                bar_code = self.input_str(
+                    "Barcode to remove",
+                    regex=Product.bar_code_re,
+                    length_range=(8, 13),
+                )
+                assert bar_code is not None
+                try:
+                    remove_bar_code(self.sql_session, product, bar_code)
+                except ValueError as e:
+                    print(e)
             elif what == "hidden":
                 hidden = self.confirm(f"Hidden(currently {product.hidden})", default=False)
                 edit_product(self.sql_session, product, hidden=hidden)
