@@ -5,7 +5,7 @@
 , less
 }:
 let
-  pyproject = builtins.fromTOML (builtins.readFile ../pyproject.toml);
+  pyproject = fromTOML (builtins.readFile ../pyproject.toml);
 in
 python3Packages.buildPythonApplication {
   pname = pyproject.project.name;
@@ -40,13 +40,12 @@ python3Packages.buildPythonApplication {
   pythonImportsCheck = [ "dibbler" ];
 
   doCheck = true;
+  # Overriding addopts from pyproject.toml
+  pytestFlags = [ "-o" "addopts=" ];
   nativeCheckInputs = with python3Packages; [
     pytest
     pytestCheckHook
     sqlparse
-    pytest-html
-    pytest-cov
-    pytest-md-report
   ];
 
   meta = {
