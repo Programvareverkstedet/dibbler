@@ -16,7 +16,8 @@ class ProductLogEntryType(StrEnum):
     REMOVE_BARCODE = auto()
     """A barcode removed from an existing product."""
 
-    # TODO: add a `MERGE` type once merging products have been implemented.
+    MERGE = auto()
+    """Two products merged into one."""
 
     DELETE = auto()
     """A deleted product."""

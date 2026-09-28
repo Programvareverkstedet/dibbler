@@ -8,6 +8,7 @@ __all__ = [
     "create_user",
     "edit_product",
     "edit_user",
+    "merge_products",
     "remove_bar_code",
     "search_product",
     "search_user",
@@ -23,6 +24,7 @@ from .create_product import create_product
 from .create_user import create_user
 from .edit_product import edit_product
 from .edit_user import edit_user
+from .merge_products import merge_products
 from .remove_bar_code import remove_bar_code
 from .search_product import search_product
 from .search_user import search_user

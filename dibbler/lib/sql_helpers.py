@@ -5,7 +5,7 @@ from sqlalchemy import CheckConstraint, ColumnElement, and_, column, or_
 
 
 def type_field_constraints(
-    expected_fields: Mapping[Enum, Mapping[str, bool]],
+    expected_fields: Mapping[Enum, Mapping[str, bool | None]],
     *,
     type_column: str = "type",
     name_prefix: str = "ck",
@@ -22,8 +22,10 @@ def type_field_constraints(
 
     constraints = []
     for entry_type, fields in expected_fields.items():
-        required = [field for field, is_required in fields.items() if is_required]
-        forbidden = [field for field, is_required in fields.items() if not is_required]
+        required = {field for field, state in fields.items() if state is True}
+        forbidden = {field for field, state in fields.items() if state is False}
+        if not required and not forbidden:
+            continue
         constraints.append(
             CheckConstraint(
                 or_(
