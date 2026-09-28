@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime  # noqa: TC003 SQLAlchemy needs this at runtime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (

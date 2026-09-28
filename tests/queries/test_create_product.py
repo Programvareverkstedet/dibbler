@@ -41,7 +41,11 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
     assert log.price == 15
     assert log.hidden is True
 
-    log = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.ADD_BARCODE).one()
+    log = (
+        sql_session.query(ProductLog)
+        .filter(ProductLog.type == ProductLogEntryType.ADD_BARCODE)
+        .one()
+    )
     assert log.product_id == product.id
     assert log.bar_code == "1234567890"
 

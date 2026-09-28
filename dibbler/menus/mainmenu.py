@@ -16,7 +16,7 @@ def restart() -> None:
     # Does not work if the script is not executable, or if it was
     # started by searching $PATH.
     try:
-        os.execv(sys.argv[0], sys.argv)
+        os.execv(sys.argv[0], sys.argv) # noqa: S606 we are restarting ourselves, it's fine
     except OSError as e:
         print(f"Restart failed: {e}")
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime  # noqa: TC003 SQLAlchemy needs this at runtime
 
 from sqlalchemy import (
     Boolean,
@@ -92,8 +92,8 @@ class ProductLog(Base, UidMixin):
         ),
         CheckConstraint(
             or_(
-              column("merge_ref_id").is_(None),
-              column("merge_ref_id") != column("id"),
+                column("merge_ref_id").is_(None),
+                column("merge_ref_id") != column("id"),
             ),
             name="ck_merge_ref_not_self",
         ),
