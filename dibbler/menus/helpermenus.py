@@ -486,7 +486,11 @@ class Menu:
         search_str: str,
         thing: str,
     ) -> Any:
-        result = search_fun(search_str, self.sql_session)
+        try:
+            result = search_fun(search_str, self.sql_session)
+        except ValueError as e:
+            print(f"Could not search for {thing}: {e}")
+            return None
         return self.search_ui2(search_str, result, thing)
 
     def search_ui2(

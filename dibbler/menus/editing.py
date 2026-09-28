@@ -1,5 +1,5 @@
 import sqlalchemy
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
@@ -60,7 +60,7 @@ class AddUserMenu(Menu):
             create_user(self.sql_session, username, cardnum, rfid)
             self.sql_session.commit()
             print(f"User {username} stored")
-        except IntegrityError as e:
+        except (SQLAlchemyError, ValueError) as e:
             self.sql_session.rollback()
             print(f"Could not store user {username}: {e}")
         self.pause()
@@ -139,7 +139,7 @@ class AddProductMenu(Menu):
             create_product(self.sql_session, bar_code, name, price)
             self.sql_session.commit()
             print(f"Product {name} stored")
-        except SQLAlchemyError as e:
+        except (SQLAlchemyError, ValueError) as e:
             self.sql_session.rollback()
             print(f"Could not store product {name}: {e}")
         self.pause()
@@ -175,11 +175,17 @@ class EditProductMenu(Menu):
                         length_range=(1, product.name_length),
                     )
                     assert name is not None
-                    edit_product(self.sql_session, product, name=name)
+                    try:
+                        edit_product(self.sql_session, product, name=name)
+                    except ValueError as e:
+                        print(f"Could not edit name of {product.name}: {e}")
 
                 case "price":
                     price = self.input_int("Price", 1, 100000, default=product.price)
-                    edit_product(self.sql_session, product, price=price)
+                    try:
+                        edit_product(self.sql_session, product, price=price)
+                    except ValueError as e:
+                        print(f"Could not edit price of {product.name}: {e}")
 
                 case "add_barcode":
                     bar_code = self.input_str(
@@ -191,7 +197,7 @@ class EditProductMenu(Menu):
                     try:
                         add_bar_code(self.sql_session, product, bar_code)
                     except ValueError as e:
-                        print(e)
+                        print(f"Could not add barcode to {product.name}: {e}")
 
                 case "remove_barcode":
                     print("Current barcodes:")
@@ -206,11 +212,14 @@ class EditProductMenu(Menu):
                     try:
                         remove_bar_code(self.sql_session, product, bar_code)
                     except ValueError as e:
-                        print(e)
+                        print(f"Could not remove barcode from {product.name}: {e}")
 
                 case "hidden":
                     hidden = self.confirm(f"Hidden(currently {product.hidden})", default=False)
-                    edit_product(self.sql_session, product, hidden=hidden)
+                    try:
+                        edit_product(self.sql_session, product, hidden=hidden)
+                    except ValueError as e:
+                        print(f"Could not edit hidden status of {product.name}: {e}")
 
                 case "store":
                     try:
@@ -381,7 +390,7 @@ class AdjustStockMenu(Menu):
             self.sql_session.commit()
             print("Stock is now stored")
             self.pause()
-        except SQLAlchemyError as e:
+        except (SQLAlchemyError, ValueError) as e:
             self.sql_session.rollback()
             print(f"Could not store stock: {e}")
             self.pause()
@@ -411,7 +420,11 @@ class CleanupStockMenu(Menu):
             oldstock = product.stock
             newstock = self.input_int(product.name, 0, 10000, default=max(0, oldstock))
             if newstock != oldstock:
-                adjust_stock(self.sql_session, product, newstock - oldstock)
+                try:
+                    adjust_stock(self.sql_session, product, newstock - oldstock)
+                except ValueError as e:
+                    print(f"Could not adjust stock of {product.name}: {e}")
+                    continue
                 changed_products.append((product, oldstock))
 
         try:
