@@ -1,12 +1,21 @@
-import json
-from pathlib import Path
-
 from sqlalchemy.orm import Session
 
-from dibbler.models.Product import Product
-from dibbler.models.User import User
+from dibbler.models import Product, User
+from dibbler.queries import create_product, create_user
 
-JSON_FILE = Path(__file__).parent.parent.parent / "mock_data.json"
+MOCK_PRODUCTS = [
+    {"bar_code": "3707412130983", "name": "Cola 0.33L", "price": 13, "stock": 48},
+    {"bar_code": "1974798302392", "name": "Pepsi 0.5L", "price": 22, "stock": 36},
+    {"bar_code": "1293289192038", "name": "Pakke med kjeks", "price": 30, "stock": 20},
+    {"bar_code": "7000000000010", "name": "PVV T-skjorte", "price": 150, "stock": 15},
+]
+
+MOCK_USERS = [
+    {"name": "alice", "card": "12345678", "rfid": "a1b2c3d4e5", "credit": 500},
+    {"name": "bob", "card": "23456789", "rfid": None, "credit": -50},
+    {"name": "borek", "card": None, "rfid": "deadbeef12", "credit": 100},
+    {"name": "kjartan", "card": "ntnu123456", "rfid": "f0912382a9", "credit": 250},
+]
 
 
 def clear_db(sql_session: Session) -> None:
@@ -17,30 +26,11 @@ def clear_db(sql_session: Session) -> None:
 
 def main(sql_session: Session) -> None:
     clear_db(sql_session)
-    product_items = []
-    user_items = []
 
-    with Path.open(JSON_FILE) as f:
-        json_obj = json.load(f)
+    for product in MOCK_PRODUCTS:
+        create_product(sql_session, **product)  # ty: ignore[invalid-argument-type]
 
-        for product in json_obj["products"]:
-            product_item = Product(
-                bar_code=product["bar_code"],
-                name=product["name"],
-                price=product["price"],
-                stock=product["stock"],
-            )
-            product_items.append(product_item)
+    for user in MOCK_USERS:
+        create_user(sql_session, **user)  # ty: ignore[invalid-argument-type]
 
-        for user in json_obj["users"]:
-            user_item = User(
-                name=user["name"],
-                card=user["card"],
-                rfid=user["rfid"],
-                credit=user["credit"],
-            )
-            user_items.append(user_item)
-
-        sql_session.add_all(product_items)
-        sql_session.add_all(user_items)
-        sql_session.commit()
+    sql_session.commit()
