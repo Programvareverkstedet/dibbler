@@ -1,8 +1,10 @@
 import re
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, ProductBarcode
+from dibbler.models import Product, ProductBarcode, ProductLog
+from dibbler.models.enums import ProductLogEntryType
 
 
 def add_bar_code(sql_session: Session, product: Product, bar_code: str) -> Product:
@@ -16,6 +18,15 @@ def add_bar_code(sql_session: Session, product: Product, bar_code: str) -> Produ
         raise ValueError("Barcode already in use.")
 
     product.barcodes.add(ProductBarcode(code=bar_code))
+
+    sql_session.add(
+        ProductLog(
+            type=ProductLogEntryType.ADD_BARCODE,
+            time=datetime.now(),
+            product_id=product.id,
+            bar_code=bar_code,
+        ),
+    )
 
     sql_session.flush()
 

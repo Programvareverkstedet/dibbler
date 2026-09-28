@@ -32,13 +32,25 @@ class ProductLog(Base, UidMixin):
         *type_field_constraints(
             {
                 ProductLogEntryType.CREATE: {
-                    "bar_code": True,
+                    "bar_code": False,
                     "name": True,
                     "price": True,
                     "hidden": True,
                 },
                 ProductLogEntryType.DELETE: {
                     "bar_code": False,
+                    "name": False,
+                    "price": False,
+                    "hidden": False,
+                },
+                ProductLogEntryType.ADD_BARCODE: {
+                    "bar_code": True,
+                    "name": False,
+                    "price": False,
+                    "hidden": False,
+                },
+                ProductLogEntryType.REMOVE_BARCODE: {
+                    "bar_code": True,
                     "name": False,
                     "price": False,
                     "hidden": False,

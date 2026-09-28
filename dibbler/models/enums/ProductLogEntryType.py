@@ -10,7 +10,8 @@ class ProductLogEntryType(StrEnum):
     EDIT = auto()
     """An edit to an existing product."""
 
-    # TODO: add a `MERGE` type once merging products have been implemented.
+    ADD_BARCODE = auto()
+    """A barcode added to an existing product."""
 
     REMOVE_BARCODE = auto()
     """A barcode removed from an existing product."""

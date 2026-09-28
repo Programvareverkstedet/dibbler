@@ -1,6 +1,9 @@
+from datetime import datetime
+
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product
+from dibbler.models import Product, ProductLog
+from dibbler.models.enums import ProductLogEntryType
 
 
 def remove_bar_code(sql_session: Session, product: Product, bar_code: str) -> Product:
@@ -15,6 +18,15 @@ def remove_bar_code(sql_session: Session, product: Product, bar_code: str) -> Pr
         raise ValueError("Cannot remove a product's last barcode.")
 
     product.barcodes.remove(matching)
+
+    sql_session.add(
+        ProductLog(
+            type=ProductLogEntryType.REMOVE_BARCODE,
+            time=datetime.now(),
+            product_id=product.id,
+            bar_code=bar_code,
+        ),
+    )
 
     sql_session.flush()
 

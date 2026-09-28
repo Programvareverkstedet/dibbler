@@ -34,13 +34,16 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
 
     sql_session.expire_all()
 
-    log = sql_session.query(ProductLog).one()
-    assert log.type == ProductLogEntryType.CREATE
+    log = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.CREATE).one()
     assert log.product_id == product.id
-    assert log.bar_code == "1234567890"
+    assert log.bar_code is None
     assert log.name == "Cola"
     assert log.price == 15
     assert log.hidden is True
+
+    log = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.ADD_BARCODE).one()
+    assert log.product_id == product.id
+    assert log.bar_code == "1234567890"
 
 
 def test_create_product_rejects_empty_bar_code(sql_session: Session) -> None:

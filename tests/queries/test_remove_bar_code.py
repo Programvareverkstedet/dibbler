@@ -1,7 +1,8 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product
+from dibbler.models import Product, ProductLog
+from dibbler.models.enums import ProductLogEntryType
 from dibbler.queries import add_bar_code, create_product, remove_bar_code
 
 
@@ -21,6 +22,23 @@ def test_removes_the_given_code(sql_session: Session) -> None:
     sql_session.expire_all()
 
     assert {bc.code for bc in product.barcodes} == {"0987654321"}
+
+
+def test_records_a_log_entry(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+    add_bar_code(sql_session, product, "0987654321")
+
+    remove_bar_code(sql_session, product, "0987654321")
+
+    sql_session.expire_all()
+
+    log = (
+        sql_session.query(ProductLog)
+        .filter(ProductLog.type == ProductLogEntryType.REMOVE_BARCODE)
+        .one()
+    )
+    assert log.product_id == product.id
+    assert log.bar_code == "0987654321"
 
 
 def test_rejects_removing_the_last_code(sql_session: Session) -> None:

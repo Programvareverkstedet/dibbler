@@ -44,6 +44,14 @@ def create_product(
             hidden=product.hidden,
         ),
     )
+    sql_session.add(
+        ProductLog(
+            type=ProductLogEntryType.ADD_BARCODE,
+            time=datetime.now(),
+            product_id=product.id,
+            bar_code=bar_code,
+        ),
+    )
     sql_session.flush()
 
     return product
