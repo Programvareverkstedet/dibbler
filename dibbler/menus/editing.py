@@ -176,8 +176,9 @@ class EditProductMenu(Menu):
                 except ValueError as e:
                     print(e)
             elif what == "remove_barcode":
-                current_codes = ", ".join(bc.code for bc in product.barcodes)
-                print(f"Current barcodes: {current_codes}")
+                print("Current barcodes:")
+                for code in sorted(bc.code for bc in product.barcodes):
+                    print(f"  - {code}")
                 bar_code = self.input_str(
                     "Barcode to remove",
                     regex=Product.bar_code_re,

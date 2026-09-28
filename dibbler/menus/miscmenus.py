@@ -8,6 +8,8 @@ from dibbler.queries import adjust_balance, transfer
 
 from .helpermenus import Menu, Selector
 
+MAX_SCREEN_SIZE = 80
+
 
 class TransferMenu(Menu):
     def __init__(self, sql_session: Session) -> None:
@@ -184,13 +186,21 @@ class ProductListMenu(Menu):
         total_value = 0
         for p in product_list:
             total_value += p.price * p.stock
-        line_format = "%-15s | %5s | %-" + str(Product.name_length) + "s | %5s \n"
+        name_width = 40
+        line_format = f"%-20s | %5s | %-{name_width}s | %5s \n"
         text += line_format % ("bar code", "price", "name", "stock")
-        text += 78 * "-" + "\n"
+        text += MAX_SCREEN_SIZE * "-" + "\n"
         for p in product_list:
-            barcodes = ", ".join(bc.code for bc in p.barcodes)
-            text += line_format % (barcodes, p.price, p.name, p.stock)
-        text += 78 * "-" + "\n"
+            codes = sorted(bc.code for bc in p.barcodes)
+            extra = len(codes) - 1
+            barcode_summary = codes[0] if extra == 0 else f"{codes[0]} (+{extra})"
+            text += line_format % (
+                barcode_summary,
+                p.price,
+                p.name[:name_width],
+                p.stock,
+            )
+        text += MAX_SCREEN_SIZE * "-" + "\n"
         text += line_format % (
             "Total value",
             total_value,
@@ -213,10 +223,12 @@ class ProductSearchMenu(Menu):
                 [
                     f"Result: {product.name}",
                     f"price: {product.price} kr",
-                    f"barcodes: {', '.join(bc.code for bc in product.barcodes)}",
                     f"stock: {product.stock}",
                     f"hidden: {'Y' if product.hidden else 'N'}",
                 ],
             ),
         )
+        print("barcodes:")
+        for code in sorted(bc.code for bc in product.barcodes):
+            print(f"  - {code}")
         # self.pause()
