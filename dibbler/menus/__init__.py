@@ -13,6 +13,7 @@ __all__ = [
     "LoggedStatisticsMenu",
     "MainMenu",
     "Menu",
+    "MergeProductsMenu",
     "PrintLabelMenu",
     "ProductListMenu",
     "ProductPopularityMenu",
@@ -32,6 +33,7 @@ from .editing import (
     CleanupStockMenu,
     EditProductMenu,
     EditUserMenu,
+    MergeProductsMenu,
 )
 from .faq import FAQMenu
 from .helpermenus import Menu

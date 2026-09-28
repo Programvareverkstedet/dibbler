@@ -10,6 +10,7 @@ from dibbler.queries import (
     create_user,
     edit_product,
     edit_user,
+    merge_products,
     remove_bar_code,
 )
 
@@ -19,6 +20,7 @@ __all__ = [
     "AddUserMenu",
     "AddProductMenu",
     "EditProductMenu",
+    "MergeProductsMenu",
     "AdjustStockMenu",
     "CleanupStockMenu",
     "EditUserMenu",
@@ -203,6 +205,135 @@ class EditProductMenu(Menu):
                 return
             else:
                 print("What what?")
+
+
+class MergeProductsMenu(Menu):
+    def __init__(self, sql_session: Session) -> None:
+        super().__init__("Merge products", sql_session)
+        self.help_text = """
+Merge two duplicate products into one.
+
+Pick product A (the one to delete) and product B (will be kept),
+then choose which properties to keep from each product, or edit.
+"""
+
+    def _pick(self, label: str, options: list[tuple[str, str]]) -> str:
+        selector = Selector(
+            f"Which {label} should the merged product have?",
+            sql_session=self.sql_session,
+            items=options,
+        )
+        choice = selector.execute()
+        assert choice is not None
+        return choice
+
+    def _execute(self, **_kwargs) -> None:
+        self.print_header()
+        source = self.input_product("Product to delete (A)")
+        target = self.input_product("Product to keep (B)")
+
+        if source.id == target.id:
+            print("Cannot merge a product into itself.")
+            self.pause()
+            return
+
+        self.printc(f"Merging {source.name} (A) into {target.name} (B)")
+
+        if source.name == target.name:
+            name = source.name
+        else:
+            match self._pick(
+                "name",
+                [
+                    ("a", f'A\'s name: "{source.name}"'),
+                    ("b", f'B\'s name: "{target.name}"'),
+                    ("custom", "Enter a custom name"),
+                ],
+            ):
+                case "a":
+                    name = source.name
+                case "b":
+                    name = target.name
+                case _:
+                    name = self.input_str(
+                        "Name",
+                        regex=Product.name_re,
+                        length_range=(1, Product.name_length),
+                    )
+                    assert name is not None
+
+        if source.price == target.price:
+            price = source.price
+        else:
+            match self._pick(
+                "price",
+                [
+                    ("a", f"A's price: {source.price}"),
+                    ("b", f"B's price: {target.price}"),
+                    ("custom", "Enter a custom price"),
+                ],
+            ):
+                case "a":
+                    price = source.price
+                case "b":
+                    price = target.price
+                case _:
+                    price = self.input_int("Price", 1, 100000)
+
+        if source.hidden == target.hidden:
+            hidden = source.hidden
+        else:
+            match self._pick(
+                "hidden status",
+                [
+                    ("a", f"A's hidden status: {source.hidden}"),
+                    ("b", f"B's hidden status: {target.hidden}"),
+                    ("custom", "Enter a custom hidden status"),
+                ],
+            ):
+                case "a":
+                    hidden = source.hidden
+                case "b":
+                    hidden = target.hidden
+                case _:
+                    hidden = self.confirm("Hidden", default=target.hidden)
+
+        # NOTE: Unlike the other properties, we deliberately always ask about stock.
+        #       It's not sane to assume anything here.
+        match self._pick(
+            "stock",
+            [
+                ("a", f"A's stock: {source.stock}"),
+                ("b", f"B's stock: {target.stock}"),
+                ("sum", f"Sum of both: {source.stock + target.stock}"),
+                ("custom", "Enter a custom stock"),
+            ],
+        ):
+            case "a":
+                stock = source.stock
+            case "b":
+                stock = target.stock
+            case "sum":
+                stock = source.stock + target.stock
+            case _:
+                stock = self.input_int("Stock", 0, 100000)
+
+        try:
+            merge_products(
+                self.sql_session,
+                source,
+                target,
+                name=name,
+                price=price,
+                hidden=hidden,
+                stock=stock,
+            )
+            self.sql_session.commit()
+            print(f"Product {source.name} merged into {target.name}")
+        except (ValueError, SQLAlchemyError) as e:
+            self.sql_session.rollback()
+            print(f"Could not merge products: {e}")
+        self.pause()
 
 
 class AdjustStockMenu(Menu):
