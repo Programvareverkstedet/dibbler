@@ -12,6 +12,7 @@ from dibbler.queries import (
     adjust_balance,
     transaction_log_query,
     transfer,
+    user_info,
     user_product_stats_query,
 )
 
@@ -60,6 +61,13 @@ class ShowUserMenu(Menu):
         print(f"Card number: {user.card}")
         print(f"RFID: {user.rfid}")
         print(f"Credit: {user.credit} kr")
+        info = user_info(self.sql_session, user)
+        last_activity = (
+            f"{info.last_activity:%Y-%m-%d %H:%M:%S}" if info.last_activity is not None else "never"
+        )
+        print(f"Last activity: {last_activity}")
+        print(f"Products bought: {info.products_bought}")
+        print(f"Products added: {info.products_added}")
         selector = Selector(
             f"What do you want to know about {user.name}?",
             self.sql_session,
