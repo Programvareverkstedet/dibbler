@@ -271,6 +271,16 @@ then choose which properties to keep from each product, or edit.
             return
 
         self.printc(f"Merging {source.name} (A) into {target.name} (B)")
+        self.printc("")
+        rows: list[tuple[str, object, object]] = [
+            ("", "A", "B"),
+            ("Price", source.price, target.price),
+            ("Stock", source.stock, target.stock),
+        ]
+        if source.hidden or target.hidden:
+            rows.append(("Hidden", source.hidden, target.hidden))
+        for label, a, b in rows:
+            self.printc(f"{label:<8}{a!s:>8}{b!s:>8}")
 
         if source.name == target.name:
             name = source.name
