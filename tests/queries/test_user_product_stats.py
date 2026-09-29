@@ -126,7 +126,7 @@ def test_product_merge(sql_session: Session) -> None:
     buy_products(sql_session, [(alice, 1)], [(pepsi, 2)])
     buy_products(sql_session, [(alice, 1)], [(pepsi_max, 3)])
     _add(sql_session, [alice], pepsi_max, 4)
-    merge_products(sql_session, pepsi_max, pepsi)
+    merge_products(sql_session, alice, pepsi_max, pepsi)
 
     assert user_product_stats(sql_session, alice) == [(pepsi, 5, 4)]
 

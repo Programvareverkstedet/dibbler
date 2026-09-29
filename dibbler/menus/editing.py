@@ -261,6 +261,7 @@ then choose which properties to keep from each product, or edit.
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
+        user = self.input_user("User")
         source = self.input_product("Product to delete (A)")
         target = self.input_product("Product to keep (B)")
 
@@ -353,6 +354,7 @@ then choose which properties to keep from each product, or edit.
         try:
             merge_products(
                 self.sql_session,
+                user,
                 source,
                 target,
                 name=name,

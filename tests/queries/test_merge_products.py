@@ -38,10 +38,11 @@ def _make_user(sql_session: Session, name: str = "alice", credit: int = 1000) ->
 
 
 def test_moves_barcodes_onto_the_target(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -49,13 +50,14 @@ def test_moves_barcodes_onto_the_target(sql_session: Session) -> None:
 
 
 def test_moves_barcodes_to_target_when_preloaded(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
     preloaded = set(source.barcodes)
     assert len(preloaded) == 1
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -63,11 +65,12 @@ def test_moves_barcodes_to_target_when_preloaded(sql_session: Session) -> None:
 
 
 def test_deletes_the_source_product(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
     source_id = source.id
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -75,10 +78,11 @@ def test_deletes_the_source_product(sql_session: Session) -> None:
 
 
 def test_keeps_targets_own_fields_by_default(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111", name="Cola", price=15, stock=10)
     target = _make_product(sql_session, bar_code="2222222222", name="Pepsi", price=20, stock=5)
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -88,11 +92,13 @@ def test_keeps_targets_own_fields_by_default(sql_session: Session) -> None:
 
 
 def test_can_edit_the_merged_product(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111", name="Cola", price=15, hidden=True)
     target = _make_product(sql_session, bar_code="2222222222", name="Pepsi", price=20, hidden=False)
 
     merge_products(
         sql_session,
+        alice,
         source,
         target,
         name=source.name,
@@ -108,10 +114,11 @@ def test_can_edit_the_merged_product(sql_session: Session) -> None:
 
 
 def test_can_set_a_custom_stock(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111", stock=10)
     target = _make_product(sql_session, bar_code="2222222222", stock=5)
 
-    merge_products(sql_session, source, target, stock=source.stock + target.stock)
+    merge_products(sql_session, alice, source, target, stock=source.stock + target.stock)
 
     sql_session.expire_all()
 
@@ -125,7 +132,7 @@ def test_repoints_purchase_history_to_the_target(sql_session: Session) -> None:
 
     purchase = buy_products(sql_session, [(alice, 1)], [(source, 1)])
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -137,12 +144,14 @@ def test_repoints_purchase_history_to_the_target(sql_session: Session) -> None:
 
 
 def test_records_logs(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111", name="Cola")
     target = _make_product(sql_session, bar_code="2222222222", name="Pepsi")
     source_id = source.id
 
     merge_products(
         sql_session,
+        alice,
         source,
         target,
         name="Cola",
@@ -178,13 +187,15 @@ def test_records_logs(sql_session: Session) -> None:
         .one()
     )
     assert adjustment_log.merge_ref_id == merge_log.id
+    assert [(u.user, u.amount) for u in adjustment_log.users] == [(alice, None)]
 
 
 def test_no_change_implies_no_edit_log(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -195,10 +206,11 @@ def test_no_change_implies_no_edit_log(sql_session: Session) -> None:
 
 
 def test_no_stock_change_implies_no_transaction_log(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111", stock=10)
     target = _make_product(sql_session, bar_code="2222222222", stock=5)
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -206,10 +218,11 @@ def test_no_stock_change_implies_no_transaction_log(sql_session: Session) -> Non
 
 
 def test_freed_barcode_after_merge_stays_freed(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
-    merge_products(sql_session, source, target)
+    merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
@@ -217,23 +230,26 @@ def test_freed_barcode_after_merge_stays_freed(sql_session: Session) -> None:
 
 
 def test_rejects_merging_a_product_into_itself(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     product = _make_product(sql_session)
 
     with pytest.raises(ValueError, match="itself"):
-        merge_products(sql_session, product, product)
+        merge_products(sql_session, alice, product, product)
 
 
 def test_rejects_empty_name(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
     with pytest.raises(ValueError, match="Name cannot be empty"):
-        merge_products(sql_session, source, target, name="")
+        merge_products(sql_session, alice, source, target, name="")
 
 
 def test_rejects_non_positive_price(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
     with pytest.raises(ValueError, match="Price must be positive"):
-        merge_products(sql_session, source, target, price=0)
+        merge_products(sql_session, alice, source, target, price=0)

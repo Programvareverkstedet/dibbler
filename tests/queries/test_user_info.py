@@ -5,7 +5,14 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dibbler.models import Product, TransactionLog, User
-from dibbler.queries import add_stock, adjust_balance, buy_products, transfer, user_info
+from dibbler.queries import (
+    add_stock,
+    adjust_balance,
+    adjust_stock,
+    buy_products,
+    transfer,
+    user_info,
+)
 from dibbler.queries.user_info import UserInfo
 
 

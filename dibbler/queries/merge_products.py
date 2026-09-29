@@ -11,6 +11,8 @@ from dibbler.models import (
     PurchaseEntry,
     TransactionLog,
     TransactionLogProduct,
+    TransactionLogUser,
+    User,
 )
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
 
@@ -19,6 +21,7 @@ UNSET: Any = object()
 
 def merge_products(
     sql_session: Session,
+    user: User,
     source: Product,
     target: Product,
     name: str = UNSET,
@@ -97,6 +100,12 @@ def merge_products(
             merge_ref_id=merge_log.id,
         )
         sql_session.add(header)
+        sql_session.add(
+          TransactionLogUser(
+            transaction=header,
+            user=user,
+          ),
+        )
         sql_session.add(
             TransactionLogProduct(
                 transaction=header,
