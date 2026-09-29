@@ -163,5 +163,5 @@ def config_db_string() -> str:
         password = postgresql["password"]
 
     if host.startswith("/"):
-        return f"postgresql+psycopg2://{username}:{password}@/{dbname}?host={host}"
-    return f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}"
+        return f"postgresql+psycopg2://{username}:{password}@/{dbname}?host={host}&application_name=dibbler"
+    return f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}?application_name=dibbler"
