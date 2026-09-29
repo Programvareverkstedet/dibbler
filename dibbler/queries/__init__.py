@@ -12,6 +12,8 @@ __all__ = [
     "remove_bar_code",
     "search_product",
     "search_user",
+    "transaction_log",
+    "transaction_log_query",
     "transfer",
 ]
 
@@ -28,4 +30,5 @@ from .merge_products import merge_products
 from .remove_bar_code import remove_bar_code
 from .search_product import search_product
 from .search_user import search_user
+from .transaction_log import transaction_log, transaction_log_query
 from .transfer import transfer
