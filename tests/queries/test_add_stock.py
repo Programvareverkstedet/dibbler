@@ -184,3 +184,11 @@ def test_add_stock_rejects_non_positive_product_amount(sql_session: Session) -> 
 
     with pytest.raises(ValueError, match="Product amounts must be positive"):
         add_stock(sql_session, [alice], [(product, 0, 100)], total_price=100)
+
+
+def test_add_stock_rejects_negative_paid_amount(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+    alice = _make_user(sql_session, "alice")
+
+    with pytest.raises(ValueError, match="Paid amounts must not be negative"):
+        add_stock(sql_session, [alice], [(product, 5, -1)], total_price=0)

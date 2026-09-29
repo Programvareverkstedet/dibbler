@@ -35,6 +35,9 @@ def add_stock(
     if any(amount <= 0 for _, amount, _ in products):
         raise ValueError("Product amounts must be positive.")
 
+    if any(paid_amount < 0 for _, _, paid_amount in products):
+        raise ValueError("Paid amounts must not be negative.")
+
     for product, amount, paid_amount in products:
         value = max(product.stock, 0) * product.price + paid_amount
         product.price = int(ceil(float(value) / (max(product.stock, 0) + amount)))
