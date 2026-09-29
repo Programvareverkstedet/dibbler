@@ -40,7 +40,6 @@ GENERAL_SCHEMA: dict[str, ConfigField] = {
 
 LIMITS_SCHEMA: dict[str, ConfigField] = {
     "low_credit_warning_limit": ConfigField(int, default=-100),
-    "user_recent_transaction_limit": ConfigField(int, default=100),
 }
 
 SQLITE_SCHEMA: dict[str, ConfigField] = {
