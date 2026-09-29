@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, User
+from dibbler.models import Base
 from dibbler.queries import create_product, create_user
 
 MOCK_PRODUCTS = [
@@ -19,8 +19,8 @@ MOCK_USERS = [
 
 
 def clear_db(sql_session: Session) -> None:
-    sql_session.query(Product).delete()
-    sql_session.query(User).delete()
+    for table in reversed(Base.metadata.sorted_tables):
+        sql_session.execute(table.delete())
     sql_session.commit()
 
 
