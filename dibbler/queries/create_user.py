@@ -21,6 +21,9 @@ def create_user(
     if not re.fullmatch(User.name_re, name):
         raise ValueError("Name must consist of lowercase letters only.")
 
+    if sql_session.scalar(select(exists().where(User.name == name))):
+        raise ValueError(f'A user named "{name}" already exists.')
+
     if card:
         if not re.fullmatch(User.card_re, card):
             raise ValueError("Card number has an invalid format.")

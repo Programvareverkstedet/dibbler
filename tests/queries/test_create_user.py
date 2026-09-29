@@ -75,6 +75,13 @@ def test_create_user_rejects_invalid_rfid(sql_session: Session) -> None:
         create_user(sql_session, "alice", rfid="not-hex!")
 
 
+def test_create_user_rejects_duplicate_name(sql_session: Session) -> None:
+    create_user(sql_session, "alice")
+
+    with pytest.raises(ValueError, match="already exists"):
+        create_user(sql_session, "alice")
+
+
 def test_create_user_rejects_duplicate_card(sql_session: Session) -> None:
     create_user(sql_session, "alice", card="ntnu123")
 
