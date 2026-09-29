@@ -5,9 +5,10 @@ from sqlalchemy.orm import Session
 
 from dibbler.conf import config
 from dibbler.lib.pager import pager, streaming_pager
+from dibbler.lib.render_transaction_log import render_transaction_log
 from dibbler.lib.sql_helpers import iter_in_chunks
 from dibbler.models import Product, User
-from dibbler.queries import adjust_balance, transfer
+from dibbler.queries import adjust_balance, transaction_log_query, transfer
 
 from .helpermenus import Menu, Selector
 
@@ -238,3 +239,15 @@ class ProductSearchMenu(Menu):
         for code in sorted(bc.code for bc in product.barcodes):
             print(f"  - {code}")
         # self.pause()
+
+
+class TransactionLogMenu(Menu):
+    def __init__(self, sql_session: Session) -> None:
+        super().__init__("Transaction log", sql_session)
+
+    def _execute(self, **_kwargs) -> None:
+        self.print_header()
+
+        query = transaction_log_query(newest_first=True)
+        entries = iter_in_chunks(self.sql_session, query)
+        streaming_pager(render_transaction_log(entries, ascii_only=True))

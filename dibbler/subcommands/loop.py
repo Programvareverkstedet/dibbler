@@ -40,6 +40,7 @@ from ..menus import (
     ProductRevenueMenu,
     ProductSearchMenu,
     ShowUserMenu,
+    TransactionLogMenu,
     TransferMenu,
     UserListMenu,
 )
@@ -91,6 +92,7 @@ def main(sql_session: Session) -> None:
                 ],
             ),
             ProductSearchMenu(sql_session),
+            TransactionLogMenu(sql_session),
             Menu(
                 "Statistics",
                 sql_session,

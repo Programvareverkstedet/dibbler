@@ -20,6 +20,7 @@ __all__ = [
     "ProductRevenueMenu",
     "ProductSearchMenu",
     "ShowUserMenu",
+    "TransactionLogMenu",
     "TransferMenu",
     "UserListMenu",
 ]
@@ -43,6 +44,7 @@ from .miscmenus import (
     ProductListMenu,
     ProductSearchMenu,
     ShowUserMenu,
+    TransactionLogMenu,
     TransferMenu,
     UserListMenu,
 )
