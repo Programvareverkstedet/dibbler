@@ -126,20 +126,18 @@ def test_buy_products_updates_multiple_products_independently(sql_session: Sessi
     assert alice.credit == 100 - (2 * 15 + 3 * 8)
 
 
-def test_buy_products_allows_the_same_buyer_twice(sql_session: Session) -> None:
-    # NOTE: this behaviour might be edited in the future,
-    #       see https://git.pvv.ntnu.no/Projects/dibbler/issues/54
-    product = _make_product(sql_session, price=10)
+def test_buy_products_dedupes_a_single_repeated_buyer(sql_session: Session) -> None:
+    product = _make_product(sql_session, price=11)
     alice = _make_user(sql_session, "alice")
 
     purchase = buy_products(sql_session, [(alice, 1), (alice, 1)], [(product, 1)])
 
     sql_session.expire_all()
 
-    assert alice.credit == 100 - 10
-    assert len(purchase.transactions) == 2
-    assert {t.user for t in purchase.transactions} == {alice}
-    assert [t.penalty for t in purchase.transactions] == [1, 1]
+    # i.e. not 2 * ceil(11 / 2) = 12
+    assert alice.credit == 100 - 11
+    assert [(t.user, t.penalty) for t in purchase.transactions] == [(alice, 1)]
+    assert len(sql_session.query(TransactionLog).one().users) == 1
 
 
 def test_buy_products_allows_a_repeated_buyer_alongside_another_buyer(

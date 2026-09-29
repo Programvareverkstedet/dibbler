@@ -38,6 +38,8 @@ def buy_products(
     if any(amount <= 0 for _, amount in products):
         raise ValueError("Product amounts must be positive.")
 
+    buyers = buyers[:1] if len({user for user, _ in buyers}) == 1 else buyers
+
     purchase = Purchase()
     sql_session.add(purchase)
 

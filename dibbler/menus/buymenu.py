@@ -239,15 +239,17 @@ When finished, write an empty line to confirm the purchase.\n"""
 
         string += f"\n  total price: {price:d} kr"
 
-        if len(self.buyers) > 0:
-            price_per_transaction = math.ceil(price / len(self.buyers))
-            if len(self.buyers) > 1:
+        buyers = self.buyers[:1] if len({user for user, _ in self.buyers}) == 1 else self.buyers
+
+        if len(buyers) > 0:
+            price_per_transaction = math.ceil(price / len(buyers))
+            if len(buyers) > 1:
                 string += f"\n  price per person: {price_per_transaction:d} kr"
-                if any(penalty > 1 for _, penalty in self.buyers):
+                if any(penalty > 1 for _, penalty in buyers):
                     string += f" *({price_per_transaction * PENALTY_MULTIPLIER:d} kr)"
 
-            if any(penalty > 1 for _, penalty in self.buyers):
-                total = sum(price_per_transaction * penalty for _, penalty in self.buyers)
+            if any(penalty > 1 for _, penalty in buyers):
+                total = sum(price_per_transaction * penalty for _, penalty in buyers)
                 string += f"\n  *total with penalty: {total} kr"
 
         return string
