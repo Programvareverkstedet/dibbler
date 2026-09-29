@@ -245,4 +245,9 @@ class TransactionLogMenu(Menu):
 
         query = transaction_log_query(newest_first=True)
         entries = iter_in_chunks(self.sql_session, query)
-        streaming_pager(render_transaction_log(entries, ascii_only=True))
+        first = next(entries, None)
+        if first is None:
+            print("No transactions yet")
+            return
+
+        streaming_pager(render_transaction_log(chain([first], entries), ascii_only=True))

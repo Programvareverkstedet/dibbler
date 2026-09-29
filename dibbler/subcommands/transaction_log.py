@@ -1,5 +1,6 @@
 import sys
 from datetime import datetime
+from itertools import chain
 from typing import TypeVar
 
 from sqlalchemy import func, select
@@ -55,6 +56,10 @@ def main(
         limit=limit,
         newest_first=not reverse,
     )
-    lines = render_transaction_log(iter_in_chunks(sql_session, query))
+    entries = iter_in_chunks(sql_session, query)
+    first = next(entries, None)
+    if first is None:
+        print("No transactions yet")
+        return
 
-    streaming_pager(lines)
+    streaming_pager(render_transaction_log(chain([first], entries)))
