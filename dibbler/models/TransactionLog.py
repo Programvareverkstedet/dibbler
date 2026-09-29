@@ -7,9 +7,11 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     String,
+    event,
 )
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     mapped_column,
     relationship,
 )
@@ -48,3 +50,52 @@ class TransactionLog(Base, UidMixin):
 
     merge_ref_id: Mapped[int | None] = mapped_column(ForeignKey("product_log.id"))
     merge_ref: Mapped[ProductLog | None] = relationship()
+
+
+_EXPECTED_COUNTS: dict[
+    TransactionLogEntryType,
+    tuple[tuple[int, int | None], tuple[int, int | None]],
+] = {
+    # min/max number of (users, products) per type
+    TransactionLogEntryType.BUY_PRODUCT: ((1, None), (1, None)),
+    TransactionLogEntryType.ADD_PRODUCT: ((1, None), (1, None)),
+    # TODO: connect `ADJUST_STOCK` to a user in the future
+    TransactionLogEntryType.ADJUST_STOCK: ((0, 0), (1, 1)),
+    TransactionLogEntryType.TRANSFER: ((2, 2), (0, 0)),
+    TransactionLogEntryType.ADJUST_BALANCE: ((1, 1), (0, 0)),
+}
+
+
+def _describe_minmax(minmax: tuple[int, int | None]) -> str:
+    low, high = minmax
+    if high is None:
+        return f"at least {low}"
+    if low == high:
+        return f"exactly {low}"
+    return f"{low} to {high}"
+
+
+@event.listens_for(Session, "before_flush")
+def _validate_transaction_log_entries(
+    session: Session,
+    _flush_context: object,
+    _instances: object,
+) -> None:
+    for entry in (*session.new, *session.dirty):
+        if not isinstance(entry, TransactionLog):
+            continue
+
+        user_minmax, product_minmax = _EXPECTED_COUNTS[entry.type]
+        counts_and_minmax = [
+            (len(entry.users), user_minmax),
+            (len(entry.products), product_minmax),
+        ]
+        if not all(
+            low <= count and (high is None or count <= high)
+            for count, (low, high) in counts_and_minmax
+        ):
+            raise ValueError(
+                f"A {entry.type} log entry must have {_describe_minmax(user_minmax)} users and "
+                f"{_describe_minmax(product_minmax)} products, "
+                f"got {len(entry.users)} users and {len(entry.products)} products.",
+            )
