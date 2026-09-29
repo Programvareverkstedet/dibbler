@@ -15,6 +15,7 @@ def transaction_log_query(
     entry_type: list[TransactionLogEntryType] | None = None,
     negate_entry_type_filter: bool = False,
     limit: int | None = None,
+    newest_first: bool = False,
 ) -> Select[tuple[TransactionLog]]:
     """
     Query variant of `transaction_log`, useful for use with the `iter_in_chunks` helper.
@@ -53,6 +54,12 @@ def transaction_log_query(
             ),
         )
 
+    ordering = (
+        (TransactionLog.time.desc(), TransactionLog.id.desc())
+        if newest_first
+        else (TransactionLog.time.asc(), TransactionLog.id.asc())
+    )
+
     return (
         select(TransactionLog)
         .where(*conditions)
@@ -60,7 +67,7 @@ def transaction_log_query(
             selectinload(TransactionLog.users).selectinload(TransactionLogUser.user),
             selectinload(TransactionLog.products).selectinload(TransactionLogProduct.product),
         )
-        .order_by(TransactionLog.time.asc(), TransactionLog.id.asc())
+        .order_by(*ordering)
     )
 
 
@@ -73,10 +80,12 @@ def transaction_log(
     entry_type: list[TransactionLogEntryType] | None = None,
     negate_entry_type_filter: bool = False,
     limit: int | None = None,
+    newest_first: bool = False,
 ) -> list[TransactionLog]:
     """
     Retrieve the transaction log in chronological order, optionally filtered.
 
+    - The order is reversed if `newest_first` is set.
     - Only one of `user` or `product` may be specified.
     - `after_time` is inclusive and `before_time` is exclusive.
     - If `limit` is given, the `limit` most recent matching entries are returned.
@@ -89,5 +98,6 @@ def transaction_log(
         entry_type=entry_type,
         negate_entry_type_filter=negate_entry_type_filter,
         limit=limit,
+        newest_first=newest_first,
     )
     return list(sql_session.scalars(query))

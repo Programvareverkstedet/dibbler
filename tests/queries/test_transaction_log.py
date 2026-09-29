@@ -148,6 +148,33 @@ def test_insertion_order_ignored(sql_session: Session) -> None:
     assert _ids(entries) != sorted(_ids(entries))
 
 
+def test_newest_first(sql_session: Session) -> None:
+    entries = _insert_shuffled(sql_session, _generate_a_bunch_of_entries(sql_session, 10))
+
+    result = transaction_log(sql_session, newest_first=True)
+
+    assert _ids(result) == _ids(reversed(entries))
+
+
+def test_newest_first_equal_time_reverse_id_order(sql_session: Session) -> None:
+    entries = _generate_a_bunch_of_entries(sql_session, 5)
+    for entry in entries:
+        entry.time = datetime(2024, 1, 1)
+    _insert_trx_entries(sql_session, entries)
+
+    result = transaction_log(sql_session, newest_first=True)
+
+    assert _ids(result) == sorted(_ids(entries), reverse=True)
+
+
+def test_newest_first_with_limit(sql_session: Session) -> None:
+    entries = _insert_shuffled(sql_session, _generate_a_bunch_of_entries(sql_session, 10), seed=7)
+
+    result = transaction_log(sql_session, limit=3, newest_first=True)
+
+    assert _ids(result) == _ids(reversed(entries[-3:]))
+
+
 def test_children_loaded(sql_session: Session) -> None:
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
