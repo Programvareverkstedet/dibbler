@@ -15,6 +15,7 @@ __all__ = [
     "transaction_log",
     "transaction_log_query",
     "transfer",
+    "user_info",
     "user_product_stats",
     "user_product_stats_query",
 ]
@@ -34,4 +35,5 @@ from .search_product import search_product
 from .search_user import search_user
 from .transaction_log import transaction_log, transaction_log_query
 from .transfer import transfer
+from .user_info import user_info
 from .user_product_stats import user_product_stats, user_product_stats_query
