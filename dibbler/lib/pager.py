@@ -20,10 +20,10 @@ def pager(string: str) -> None:
         env = dict(os.environ)
         env["LESSSECURE"] = "1"
         proc = subprocess.Popen(
-          "less",
-          env=env,
-          encoding="utf-8",
-          stdin=subprocess.PIPE,
+            "less",
+            env=env,
+            encoding="utf-8",
+            stdin=subprocess.PIPE,
         )
         proc.communicate(string)
     finally:
@@ -31,8 +31,8 @@ def pager(string: str) -> None:
 
 
 def streaming_pager(
-  lines: Iterable[str],
-  pager_command: str | Sequence[str] = "less",
+    lines: Iterable[str],
+    pager_command: str | Sequence[str] = "less",
 ) -> None:
     """This function takes a stream of text lines, and pipes them into a pager of choice."""
     int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)

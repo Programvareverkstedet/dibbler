@@ -24,9 +24,9 @@ def _make_entry(
         users={TransactionLogUser(user=user, amount=1) for user in users},
         products={
             TransactionLogProduct(
-              product=product,
-              amount=1,
-              price_at_time=product.price,
+                product=product,
+                amount=1,
+                price_at_time=product.price,
             )
             for product in products
         },
@@ -44,14 +44,10 @@ def _make_entry(
 VALID_USER_PRODUCT_COUNTS = [
     (TransactionLogEntryType.BUY_PRODUCT, 1, 1),
     (TransactionLogEntryType.BUY_PRODUCT, 3, 2),
-
     (TransactionLogEntryType.ADD_PRODUCT, 1, 1),
     (TransactionLogEntryType.ADD_PRODUCT, 2, 3),
-
     (TransactionLogEntryType.ADJUST_STOCK, 0, 1),
-
     (TransactionLogEntryType.TRANSFER, 2, 0),
-
     (TransactionLogEntryType.ADJUST_BALANCE, 1, 0),
 ]
 
@@ -74,19 +70,15 @@ INVALID_USER_PRODUCT_COUNTS = [
     (TransactionLogEntryType.BUY_PRODUCT, 0, 0),
     (TransactionLogEntryType.BUY_PRODUCT, 0, 1),
     (TransactionLogEntryType.BUY_PRODUCT, 1, 0),
-
     (TransactionLogEntryType.ADD_PRODUCT, 0, 0),
     (TransactionLogEntryType.ADD_PRODUCT, 0, 1),
     (TransactionLogEntryType.ADD_PRODUCT, 1, 0),
-
     (TransactionLogEntryType.ADJUST_STOCK, 0, 0),
     (TransactionLogEntryType.ADJUST_STOCK, 0, 2),
-
     (TransactionLogEntryType.TRANSFER, 0, 0),
     (TransactionLogEntryType.TRANSFER, 1, 0),
     (TransactionLogEntryType.TRANSFER, 3, 0),
     (TransactionLogEntryType.TRANSFER, 2, 1),
-
     (TransactionLogEntryType.ADJUST_BALANCE, 0, 0),
     (TransactionLogEntryType.ADJUST_BALANCE, 2, 0),
     (TransactionLogEntryType.ADJUST_BALANCE, 1, 1),
