@@ -3,8 +3,7 @@ from collections.abc import Iterator
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
-from dibbler.lib.helpers import less
-from dibbler.lib.pager import streaming_pager
+from dibbler.lib.pager import pager, streaming_pager
 from dibbler.lib.sql_helpers import iter_in_chunks
 from dibbler.models import Product, User
 from dibbler.queries import adjust_balance, transfer
@@ -103,7 +102,7 @@ class ShowUserMenu(Menu):
             elif t.description is not None:
                 string += t.description
             string += "\n"
-        less(string)
+        pager(string)
 
     @staticmethod
     def print_purchased_products(user: User) -> None:
@@ -121,7 +120,7 @@ class ShowUserMenu(Menu):
             text += "Products purchased:\n"
             for product, count in products:
                 text += f"{product.name:<47} {count:>3}\n"
-            less(text)
+            pager(text)
 
 
 class UserListMenu(Menu):
@@ -212,7 +211,7 @@ class ProductListMenu(Menu):
             "",
             "",
         )
-        less(text)
+        pager(text)
 
 
 class ProductSearchMenu(Menu):

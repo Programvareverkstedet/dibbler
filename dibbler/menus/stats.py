@@ -1,7 +1,7 @@
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
-from dibbler.lib.helpers import less
+from dibbler.lib.pager import pager
 from dibbler.lib.statistikkHelpers import statisticsTextOnly
 from dibbler.models import Product, PurchaseEntry, User
 
@@ -45,7 +45,7 @@ class ProductPopularityMenu(Menu):
             if number is None:
                 continue
             text += line_format.format(str(number), product.name)
-        less(text)
+        pager(text)
 
 
 class ProductRevenueMenu(Menu):
@@ -83,7 +83,7 @@ class ProductRevenueMenu(Menu):
                 str(product.price),
                 product.name,
             )
-        less(text)
+        pager(text)
 
 
 class BalanceMenu(Menu):
@@ -120,7 +120,7 @@ class BalanceMenu(Menu):
         text += line_format % ("Total credit", total_credit)
         text += 24 * "-" + "\n"
         text += line_format % ("Total balance", total_balance)
-        less(text)
+        pager(text)
 
 
 class LoggedStatisticsMenu(Menu):

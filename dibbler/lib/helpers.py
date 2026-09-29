@@ -51,22 +51,6 @@ def argmax(
     return maxarg
 
 
-def less(string: str) -> None:
-    """
-    Run less with string as input; wait until it finishes.
-    """
-    # If we don't ignore SIGINT while running the `less` process,
-    # it will become a zombie when someone presses C-c.
-    int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
-    try:
-        env = dict(os.environ)
-        env["LESSSECURE"] = "1"
-        proc = subprocess.Popen("less", env=env, encoding="utf-8", stdin=subprocess.PIPE)
-        proc.communicate(string)
-    finally:
-        signal.signal(signal.SIGINT, int_handler)
-
-
 def pascal_case_to_snake_case(name: str) -> str:
     return "".join(["_" + i.lower() if i.isupper() else i for i in name]).lstrip("_")
 
