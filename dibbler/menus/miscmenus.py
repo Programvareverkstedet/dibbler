@@ -1,8 +1,11 @@
-import sqlalchemy
+from collections.abc import Iterator
+
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
 from dibbler.lib.helpers import less
+from dibbler.lib.pager import streaming_pager
+from dibbler.lib.sql_helpers import iter_in_chunks
 from dibbler.models import Product, User
 from dibbler.queries import adjust_balance, transfer
 
@@ -127,19 +130,21 @@ class UserListMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        user_list = self.sql_session.query(User).all()
-        total_credit = self.sql_session.query(sqlalchemy.func.sum(User.credit)).first()[0]
 
-        line_format = "%-12s | %6s\n"
-        hline = "---------------------\n"
-        text = ""
-        text += line_format % ("username", "credit")
-        text += hline
-        for user in user_list:
-            text += line_format % (user.name, user.credit)
-        text += hline
-        text += line_format % ("total credit", total_credit)
-        less(text)
+        def lines() -> Iterator[str]:
+            line_format = "%-12s | %6s\n"
+            hline = "---------------------\n"
+            yield line_format % ("username", "credit")
+            yield hline
+            total_credit = 0
+            users = self.sql_session.query(User).order_by(User.id)
+            for user in iter_in_chunks(users):
+                total_credit += user.credit
+                yield line_format % (user.name, user.credit)
+            yield hline
+            yield line_format % ("total credit", total_credit)
+
+        streaming_pager(lines())
 
 
 class AdjustCreditMenu(Menu):
