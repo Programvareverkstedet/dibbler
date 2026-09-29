@@ -1,7 +1,11 @@
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from enum import Enum
+from typing import TypeVar
 
 from sqlalchemy import CheckConstraint, ColumnElement, and_, column, or_
+from sqlalchemy.orm import Query
+
+T = TypeVar("T")
 
 
 def type_field_constraints(
@@ -40,3 +44,18 @@ def type_field_constraints(
         )
 
     return constraints
+
+
+def iter_in_chunks(query: Query[T], chunk_size: int = 64) -> Iterator[T]:
+    """
+    Create a chunked iterator from an SQLAlchemy query.
+
+    This is particularly useful in combination with the streaming pager.
+    """
+    offset = 0
+    while True:
+        chunk = query.offset(offset).limit(chunk_size).all()
+        yield from chunk
+        if len(chunk) < chunk_size:
+            return
+        offset += chunk_size
