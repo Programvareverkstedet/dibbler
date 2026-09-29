@@ -6,9 +6,12 @@ from sqlalchemy import (
     Boolean,
     Integer,
     String,
+    event,
+    inspect,
 )
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     mapped_column,
     relationship,
 )
@@ -57,3 +60,19 @@ class Product(Base, UidMixin):
 
     def __str__(self) -> str:
         return self.name
+
+
+@event.listens_for(Session, "before_flush")
+def _validate_product_barcodes(
+    session: Session,
+    _flush_context: object,
+    _instances: object,
+) -> None:
+    for product in (*session.new, *session.dirty):
+        if not isinstance(product, Product) or product in session.deleted:
+            continue
+
+        # Skip checking the barcodes if the the session doesn't contain any history about it.
+        barcodes_changed = inspect(product).attrs.barcodes.history.has_changes()
+        if (product in session.new or barcodes_changed) and not product.barcodes:
+            raise ValueError(f"Product {product.name!r} must have at least one barcode.")
