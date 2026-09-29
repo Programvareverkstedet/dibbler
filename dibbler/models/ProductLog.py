@@ -73,6 +73,7 @@ class ProductLog(Base, UidMixin):
                     "merge_ref_id": False,
                 },
                 ProductLogEntryType.EDIT: {
+                    "bar_code": False,
                     "merged_product_id": False,
                     "merge_ref_id": None,
                 },
@@ -82,7 +83,6 @@ class ProductLog(Base, UidMixin):
             or_(
                 column("type") != ProductLogEntryType.EDIT.value,
                 or_(
-                    column("bar_code").is_not(None),
                     column("name").is_not(None),
                     column("price").is_not(None),
                     column("hidden").is_not(None),
