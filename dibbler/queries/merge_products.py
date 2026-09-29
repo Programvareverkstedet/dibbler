@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import Any
 
+from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from dibbler.models import (
     Product,
+    ProductBarcode,
     ProductLog,
     PurchaseEntry,
     TransactionLog,
@@ -42,16 +44,24 @@ def merge_products(
     sql_session.add(merge_log)
     sql_session.flush()
 
-    for barcode in list(source.barcodes):
-        barcode.product = target
+    sql_session.execute(
+        update(ProductBarcode)
+        .where(ProductBarcode.product_id == source.id)
+        .values(product_id=target.id),
+    )
+    sql_session.expire(source, ["barcodes"])
 
-    for entry in sql_session.query(PurchaseEntry).filter(PurchaseEntry.product_id == source.id):
-        entry.product = target
+    sql_session.execute(
+        update(PurchaseEntry)
+        .where(PurchaseEntry.product_id == source.id)
+        .values(product_id=target.id),
+    )
 
-    for xref in sql_session.query(TransactionLogProduct).filter(
-        TransactionLogProduct.product_id == source.id,
-    ):
-        xref.product = target
+    sql_session.execute(
+        update(TransactionLogProduct)
+        .where(TransactionLogProduct.product_id == source.id)
+        .values(product_id=target.id),
+    )
 
     edited_name = name if name is not UNSET and name != target.name else None
     edited_price = price if price is not UNSET and price != target.price else None
@@ -107,5 +117,7 @@ def merge_products(
 
     sql_session.delete(source)
     sql_session.flush()
+
+    sql_session.expire_all()
 
     return target
