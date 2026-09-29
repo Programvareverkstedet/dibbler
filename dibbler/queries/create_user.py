@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 
+from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from dibbler.models import User, UserLog
@@ -29,6 +30,12 @@ def create_user(
         if not re.fullmatch(User.rfid_re, rfid):
             raise ValueError("RFID has an invalid format.")
         rfid = rfid.lower()
+
+    if card and sql_session.scalar(select(exists().where(User.card == card))):
+        raise ValueError(f'A user with card number "{card}" already exists.')
+
+    if rfid and sql_session.scalar(select(exists().where(User.rfid == rfid))):
+        raise ValueError(f'A user with RFID "{rfid}" already exists.')
 
     user = User(name, card, rfid, credit)
     sql_session.add(user)

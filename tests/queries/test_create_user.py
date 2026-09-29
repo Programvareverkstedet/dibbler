@@ -1,5 +1,4 @@
 import pytest
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dibbler.models import User, UserLog
@@ -49,13 +48,6 @@ def test_create_user_rejects_empty_name(sql_session: Session) -> None:
         create_user(sql_session, "")
 
 
-def test_create_user_rejects_duplicate_name(sql_session: Session) -> None:
-    create_user(sql_session, "alice")
-
-    with pytest.raises(IntegrityError):
-        create_user(sql_session, "alice")
-
-
 def test_create_user_rejects_uppercase_name(sql_session: Session) -> None:
     with pytest.raises(ValueError, match="lowercase letters only"):
         create_user(sql_session, "Alice")
@@ -81,3 +73,24 @@ def test_create_user_rejects_invalid_card(sql_session: Session) -> None:
 def test_create_user_rejects_invalid_rfid(sql_session: Session) -> None:
     with pytest.raises(ValueError, match="invalid format"):
         create_user(sql_session, "alice", rfid="not-hex!")
+
+
+def test_create_user_rejects_duplicate_card(sql_session: Session) -> None:
+    create_user(sql_session, "alice", card="ntnu123")
+
+    with pytest.raises(ValueError, match="already exists"):
+        create_user(sql_session, "bob", card="NTNU123")
+
+
+def test_create_user_rejects_duplicate_rfid(sql_session: Session) -> None:
+    create_user(sql_session, "alice", rfid="deadbeef")
+
+    with pytest.raises(ValueError, match="already exists"):
+        create_user(sql_session, "bob", rfid="DEADBEEF")
+
+
+def test_create_user_allows_several_users_without_card_or_rfid(sql_session: Session) -> None:
+    create_user(sql_session, "alice")
+    create_user(sql_session, "bob")
+
+    assert sql_session.query(User).count() == 2

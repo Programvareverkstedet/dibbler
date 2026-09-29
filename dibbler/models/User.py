@@ -28,8 +28,8 @@ class User(Base, UidMixin):
 
     name: Mapped[str] = mapped_column(String(name_length), unique=True, index=True)
     credit: Mapped[int] = mapped_column(Integer)
-    card: Mapped[str | None] = mapped_column(String(card_length))
-    rfid: Mapped[str | None] = mapped_column(String(rfid_length))
+    card: Mapped[str | None] = mapped_column(String(card_length), unique=True)
+    rfid: Mapped[str | None] = mapped_column(String(rfid_length), unique=True)
 
     transactions: Mapped[list[Transaction]] = relationship(
         back_populates="user",

@@ -6,8 +6,13 @@ from dibbler.models.enums import UserLogEntryType
 from dibbler.queries import create_user, edit_user
 
 
-def _make_user(sql_session: Session, name: str = "alice") -> User:
-    user = User(name, "ntnu123", "deadbeef")
+def _make_user(
+    sql_session: Session,
+    name: str = "alice",
+    card: str | None = "ntnu123",
+    rfid: str | None = "deadbeef",
+) -> User:
+    user = User(name, card, rfid)
     sql_session.add(user)
     sql_session.flush()
     return user
@@ -93,7 +98,7 @@ def test_edit_user_rejects_empty_name(sql_session: Session) -> None:
 
 def test_edit_user_rejects_duplicate_name(sql_session: Session) -> None:
     _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob")
+    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
 
     with pytest.raises(ValueError, match="already exists"):
         edit_user(sql_session, bob, name="alice")
@@ -180,3 +185,62 @@ def test_edit_user_can_rename(sql_session: Session) -> None:
     assert sql_session.get(User, user.id) is user
     assert user.name == "alicia"
     assert sql_session.query(User).filter_by(name="alice").first() is None
+
+
+def test_edit_user_rejects_duplicate_card(sql_session: Session) -> None:
+    _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
+
+    with pytest.raises(ValueError, match="already exists"):
+        edit_user(sql_session, bob, card="NTNU123")
+
+    sql_session.expire_all()
+
+    assert bob.card == "ntnu456"
+
+
+def test_edit_user_rejects_duplicate_rfid(sql_session: Session) -> None:
+    _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
+
+    with pytest.raises(ValueError, match="already exists"):
+        edit_user(sql_session, bob, rfid="DEADBEEF")
+
+    sql_session.expire_all()
+
+    assert bob.rfid == "cafebabe"
+
+
+def test_edit_user_allows_resubmitting_the_same_card_and_rfid_with_other_changes(
+    sql_session: Session,
+) -> None:
+    user = _make_user(sql_session)
+
+    edit_user(sql_session, user, name="bob", card="ntnu123", rfid="deadbeef")
+
+    sql_session.expire_all()
+
+    assert (user.name, user.card, user.rfid) == ("bob", "ntnu123", "deadbeef")
+
+
+def test_edit_user_treats_empty_card_and_rfid_as_none(sql_session: Session) -> None:
+    alice = _make_user(sql_session, "alice", card=None, rfid=None)
+    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
+
+    edit_user(sql_session, bob, card="", rfid="")
+
+    sql_session.expire_all()
+
+    assert (alice.card, alice.rfid) == (None, None)
+    assert (bob.card, bob.rfid) == (None, None)
+
+
+def test_edit_user_allows_unused_card_and_rfid(sql_session: Session) -> None:
+    _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
+
+    edit_user(sql_session, bob, card="ntnu789", rfid="f00dface")
+
+    sql_session.expire_all()
+
+    assert (bob.card, bob.rfid) == ("ntnu789", "f00dface")
