@@ -249,15 +249,13 @@ Pick product A (the one to delete) and product B (will be kept),
 then choose which properties to keep from each product, or edit.
 """
 
-    def _pick(self, label: str, options: list[tuple[str, str]]) -> str:
+    def _pick(self, label: str, options: list[tuple[str, str]]) -> str | None:
         selector = Selector(
             f"Which {label} should the merged product have?",
             sql_session=self.sql_session,
             items=options,
         )
-        choice = selector.execute()
-        assert choice is not None
-        return choice
+        return selector.execute()
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
@@ -297,6 +295,9 @@ then choose which properties to keep from each product, or edit.
                     name = source.name
                 case "b":
                     name = target.name
+                case None:
+                    print("Merge aborted")
+                    return
                 case _:
                     name = self.input_str(
                         "Name",
@@ -320,6 +321,9 @@ then choose which properties to keep from each product, or edit.
                     price = source.price
                 case "b":
                     price = target.price
+                case None:
+                    print("Merge aborted")
+                    return
                 case _:
                     price = self.input_int("Price", 1, 100000)
 
@@ -338,6 +342,9 @@ then choose which properties to keep from each product, or edit.
                     hidden = source.hidden
                 case "b":
                     hidden = target.hidden
+                case None:
+                    print("Merge aborted")
+                    return
                 case _:
                     hidden = self.confirm("Hidden", default=target.hidden)
 
@@ -358,6 +365,9 @@ then choose which properties to keep from each product, or edit.
                 stock = target.stock
             case "sum":
                 stock = source.stock + target.stock
+            case None:
+                print("Merge aborted")
+                return
             case _:
                 stock = self.input_int("Stock", 0, 100000)
 
