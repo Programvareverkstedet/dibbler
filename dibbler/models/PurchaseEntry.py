@@ -12,6 +12,8 @@ from sqlalchemy.orm import (
     relationship,
 )
 
+from dibbler.models.mixins import UidMixin
+
 from .Base import Base
 
 if TYPE_CHECKING:
@@ -19,10 +21,9 @@ if TYPE_CHECKING:
     from .Purchase import Purchase
 
 
-class PurchaseEntry(Base):
+class PurchaseEntry(Base, UidMixin):
     __tablename__ = "purchase_entries"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     amount: Mapped[int] = mapped_column(Integer)
 
     product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))

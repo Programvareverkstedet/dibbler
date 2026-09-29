@@ -15,6 +15,8 @@ from sqlalchemy.orm import (
     relationship,
 )
 
+from dibbler.models.mixins import UidMixin
+
 from .Base import Base
 
 if TYPE_CHECKING:
@@ -22,10 +24,8 @@ if TYPE_CHECKING:
     from .User import User
 
 
-class Transaction(Base):
+class Transaction(Base, UidMixin):
     __tablename__ = "transactions"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
     time: Mapped[datetime] = mapped_column(DateTime)
     amount: Mapped[int] = mapped_column(Integer)
