@@ -374,6 +374,7 @@ class AdjustStockMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
+        user = self.input_user("User")
         product = self.input_product("Product")
 
         print(f"The stock of this product is: {product.stock:d}")
@@ -386,7 +387,7 @@ class AdjustStockMenu(Menu):
             print(f"You removed {(add_stock * -1):d} from the stock of {product}")
 
         try:
-            adjust_stock(self.sql_session, product, add_stock)
+            adjust_stock(self.sql_session, user, product, add_stock)
             self.sql_session.commit()
             print("Stock is now stored")
             self.pause()
@@ -404,6 +405,7 @@ class CleanupStockMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
+        user = self.input_user("User")
 
         products = self.sql_session.query(Product).filter(Product.stock != 0).all()
 
@@ -421,7 +423,7 @@ class CleanupStockMenu(Menu):
             newstock = self.input_int(product.name, 0, 10000, default=max(0, oldstock))
             if newstock != oldstock:
                 try:
-                    adjust_stock(self.sql_session, product, newstock - oldstock)
+                    adjust_stock(self.sql_session, user, product, newstock - oldstock)
                 except ValueError as e:
                     print(f"Could not adjust stock of {product.name}: {e}")
                     continue

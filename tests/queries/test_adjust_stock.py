@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, TransactionLog
+from dibbler.models import Product, TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import adjust_stock
 
@@ -13,22 +13,31 @@ def _make_product(sql_session: Session, stock: int = 10) -> Product:
     return product
 
 
+def _make_user(sql_session: Session) -> User:
+    user = User("alice", None)
+    sql_session.add(user)
+    sql_session.flush()
+    return user
+
+
 def test_adjust_stock_changes_stock_by_delta(sql_session: Session) -> None:
     product = _make_product(sql_session, stock=10)
+    alice = _make_user(sql_session)
 
-    adjust_stock(sql_session, product, 5)
+    adjust_stock(sql_session, alice, product, 5)
     sql_session.expire_all()
     assert product.stock == 15
 
-    adjust_stock(sql_session, product, -8)
+    adjust_stock(sql_session, alice, product, -8)
     sql_session.expire_all()
     assert product.stock == 7
 
 
 def test_adjust_stock_allows_negative_resulting_stock(sql_session: Session) -> None:
     product = _make_product(sql_session, stock=2)
+    alice = _make_user(sql_session)
 
-    adjust_stock(sql_session, product, -5)
+    adjust_stock(sql_session, alice, product, -5)
 
     sql_session.expire_all()
 
@@ -37,8 +46,9 @@ def test_adjust_stock_allows_negative_resulting_stock(sql_session: Session) -> N
 
 def test_adjust_stock_records_a_transaction_log_entry(sql_session: Session) -> None:
     product = _make_product(sql_session)
+    alice = _make_user(sql_session)
 
-    adjust_stock(sql_session, product, 5)
+    adjust_stock(sql_session, alice, product, 5)
 
     sql_session.expire_all()
 
@@ -46,8 +56,21 @@ def test_adjust_stock_records_a_transaction_log_entry(sql_session: Session) -> N
     assert log.type == TransactionLogEntryType.ADJUST_STOCK
 
 
+def test_adjust_stock_records_the_adjusting_user(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+    alice = _make_user(sql_session)
+
+    adjust_stock(sql_session, alice, product, 5)
+
+    sql_session.expire_all()
+
+    log = sql_session.query(TransactionLog).one()
+    assert [(u.user, u.amount) for u in log.users] == [(alice, None)]
+
+
 def test_adjust_stock_rejects_zero_delta(sql_session: Session) -> None:
     product = _make_product(sql_session)
+    alice = _make_user(sql_session)
 
     with pytest.raises(ValueError, match="Delta must be non-zero"):
-        adjust_stock(sql_session, product, 0)
+        adjust_stock(sql_session, alice, product, 0)

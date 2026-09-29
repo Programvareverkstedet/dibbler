@@ -35,7 +35,13 @@ def _trx_entry(
     return TransactionLog(
         type=entry_type,
         description=description,
-        users={TransactionLogUser(user=user, amount=1) for user in users},
+        users={
+            TransactionLogUser(
+                user=user,
+                amount=None if entry_type == TransactionLogEntryType.ADJUST_STOCK else 1,
+            )
+            for user in users
+        },
         products={
             TransactionLogProduct(product=product, amount=1, price_at_time=product.price)
             for product in products
@@ -51,8 +57,8 @@ def _add(users: Iterable[User], products: Iterable[Product]) -> TransactionLog:
     return _trx_entry(TransactionLogEntryType.ADD_PRODUCT, users=users, products=products)
 
 
-def _adjust_stock(product: Product) -> TransactionLog:
-    return _trx_entry(TransactionLogEntryType.ADJUST_STOCK, products=[product])
+def _adjust_stock(user: User, product: Product) -> TransactionLog:
+    return _trx_entry(TransactionLogEntryType.ADJUST_STOCK, users=[user], products=[product])
 
 
 def _transfer(sender: User, receiver: User) -> TransactionLog:
@@ -230,7 +236,7 @@ def test_product_filter(sql_session: Session) -> None:
         [
             _buy([alice], [chips]),
             _buy([alice], [chips, soda]),
-            _adjust_stock(soda),
+            _adjust_stock(alice, soda),
             _adjust_balance(alice),
         ],
     )

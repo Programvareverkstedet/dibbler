@@ -23,6 +23,8 @@ from .enums import TransactionLogEntryType, TransactionLogEntryTypeSQL
 from .mixins import UidMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from .ProductLog import ProductLog
     from .xref_tables import TransactionLogProduct, TransactionLogUser
 
@@ -59,10 +61,21 @@ _EXPECTED_COUNTS: dict[
     # min/max number of (users, products) per type
     TransactionLogEntryType.BUY_PRODUCT: ((1, None), (1, None)),
     TransactionLogEntryType.ADD_PRODUCT: ((1, None), (1, None)),
-    # TODO: connect `ADJUST_STOCK` to a user in the future
-    TransactionLogEntryType.ADJUST_STOCK: ((0, 0), (1, 1)),
+    TransactionLogEntryType.ADJUST_STOCK: ((1, 1), (1, 1)),
     TransactionLogEntryType.TRANSFER: ((2, 2), (0, 0)),
     TransactionLogEntryType.ADJUST_BALANCE: ((1, 1), (0, 0)),
+}
+
+
+_USER_AMOUNT_RULES: dict[
+  TransactionLogEntryType,
+  tuple[Callable[[int | None], bool], str],
+] = {
+    TransactionLogEntryType.BUY_PRODUCT: (lambda amount: bool(amount), "a non-zero amount"),
+    TransactionLogEntryType.ADD_PRODUCT: (lambda amount: amount is not None, "an amount"),
+    TransactionLogEntryType.ADJUST_STOCK: (lambda amount: amount is None, "no amount"),
+    TransactionLogEntryType.TRANSFER: (lambda amount: bool(amount), "a non-zero amount"),
+    TransactionLogEntryType.ADJUST_BALANCE: (lambda amount: bool(amount), "a non-zero amount"),
 }
 
 
@@ -99,3 +112,11 @@ def _validate_transaction_log_entries(
                 f"{_describe_minmax(product_minmax)} products, "
                 f"got {len(entry.users)} users and {len(entry.products)} products.",
             )
+
+        amount_is_valid, amount_description = _USER_AMOUNT_RULES[entry.type]
+        for user in entry.users:
+            if not amount_is_valid(user.amount):
+                raise ValueError(
+                    f"Every user in a {entry.type} log entry must have {amount_description}, "
+                    f"got {user.amount}.",
+                )

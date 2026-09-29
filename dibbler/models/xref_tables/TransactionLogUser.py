@@ -27,7 +27,7 @@ class TransactionLogUser(XrefMixin, Base, UidMixin):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     user: Mapped[User] = relationship()
 
-    amount: Mapped[int] = mapped_column(Integer)
+    amount: Mapped[int | None] = mapped_column(Integer)
     """How much credit added or removed. Penalty is already applied."""
 
     penalty: Mapped[int | None] = mapped_column(Integer)

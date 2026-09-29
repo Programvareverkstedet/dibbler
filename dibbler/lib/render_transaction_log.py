@@ -174,6 +174,9 @@ def _render_children(entry: TransactionLog, width: int) -> list[str]:
         children.append(_wrap(prefix + entry.description, width, hanging=len(prefix)))
 
     for user in sorted(entry.users, key=lambda u: (u.user.name, u.id)):
+        if user.amount is None:
+            children.append(_wrap(f"user {user.user.name}", width))
+            continue
         line = f"user {user.user.name}: credit_diff={-user.amount:+}"
         if user.penalty not in (None, 1):
             line += f", penalty={user.penalty}"

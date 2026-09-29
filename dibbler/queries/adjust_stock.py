@@ -2,11 +2,22 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, TransactionLog, TransactionLogProduct
+from dibbler.models import (
+    Product,
+    TransactionLog,
+    TransactionLogProduct,
+    TransactionLogUser,
+    User,
+)
 from dibbler.models.enums import TransactionLogEntryType
 
 
-def adjust_stock(sql_session: Session, product: Product, delta: int) -> Product:
+def adjust_stock(
+    sql_session: Session,
+    user: User,
+    product: Product,
+    delta: int,
+) -> Product:
     if delta == 0:
         raise ValueError("Delta must be non-zero.")
 
@@ -14,6 +25,12 @@ def adjust_stock(sql_session: Session, product: Product, delta: int) -> Product:
 
     header = TransactionLog(type=TransactionLogEntryType.ADJUST_STOCK, time=datetime.now())
     sql_session.add(header)
+    sql_session.add(
+        TransactionLogUser(
+            transaction=header,
+            user=user,
+        ),
+    )
     sql_session.add(
         TransactionLogProduct(
             transaction=header,
