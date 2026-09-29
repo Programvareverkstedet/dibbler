@@ -1,5 +1,6 @@
 from collections.abc import Iterator
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
@@ -136,8 +137,8 @@ class UserListMenu(Menu):
             yield line_format % ("username", "credit")
             yield hline
             total_credit = 0
-            users = self.sql_session.query(User).order_by(User.id)
-            for user in iter_in_chunks(users):
+            users = select(User).order_by(User.id)
+            for user in iter_in_chunks(self.sql_session, users):
                 total_credit += user.credit
                 yield line_format % (user.name, user.credit)
             yield hline
@@ -189,11 +190,11 @@ class ProductListMenu(Menu):
             yield MAX_SCREEN_SIZE * "-" + "\n"
             total_value = 0
             product_list = (
-                self.sql_session.query(Product)
-                .filter(Product.hidden.is_(False))
+                select(Product)
+                .where(Product.hidden.is_(False))
                 .order_by(Product.stock.desc(), Product.id)
             )
-            for p in iter_in_chunks(product_list):
+            for p in iter_in_chunks(self.sql_session, product_list):
                 total_value += p.price * p.stock
                 codes = sorted(bc.code for bc in p.barcodes)
                 extra = len(codes) - 1
