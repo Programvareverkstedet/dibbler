@@ -181,37 +181,38 @@ class ProductListMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        text = ""
-        product_list = (
-            self.sql_session.query(Product)
-            .filter(Product.hidden.is_(False))
-            .order_by(Product.stock.desc())
-        )
-        total_value = 0
-        for p in product_list:
-            total_value += p.price * p.stock
         name_width = 40
         line_format = f"%-20s | %5s | %-{name_width}s | %5s \n"
-        text += line_format % ("bar code", "price", "name", "stock")
-        text += MAX_SCREEN_SIZE * "-" + "\n"
-        for p in product_list:
-            codes = sorted(bc.code for bc in p.barcodes)
-            extra = len(codes) - 1
-            barcode_summary = codes[0] if extra == 0 else f"{codes[0]} (+{extra})"
-            text += line_format % (
-                barcode_summary,
-                p.price,
-                p.name[:name_width],
-                p.stock,
+
+        def lines() -> Iterator[str]:
+            yield line_format % ("bar code", "price", "name", "stock")
+            yield MAX_SCREEN_SIZE * "-" + "\n"
+            total_value = 0
+            product_list = (
+                self.sql_session.query(Product)
+                .filter(Product.hidden.is_(False))
+                .order_by(Product.stock.desc(), Product.id)
             )
-        text += MAX_SCREEN_SIZE * "-" + "\n"
-        text += line_format % (
-            "Total value",
-            total_value,
-            "",
-            "",
-        )
-        pager(text)
+            for p in iter_in_chunks(product_list):
+                total_value += p.price * p.stock
+                codes = sorted(bc.code for bc in p.barcodes)
+                extra = len(codes) - 1
+                barcode_summary = codes[0] if extra == 0 else f"{codes[0]} (+{extra})"
+                yield line_format % (
+                    barcode_summary,
+                    p.price,
+                    p.name[:name_width],
+                    p.stock,
+                )
+            yield MAX_SCREEN_SIZE * "-" + "\n"
+            yield line_format % (
+                "Total value",
+                total_value,
+                "",
+                "",
+            )
+
+        streaming_pager(lines())
 
 
 class ProductSearchMenu(Menu):
