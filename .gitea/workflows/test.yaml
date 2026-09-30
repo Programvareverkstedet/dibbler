@@ -63,11 +63,12 @@ jobs:
           set -x
 
           export COVERAGE_FILE=coverage-data.sqlite
+          mkdir -p ./test-report
 
           PYTEST_ARGS=(
             -vv
             --db-driver=sqlite
-            --html=./test-report/index.html
+            --alluredir=./allure-results
             --md-report
             --md-report-output=./test-report/report.md
             --md-report-flavor=gfm
@@ -89,7 +90,7 @@ jobs:
         run: |
           if [ -f ./test-report/report.md ]; then
             {
-              echo "<details><summary><b>SQLite Test Report</b> <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/test-report/sqlite/\">(HTML report)</a></summary>"
+              echo "<details><summary><b>SQLite Test Report</b></summary>"
               echo
               cat ./test-report/report.md
               echo
@@ -107,16 +108,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Upload test report
-        if: ${{ success() && inputs.publish_test_report != 'false' }}
-        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v7
         with:
-          source: ./test-report/
-          target: ${{ gitea.ref_name }}/test-report/sqlite/
-          username: gitea-web
-          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
-          host: pages.pvv.ntnu.no
-          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+          name: allure-results-sqlite
+          path: allure-results/
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Check failure
         if: always() && steps.run_tests.outcome == 'failure'
@@ -161,6 +159,7 @@ jobs:
           set -x
 
           export COVERAGE_FILE=coverage-data.postgresql
+          mkdir -p ./test-report
 
           PYTEST_ARGS=(
             -vv
@@ -169,7 +168,7 @@ jobs:
             --pg-port=5432
             --pg-username=dibbler_test
             --pg-password=dibbler_test
-            --html=./test-report/index.html
+            --alluredir=./allure-results
             --md-report
             --md-report-output=./test-report/report.md
             --md-report-flavor=gfm
@@ -191,7 +190,7 @@ jobs:
         run: |
           if [ -f ./test-report/report.md ]; then
             {
-              echo "<details><summary><b>PostgreSQL Test Report</b> <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/test-report/postgresql/\">(HTML report)</a></summary>"
+              echo "<details><summary><b>PostgreSQL Test Report</b></summary>"
               echo
               cat ./test-report/report.md
               echo
@@ -209,22 +208,71 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-      - name: Upload test report
-        if: ${{ success() && inputs.publish_test_report != 'false' }}
-        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+      - name: Upload Allure results
+        uses: actions/upload-artifact@v7
         with:
-          source: ./test-report/
-          target: ${{ gitea.ref_name }}/test-report/postgresql/
-          username: gitea-web
-          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
-          host: pages.pvv.ntnu.no
-          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
+          name: allure-results-postgresql
+          path: allure-results/
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Check failure
         if: always() && steps.run_tests.outcome == 'failure'
         run: |
           echo "Tests failed"
           exit 1
+
+  test-report:
+    runs-on: debian-latest
+
+    # NOTE: if `always()` ensures that this job runs even if the `needs` jobs fail.
+    if: always()
+    needs:
+      - test-sqlite
+      - test-postgresql
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download SQLite Allure results
+        if: needs.test-sqlite.result != 'skipped'
+        uses: actions/download-artifact@v8
+        with:
+          name: allure-results-sqlite
+          path: allure-results/sqlite
+
+      - name: Download PostgreSQL Allure results
+        if: needs.test-postgresql.result != 'skipped'
+        uses: actions/download-artifact@v8
+        with:
+          name: allure-results-postgresql
+          path: allure-results/postgresql
+
+      - name: Generate test report
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          allure_results_dirs=(allure-results/*/)
+          if [ ${#allure_results_dirs[@]} -eq 0 ]; then
+            echo "No Allure results to combine (both backends were disabled)"
+            exit 1
+          fi
+          npx --yes allure@3.19.1 generate --config tests/allurerc.mjs "${allure_results_dirs[@]}"
+
+      - name: Add test report to job summary
+        run: |
+          echo "**Combined Test Report**: <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/test-report/\">(HTML report)</a>" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test report
+        if: ${{ success() && inputs.publish_test_report != 'false' }}
+        uses: https://git.pvv.ntnu.no/Projects/rsync-action@v1
+        with:
+          source: ./allure-report/
+          target: ${{ gitea.ref_name }}/test-report/
+          username: gitea-web
+          ssh-key: ${{ secrets.WEB_SYNC_SSH_KEY }}
+          host: pages.pvv.ntnu.no
+          known-hosts: "pages.pvv.ntnu.no ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIH2QjfFB+city1SYqltkVqWACfo1j37k+oQQfj13mtgg"
 
   coverage:
     runs-on: debian-latest

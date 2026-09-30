@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import allure
 import psycopg2
 import pytest
 import sqlparse
@@ -205,6 +206,13 @@ def sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
         with Session(engine) as sql_session:
             yield sql_session
         sql_session.close()
+
+
+@pytest.fixture(autouse=True)
+def _allure_db_driver(request: pytest.FixtureRequest) -> None:
+    db_driver = request.config.getoption("--db-driver")
+    allure.dynamic.label("db", db_driver)
+    allure.dynamic.parameter("db", db_driver)
 
 
 @pytest.hookimpl(wrapper=True)

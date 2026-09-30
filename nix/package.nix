@@ -43,6 +43,7 @@ python3Packages.buildPythonApplication {
   # Overriding addopts from pyproject.toml
   pytestFlags = [ "-o" "addopts=" ];
   nativeCheckInputs = with python3Packages; [
+    allure-pytest
     pytest
     pytestCheckHook
     sqlparse

@@ -19,3 +19,5 @@ coverage.xml
 htmlcov
 test-report
 /benchmark
+allure-results
+allure-report
