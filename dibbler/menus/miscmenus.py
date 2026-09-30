@@ -13,6 +13,7 @@ from dibbler.queries import (
     transaction_log_query,
     transfer,
     user_info,
+    user_list_info_query,
     user_product_stats_query,
 )
 
@@ -128,17 +129,21 @@ class UserListMenu(Menu):
         self.print_header()
 
         def lines() -> Iterator[str]:
-            line_format = "%-12s | %6s\n"
-            hline = "---------------------\n"
-            yield line_format % ("username", "credit")
+            line_format = "%-12s | %6s | %6s | %6s | %-19s\n"
+            header = line_format % ("username", "credit", "bought", "added", "last activity")
+            hline = "-" * (len(header) - 1) + "\n"
+            yield header
             yield hline
             total_credit = 0
-            users = select(User).order_by(User.id)
-            for user in iter_in_chunks(self.sql_session, users):
+            rows = iter_rows_in_chunks(self.sql_session, user_list_info_query())
+            for user, bought, added, last_activity in rows:
                 total_credit += user.credit
-                yield line_format % (user.name, user.credit)
+                last_activity_str = (
+                    f"{last_activity:%Y-%m-%d %H:%M:%S}" if last_activity is not None else "never"
+                )
+                yield line_format % (user.name, user.credit, bought, added, last_activity_str)
             yield hline
-            yield line_format % ("total credit", total_credit)
+            yield (line_format % ("total credit", total_credit, "", "", "")).rstrip() + "\n"
 
         streaming_pager(lines())
 
