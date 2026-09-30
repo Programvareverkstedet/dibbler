@@ -190,22 +190,33 @@ def _sqlite_engine() -> Iterator[Engine]:
         engine.dispose()
 
 
+@pytest.fixture(scope="session")
+def _postgres_session_engine(request: pytest.FixtureRequest) -> Iterator[Engine]:
+    with _postgres_engine(PgOptions.from_args(request.config)) as engine:
+        Base.metadata.create_all(engine)
+        yield engine
+
+
 @pytest.fixture(scope="function")
 def sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
     """Create a new SQLAlchemy session for testing."""
 
-    db_driver = request.config.getoption("--db-driver")
-    engine_context = (
-        _postgres_engine(PgOptions.from_args(request.config))
-        if db_driver == "postgresql"
-        else _sqlite_engine()
-    )
+    if request.config.getoption("--db-driver") == "postgresql":
+        engine = request.getfixturevalue("_postgres_session_engine")
+        with engine.connect() as connection:
+            transaction = connection.begin()
+            with Session(
+                bind=connection,
+                join_transaction_mode="create_savepoint",
+            ) as sql_session:
+                yield sql_session
+            transaction.rollback()
+        return
 
-    with engine_context as engine:
+    with _sqlite_engine() as engine:
         Base.metadata.create_all(engine)
         with Session(engine) as sql_session:
             yield sql_session
-        sql_session.close()
 
 
 @pytest.fixture(autouse=True)
