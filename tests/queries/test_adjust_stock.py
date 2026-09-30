@@ -68,9 +68,21 @@ def test_adjust_stock_records_the_adjusting_user(sql_session: Session) -> None:
     assert [(u.user, u.amount) for u in log.users] == [(alice, None)]
 
 
-def test_adjust_stock_rejects_zero_delta(sql_session: Session) -> None:
-    product = _make_product(sql_session)
+@pytest.mark.parametrize(
+    ("delta", "description", "error"),
+    [
+        pytest.param(0, None, "Delta must be non-zero", id="zero-delta"),
+        pytest.param(5, "x" * (TransactionLog.description_length + 1), "Description must be at most", id="too-long-description"),
+    ],
+)  # fmt: skip
+def test_invariants(
+    sql_session: Session,
+    delta: int,
+    description: str | None,
+    error: str,
+) -> None:
+    product = _make_product(sql_session, stock=10)
     alice = _make_user(sql_session)
 
-    with pytest.raises(ValueError, match="Delta must be non-zero"):
-        adjust_stock(sql_session, alice, product, 0)
+    with pytest.raises(ValueError, match=error):
+        adjust_stock(sql_session, alice, product, delta, description=description)

@@ -22,6 +22,11 @@ def adjust_stock(
     if delta == 0:
         raise ValueError("Delta must be non-zero.")
 
+    if description is not None and len(description) > TransactionLog.description_length:
+        raise ValueError(
+            f"Description must be at most {TransactionLog.description_length} characters.",
+        )
+
     product.stock += delta
 
     header = TransactionLog(

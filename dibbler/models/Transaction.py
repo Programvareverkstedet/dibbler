@@ -27,10 +27,12 @@ if TYPE_CHECKING:
 class Transaction(Base, UidMixin):
     __tablename__ = "transactions"
 
+    description_length = 50
+
     time: Mapped[datetime] = mapped_column(DateTime)
     amount: Mapped[int] = mapped_column(Integer)
     penalty: Mapped[int] = mapped_column(Integer)
-    description: Mapped[str | None] = mapped_column(String(50))
+    description: Mapped[str | None] = mapped_column(String(description_length))
 
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     purchase_id: Mapped[int | None] = mapped_column(ForeignKey("purchases.id"))

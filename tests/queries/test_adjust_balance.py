@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import TransactionLog, User
+from dibbler.models import Transaction, TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import adjust_balance
 
@@ -48,8 +48,20 @@ def test_adjust_balance_records_a_transaction_log_entry(sql_session: Session) ->
     assert log.type == TransactionLogEntryType.ADJUST_BALANCE
 
 
-def test_adjust_balance_rejects_zero_amount(sql_session: Session) -> None:
-    user = _make_user(sql_session)
+@pytest.mark.parametrize(
+    ("amount", "description", "error"),
+    [
+        pytest.param(0, None, "Amount must be non-zero", id="zero-amount"),
+        pytest.param(10, "x" * (Transaction.description_length + 1), "Description must be at most", id="too-long-description"),
+    ],
+)  # fmt: skip
+def test_invariants(
+    sql_session: Session,
+    amount: int,
+    description: str | None,
+    error: str,
+) -> None:
+    user = _make_user(sql_session, credit=100)
 
-    with pytest.raises(ValueError, match="Amount must be non-zero"):
-        adjust_balance(sql_session, user, 0)
+    with pytest.raises(ValueError, match=error):
+        adjust_balance(sql_session, user, amount, description=description)

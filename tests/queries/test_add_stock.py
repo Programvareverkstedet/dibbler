@@ -239,16 +239,20 @@ def test_add_stock_allows_crediting_nothing_for_stock_received_for_free(
 
 
 @pytest.mark.parametrize(
-    ("with_user", "products", "total_price", "error"),
+    ("with_user", "products", "total_price", "description", "error"),
     [
-        pytest.param(False, [(5, 100)], 100, "At least one user", id="no-users"),
+        pytest.param(False, [(5, 100)], 100, None, "At least one user", id="no-users"),
 
-        pytest.param(True, [(5, 100)], -1, "Total price must not be negative", id="negative-total-price"),
+        pytest.param(True, [(5, 100)], -1, None, "Total price must not be negative", id="negative-total-price"),
 
-        pytest.param(True, [], 100, "At least one product", id="no-products"),
-        pytest.param(True, [(0, 100)], 100, "Product amounts must be positive", id="zero-amount"),
-        pytest.param(True, [(-1, 100)], 100, "Product amounts must be positive", id="negative-amount"),
-        pytest.param(True, [(5, -1)], 0, "Paid amounts must not be negative", id="negative-paid-amount"),
+        pytest.param(True, [(5, 100)], 100, "x" * (TransactionLog.description_length + 1), "Description must be at most", id="too-long-description"),
+
+        pytest.param(True, [], 100, None, "At least one product", id="no-products"),
+        pytest.param(True, [(0, 100)], 100, None, "Product amounts must be positive", id="zero-amount"),
+        pytest.param(True, [(-1, 100)], 100, None, "Product amounts must be positive", id="negative-amount"),
+        pytest.param(True, [(5, 100), (0, 100)], 100, None, "Product amounts must be positive", id="valid-amount-zero-amount"),
+        pytest.param(True, [(5, -1)], 0, None, "Paid amounts must not be negative", id="negative-paid-amount"),
+        pytest.param(True, [(5, 100), (5, -1)], 100, None, "Paid amounts must not be negative", id="valid-paid-amount-negative-paid-amount"),
     ],
 )  # fmt: skip
 def test_invariants(
@@ -256,6 +260,7 @@ def test_invariants(
     with_user: bool,
     products: list[tuple[int, int]],
     total_price: int,
+    description: str | None,
     error: str,
 ) -> None:
     product = _make_product(sql_session, stock=10, price=15)
@@ -268,6 +273,7 @@ def test_invariants(
             users,
             [(product, amount, paid_amount) for amount, paid_amount in products],
             total_price=total_price,
+            description=description,
         )
 
     sql_session.expire_all()

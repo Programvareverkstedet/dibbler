@@ -43,9 +43,11 @@ class TransactionLog(Base, UidMixin):
         ),
     )
 
+    description_length = 50
+
     time: Mapped[datetime] = mapped_column(DateTime)
     type: Mapped[TransactionLogEntryType] = mapped_column(TransactionLogEntryTypeSQL)
-    description: Mapped[str | None] = mapped_column(String(50))
+    description: Mapped[str | None] = mapped_column(String(description_length))
 
     products: Mapped[set[TransactionLogProduct]] = relationship(back_populates="transaction")
     users: Mapped[set[TransactionLogUser]] = relationship(back_populates="transaction")

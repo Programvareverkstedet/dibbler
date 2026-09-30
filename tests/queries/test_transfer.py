@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import TransactionLog, User
+from dibbler.models import Transaction, TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import transfer
 
@@ -56,16 +56,24 @@ def test_transfer_records_a_transaction_log_entry(sql_session: Session) -> None:
     assert log.type == TransactionLogEntryType.TRANSFER
 
 
-def test_transfer_rejects_non_positive_amount(sql_session: Session) -> None:
-    alice = _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob")
+@pytest.mark.parametrize(
+    ("to_self", "amount", "comment", "error"),
+    [
+        pytest.param(False, 0, "", "Amount must be positive", id="zero-amount"),
+        pytest.param(False, -1, "", "Amount must be positive", id="negative-amount"),
 
-    with pytest.raises(ValueError, match="Amount must be positive"):
-        transfer(sql_session, alice, bob, 0)
+        pytest.param(True, 10, "", "Cannot transfer to the same user", id="self-transfer"),
+    ],
+)  # fmt: skip
+def test_invariants(
+    sql_session: Session,
+    to_self: bool,
+    amount: int,
+    comment: str,
+    error: str,
+) -> None:
+    alice = _make_user(sql_session, "alice", credit=100)
+    bob = _make_user(sql_session, "bob", credit=50)
 
-
-def test_transfer_rejects_self_transfer(sql_session: Session) -> None:
-    alice = _make_user(sql_session, "alice")
-
-    with pytest.raises(ValueError, match="Cannot transfer to the same user"):
-        transfer(sql_session, alice, alice, 10)
+    with pytest.raises(ValueError, match=error):
+        transfer(sql_session, alice, alice if to_self else bob, amount, comment=comment)

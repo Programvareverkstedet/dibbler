@@ -43,6 +43,11 @@ def add_stock(
     if any(paid_amount < 0 for _, _, paid_amount in products):
         raise ValueError("Paid amounts must not be negative.")
 
+    # TODO: remove this `min` once we get rid of `Transaction`
+    max_description_length = min(Transaction.description_length, TransactionLog.description_length)
+    if description is not None and len(description) > max_description_length:
+        raise ValueError(f"Description must be at most {max_description_length} characters.")
+
     for product, _amount, _paid_amount in products:
         if product.stock < 0:
             adjust_stock(
