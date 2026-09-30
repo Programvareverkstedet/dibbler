@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Any
 
@@ -18,6 +19,9 @@ def edit_product(
 ) -> Product:
     if name is not UNSET and not name:
         raise ValueError("Name cannot be empty.")
+
+    if name is not UNSET and not re.fullmatch(Product.name_re, name):
+        raise ValueError("Name has an invalid format.")
 
     if name is not UNSET and len(name) > Product.name_length:
         raise ValueError(f"Name must be at most {Product.name_length} characters.")

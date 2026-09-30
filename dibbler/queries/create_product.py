@@ -27,6 +27,9 @@ def create_product(
     if not name:
         raise ValueError("Name cannot be empty.")
 
+    if not re.fullmatch(Product.name_re, name):
+        raise ValueError("Name has an invalid format.")
+
     if len(name) > Product.name_length:
         raise ValueError(f"Name must be at most {Product.name_length} characters.")
 
