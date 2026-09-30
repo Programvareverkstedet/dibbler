@@ -60,16 +60,19 @@ def load_config(config_path: Path | None = None) -> None:
     global config
     if config_path is not None:
         with Path(config_path).open("rb") as file:
-            config = tomllib.load(file)
+            loaded = tomllib.load(file)
     elif file_is_submissive_and_readable(DEFAULT_CONFIG_PATH):
         with DEFAULT_CONFIG_PATH.open("rb") as file:
-            config = tomllib.load(file)
+            loaded = tomllib.load(file)
     else:
         print(
             "Could not read config file, it was neither provided nor readable in default location",
             file=sys.stderr,
         )
         sys.exit(1)
+
+    config.clear()
+    config.update(loaded)
 
     fill_config_defaults()
     validate_config()
