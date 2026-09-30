@@ -232,6 +232,7 @@ class EditProductMenu(Menu):
                     return
 
                 case None:
+                    self.sql_session.rollback()
                     print("Edit aborted")
                     return
 

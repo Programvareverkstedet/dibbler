@@ -162,6 +162,7 @@ When finished, write an empty line to confirm the purchase.\n"""
                         "Not enough information entered. Abort purchase?",
                         default=True,
                     ):
+                        self.sql_session.rollback()
                         return False
                     continue
                 break

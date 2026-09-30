@@ -44,6 +44,7 @@ class Menu:
     exit_disallowed_msg: str | None
     help_text: str | None
     context: str | None
+    rollback_on_exit: bool = True
 
     def __init__(
         self,
@@ -450,6 +451,7 @@ class Menu:
                 try:
                     user = create_user(self.sql_session, string)
                 except (SQLAlchemyError, ValueError) as e:
+                    self.sql_session.rollback()
                     print(f"Could not create user {string}: {e}")
                     return None
                 return user
@@ -476,6 +478,7 @@ class Menu:
                         try:
                             user = create_user(self.sql_session, username, card=string)
                         except (SQLAlchemyError, ValueError) as e:
+                            self.sql_session.rollback()
                             print(f"Could not create user {username}: {e}")
                             return None
                         return user
@@ -486,6 +489,7 @@ class Menu:
                         try:
                             edit_user(self.sql_session, user, card=string)
                         except (SQLAlchemyError, ValueError) as e:
+                            self.sql_session.rollback()
                             print(f"Could not set card number of {user.name}: {e}")
                             return None
                         print(f"Card number of {user.name} set to {string} (was {old_card})")
@@ -615,6 +619,8 @@ class Menu:
         try:
             return self._execute(**_kwargs)
         except ExitMenuException:
+            if self.rollback_on_exit:
+                self.sql_session.rollback()
             self.at_exit()
             return None
 
@@ -660,6 +666,8 @@ class MessageMenu(Menu):
 
 
 class ConfirmMenu(Menu):
+    rollback_on_exit = False
+
     def __init__(
         self,
         sql_session: Session,
@@ -697,6 +705,8 @@ class ConfirmMenu(Menu):
 
 
 class Selector(Menu):
+    rollback_on_exit = False
+
     def __init__(
         self,
         name: str,

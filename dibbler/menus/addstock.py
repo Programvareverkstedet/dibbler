@@ -77,6 +77,7 @@ much money you're due in credits for the purchase when prompted.\n"""
                         "Not enough information entered. Abort transaction?",
                         default=True,
                     ):
+                        self.sql_session.rollback()
                         return False
                     continue
                 break
