@@ -195,7 +195,7 @@ When finished, write an empty line to confirm the purchase.\n"""
             for t in purchase.transactions:
                 if not t.user.is_anonymous():
                     print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
-                    if t.user.credit < config["limits"]["low_credit_warning_limit"]:
+                    if not self.credit_check(t.user):
                         print(
                             f"USER {t.user.name} HAS LOWER CREDIT THAN {config['limits']['low_credit_warning_limit']:d},",
                             "AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.",
