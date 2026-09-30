@@ -325,3 +325,12 @@ def test_rejects_non_positive_price(sql_session: Session) -> None:
 
     with pytest.raises(ValueError, match="Price must be positive"):
         merge_products(sql_session, alice, source, target, price=0)
+
+
+def test_rejects_too_long_name(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
+    source = _make_product(sql_session, bar_code="1111111111")
+    target = _make_product(sql_session, bar_code="2222222222")
+
+    with pytest.raises(ValueError, match="Name must be at most"):
+        merge_products(sql_session, alice, source, target, name="x" * (Product.name_length + 1))

@@ -21,8 +21,14 @@ def create_product(
     if not re.fullmatch(Product.bar_code_re, bar_code):
         raise ValueError("Barcode must consist of digits only.")
 
+    if len(bar_code) > Product.bar_code_length:
+        raise ValueError(f"Barcode must be at most {Product.bar_code_length} characters.")
+
     if not name:
         raise ValueError("Name cannot be empty.")
+
+    if len(name) > Product.name_length:
+        raise ValueError(f"Name must be at most {Product.name_length} characters.")
 
     if price <= 0:
         raise ValueError("Price must be positive.")

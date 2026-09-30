@@ -19,6 +19,9 @@ def edit_product(
     if name is not UNSET and not name:
         raise ValueError("Name cannot be empty.")
 
+    if name is not UNSET and len(name) > Product.name_length:
+        raise ValueError(f"Name must be at most {Product.name_length} characters.")
+
     if price is not UNSET and price <= 0:
         raise ValueError("Price must be positive.")
 

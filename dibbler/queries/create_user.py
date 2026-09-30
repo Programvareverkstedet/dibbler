@@ -21,17 +21,24 @@ def create_user(
     if not re.fullmatch(User.name_re, name):
         raise ValueError("Name must consist of lowercase letters only.")
 
+    if len(name) > User.name_length:
+        raise ValueError(f"Name must be at most {User.name_length} characters.")
+
     if sql_session.scalar(select(exists().where(User.name == name))):
         raise ValueError(f'A user named "{name}" already exists.')
 
     if card:
         if not re.fullmatch(User.card_re, card):
             raise ValueError("Card number has an invalid format.")
+        if len(card) > User.card_length:
+            raise ValueError(f"Card number must be at most {User.card_length} characters.")
         card = card.lower()
 
     if rfid:
         if not re.fullmatch(User.rfid_re, rfid):
             raise ValueError("RFID has an invalid format.")
+        if len(rfid) > User.rfid_length:
+            raise ValueError(f"RFID must be at most {User.rfid_length} characters.")
         rfid = rfid.lower()
 
     if card and sql_session.scalar(select(exists().where(User.card == card))):

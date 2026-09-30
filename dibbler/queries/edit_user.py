@@ -23,6 +23,8 @@ def edit_user(
             raise ValueError("Name cannot be empty.")
         if not re.fullmatch(User.name_re, name):
             raise ValueError("Name must consist of lowercase letters only.")
+        if len(name) > User.name_length:
+            raise ValueError(f"Name must be at most {User.name_length} characters.")
         if name != user.name and sql_session.scalar(select(exists().where(User.name == name))):
             raise ValueError(f'A user named "{name}" already exists.')
 
@@ -35,6 +37,8 @@ def edit_user(
     if card is not UNSET and card:
         if not re.fullmatch(User.card_re, card):
             raise ValueError("Card number has an invalid format.")
+        if len(card) > User.card_length:
+            raise ValueError(f"Card number must be at most {User.card_length} characters.")
         card = card.lower()
         if card != user.card and sql_session.scalar(select(exists().where(User.card == card))):
             raise ValueError(f'A user with card number "{card}" already exists.')
@@ -42,6 +46,8 @@ def edit_user(
     if rfid is not UNSET and rfid:
         if not re.fullmatch(User.rfid_re, rfid):
             raise ValueError("RFID has an invalid format.")
+        if len(rfid) > User.rfid_length:
+            raise ValueError(f"RFID must be at most {User.rfid_length} characters.")
         rfid = rfid.lower()
         if rfid != user.rfid and sql_session.scalar(select(exists().where(User.rfid == rfid))):
             raise ValueError(f'A user with RFID "{rfid}" already exists.')

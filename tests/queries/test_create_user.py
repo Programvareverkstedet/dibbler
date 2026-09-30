@@ -101,3 +101,18 @@ def test_create_user_allows_several_users_without_card_or_rfid(sql_session: Sess
     create_user(sql_session, "bob")
 
     assert sql_session.query(User).count() == 2
+
+
+def test_create_user_rejects_too_long_name(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="Name must be at most"):
+        create_user(sql_session, "a" * (User.name_length + 1))
+
+
+def test_create_user_rejects_too_long_card(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="Card number must be at most"):
+        create_user(sql_session, "alice", card="1" * (User.card_length + 1))
+
+
+def test_create_user_rejects_too_long_rfid(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="RFID must be at most"):
+        create_user(sql_session, "alice", rfid="a" * (User.rfid_length + 1))

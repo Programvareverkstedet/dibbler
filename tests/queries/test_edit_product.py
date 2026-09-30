@@ -95,3 +95,10 @@ def test_edit_product_rejects_non_positive_price(sql_session: Session) -> None:
 
     with pytest.raises(ValueError, match="Price must be positive"):
         edit_product(sql_session, product, price=0)
+
+
+def test_edit_product_rejects_too_long_name(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+
+    with pytest.raises(ValueError, match="Name must be at most"):
+        edit_product(sql_session, product, name="x" * (Product.name_length + 1))

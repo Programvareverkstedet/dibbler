@@ -75,3 +75,13 @@ def test_create_product_rejects_duplicate_bar_code(sql_session: Session) -> None
 
     with pytest.raises(ValueError, match="already in use"):
         create_product(sql_session, "1234567890", "Pepsi", 20)
+
+
+def test_create_product_rejects_too_long_bar_code(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="Barcode must be at most"):
+        create_product(sql_session, "1" * (Product.bar_code_length + 1), "Cola", 15)
+
+
+def test_create_product_rejects_too_long_name(sql_session: Session) -> None:
+    with pytest.raises(ValueError, match="Name must be at most"):
+        create_product(sql_session, "1234567890", "x" * (Product.name_length + 1), 15)

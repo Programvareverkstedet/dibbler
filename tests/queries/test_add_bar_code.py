@@ -68,3 +68,10 @@ def test_rejects_code_already_on_the_same_product(sql_session: Session) -> None:
 
     with pytest.raises(ValueError, match="already in use"):
         add_bar_code(sql_session, product, "1234567890")
+
+
+def test_rejects_too_long_code(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+
+    with pytest.raises(ValueError, match="Barcode must be at most"):
+        add_bar_code(sql_session, product, "1" * (Product.bar_code_length + 1))

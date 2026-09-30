@@ -244,3 +244,24 @@ def test_edit_user_allows_unused_card_and_rfid(sql_session: Session) -> None:
     sql_session.expire_all()
 
     assert (bob.card, bob.rfid) == ("ntnu789", "f00dface")
+
+
+def test_edit_user_rejects_too_long_name(sql_session: Session) -> None:
+    user = _make_user(sql_session)
+
+    with pytest.raises(ValueError, match="Name must be at most"):
+        edit_user(sql_session, user, name="a" * (User.name_length + 1))
+
+
+def test_edit_user_rejects_too_long_card(sql_session: Session) -> None:
+    user = _make_user(sql_session)
+
+    with pytest.raises(ValueError, match="Card number must be at most"):
+        edit_user(sql_session, user, card="1" * (User.card_length + 1))
+
+
+def test_edit_user_rejects_too_long_rfid(sql_session: Session) -> None:
+    user = _make_user(sql_session)
+
+    with pytest.raises(ValueError, match="RFID must be at most"):
+        edit_user(sql_session, user, rfid="a" * (User.rfid_length + 1))
