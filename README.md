@@ -1,4 +1,6 @@
 # Dibbler
+[![Coverage](https://pages.pvv.ntnu.no/Projects/dibbler/main/coverage/badge.svg)](https://pages.pvv.ntnu.no/Projects/dibbler/main/coverage)
+[Siste Testrapport 🛠️🧪☣︎](https://pages.pvv.ntnu.no/Projects/dibbler/main/test-report/)
 
 EDB-system for PVVVV
 
@@ -12,6 +14,11 @@ Programmet er skrevet i Python, og bruker en sql database for å lagre data.
 Samlespleiseboden er satt opp slik at folk kjøper inn varer, og får dibblerkreditt, og så kan man bruke
 denne kreditten til å kjøpe ut andre varer. Det er ikke noen form for authentisering, så hele systemet er basert på tillit.
 Det er anbefalt å koble en barkodeleser til systemet for å gjøre det enklere å både legge til og kjøpe varer.
+
+Mer info på:
+
+- <https://wiki.pvv.ntnu.no/wiki/Tjenester/Dibbler/>
+- <https://wiki.pvv.ntnu.no/wiki/Drift/Dibbler/>
 
 ## Kom i gang
 
