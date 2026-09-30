@@ -5,123 +5,60 @@ from dibbler.models import Product
 from dibbler.queries import search_product
 
 
-def _make_product(
-    sql_session: Session,
-    bar_code: str,
-    name: str,
-    hidden: bool = False,
-) -> Product:
-    product = Product(bar_code, name, 10, hidden=hidden)
-    sql_session.add(product)
+def _make_products(sql_session: Session) -> dict[str, Product]:
+    products = [
+        Product("1234567890", "Pepsi", 10),
+        Product("2222222222", "Pepsi Zero", 10),
+        Product("3333333333", "Chips", 10),
+        Product("4444444444", "Secret Cola", 10, hidden=True),
+        Product("5555555555", "50XX Off", 10),
+        Product("6666666666", "AxB", 10),
+        Product("7777777777", "50% Off", 10),
+        Product("8888888888", "A_B", 10),
+    ]
+    sql_session.add_all(products)
     sql_session.flush()
-    return product
+    return {product.name: product for product in products}
 
 
-def test_search_product_matches_exact_bar_code(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1234567890", "Pepsi")
+@pytest.mark.parametrize(
+    ("query", "find_hidden_products", "expected"),
+    [
+        pytest.param("nonexistent", True, set(), id="no-match"),
 
-    result = search_product("1234567890", sql_session)
+        pytest.param("1234567890", True, "Pepsi", id="exact-bar-code"),
+        pytest.param("34567", True, {"Pepsi"}, id="partial-bar-code"),
 
-    assert result is pepsi
+        pytest.param("Pepsi", True, "Pepsi", id="exact-name"),
+        pytest.param("pepsi", True, "Pepsi", id="exact-name-ignores-case"),
+        pytest.param("Pep", True, {"Pepsi", "Pepsi Zero"}, id="partial-name"),
+        pytest.param("50%", True, {"50% Off"}, id="name-with-percent"),
+        pytest.param("A_", True, {"A_B"}, id="name-with-underscore"),
 
+        pytest.param("Secret Cola", True, "Secret Cola", id="hidden-exact-name"),
+        pytest.param("Secret", True, {"Secret Cola"}, id="hidden-partial-name"),
+        pytest.param("pepsi", False, "Pepsi", id="visible-only-exact-name-ignores-case"),
+        pytest.param("Pep", False, {"Pepsi", "Pepsi Zero"}, id="visible-only-partial-name"),
+        pytest.param("Secret Cola", False, set(), id="visible-only-hidden-exact-name"),
+        pytest.param("Secret", False, set(), id="visible-only-hidden-partial-name"),
+        pytest.param("4444444444", False, "Secret Cola", id="visible-only-hidden-bar-code"),
+    ],
+)  # fmt: skip
+def test_search_product(
+    sql_session: Session,
+    query: str,
+    find_hidden_products: bool,
+    expected: str | set[str],
+) -> None:
+    products = _make_products(sql_session)
 
-def test_search_product_matches_exact_name(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1234567890", "Pepsi")
+    result = search_product(query, sql_session, find_hidden_products=find_hidden_products)
 
-    result = search_product("Pepsi", sql_session)
-
-    assert result is pepsi
-
-
-def test_search_product_exact_match_ignores_case(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1234567890", "Pepsi")
-
-    result = search_product("pepsi", sql_session)
-
-    assert result is pepsi
-
-
-def test_search_product_escapes_percent(sql_session: Session) -> None:
-    _make_product(sql_session, "1111111111", "50XX Off")
-
-    result = search_product("50% Off", sql_session)
-
-    assert result == []
-
-
-def test_search_product_escapes_underscore(sql_session: Session) -> None:
-    _make_product(sql_session, "1111111111", "AxB")
-
-    result = search_product("A_B", sql_session)
-
-    assert result == []
-
-
-def test_search_product_returns_partial_matches(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
-    pepsi_zero = _make_product(sql_session, "2222222222", "Pepsi Zero")
-    _make_product(sql_session, "3333333333", "Chips")
-
-    result = search_product("Pep", sql_session)
-
-    assert isinstance(result, list)
-    assert set(result) == {pepsi, pepsi_zero}
-
-
-def test_search_product_returns_empty_list_for_no_match(sql_session: Session) -> None:
-    _make_product(sql_session, "1234567890", "Pepsi")
-
-    result = search_product("nonexistent", sql_session)
-
-    assert result == []
-
-
-def test_search_product_partial_matches_bar_code(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1234567890", "Pepsi")
-
-    result = search_product("34567", sql_session)
-
-    assert result == [pepsi]
-
-
-def test_search_product_includes_hidden_by_default(sql_session: Session) -> None:
-    hidden_product = _make_product(sql_session, "1234567890", "Pepsi", hidden=True)
-
-    result = search_product("Pepsi", sql_session)
-
-    assert result is hidden_product
-
-
-def test_search_product_visible_only_excludes_hidden_exact_match(sql_session: Session) -> None:
-    _make_product(sql_session, "1234567890", "Pepsi", hidden=True)
-
-    result = search_product("Pepsi", sql_session, find_hidden_products=False)
-
-    assert result == []
-
-
-def test_search_product_visible_only_excludes_hidden_partial_match(sql_session: Session) -> None:
-    _make_product(sql_session, "1234567890", "Pepsi", hidden=True)
-
-    result = search_product("Pep", sql_session, find_hidden_products=False)
-
-    assert result == []
-
-
-def test_search_product_visible_only_exact_match_ignores_case(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1234567890", "Pepsi", hidden=False)
-
-    result = search_product("pepsi", sql_session, find_hidden_products=False)
-
-    assert result is pepsi
-
-
-def test_search_product_visible_only_finds_hidden_by_bar_code(sql_session: Session) -> None:
-    hidden_product = _make_product(sql_session, "1234567890", "Pepsi", hidden=True)
-
-    result = search_product("1234567890", sql_session, find_hidden_products=False)
-
-    assert result is hidden_product
+    if isinstance(expected, str):
+        assert result is products[expected]
+    else:
+        assert isinstance(result, list)
+        assert {product.name for product in result} == expected
 
 
 def test_search_product_rejects_empty_string(sql_session: Session) -> None:
