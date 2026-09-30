@@ -224,20 +224,6 @@ def test_add_stock_does_not_log_an_edit_for_a_visible_product(sql_session: Sessi
     )
 
 
-def test_add_stock_rejects_no_users(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-
-    with pytest.raises(ValueError, match="At least one user"):
-        add_stock(sql_session, [], [(product, 5, 100)], total_price=100)
-
-
-def test_add_stock_rejects_no_products(sql_session: Session) -> None:
-    alice = _make_user(sql_session, "alice")
-
-    with pytest.raises(ValueError, match="At least one product"):
-        add_stock(sql_session, [alice], [], total_price=100)
-
-
 def test_add_stock_allows_crediting_nothing_for_stock_received_for_free(
     sql_session: Session,
 ) -> None:
@@ -252,25 +238,40 @@ def test_add_stock_allows_crediting_nothing_for_stock_received_for_free(
     assert product.stock == 15
 
 
-def test_add_stock_rejects_negative_total_price(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
+@pytest.mark.parametrize(
+    ("with_user", "products", "total_price", "error"),
+    [
+        pytest.param(False, [(5, 100)], 100, "At least one user", id="no-users"),
 
-    with pytest.raises(ValueError, match="Total price must not be negative"):
-        add_stock(sql_session, [alice], [(product, 5, 100)], total_price=-1)
+        pytest.param(True, [(5, 100)], -1, "Total price must not be negative", id="negative-total-price"),
 
+        pytest.param(True, [], 100, "At least one product", id="no-products"),
+        pytest.param(True, [(0, 100)], 100, "Product amounts must be positive", id="zero-amount"),
+        pytest.param(True, [(-1, 100)], 100, "Product amounts must be positive", id="negative-amount"),
+        pytest.param(True, [(5, -1)], 0, "Paid amounts must not be negative", id="negative-paid-amount"),
+    ],
+)  # fmt: skip
+def test_invariants(
+    sql_session: Session,
+    with_user: bool,
+    products: list[tuple[int, int]],
+    total_price: int,
+    error: str,
+) -> None:
+    product = _make_product(sql_session, stock=10, price=15)
+    alice = _make_user(sql_session, "alice", credit=0)
+    users = [alice] if with_user else []
 
-def test_add_stock_rejects_non_positive_product_amount(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
+    with pytest.raises(ValueError, match=error):
+        add_stock(
+            sql_session,
+            users,
+            [(product, amount, paid_amount) for amount, paid_amount in products],
+            total_price=total_price,
+        )
 
-    with pytest.raises(ValueError, match="Product amounts must be positive"):
-        add_stock(sql_session, [alice], [(product, 0, 100)], total_price=100)
+    sql_session.expire_all()
 
-
-def test_add_stock_rejects_negative_paid_amount(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
-
-    with pytest.raises(ValueError, match="Paid amounts must not be negative"):
-        add_stock(sql_session, [alice], [(product, 5, -1)], total_price=0)
+    assert alice.credit == 0
+    assert (product.stock, product.price) == (10, 15)
+    assert sql_session.query(TransactionLog).count() == 0

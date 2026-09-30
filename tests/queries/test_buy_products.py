@@ -192,41 +192,38 @@ def test_buy_products_records_a_transaction_log_entry(sql_session: Session) -> N
     assert log.type == TransactionLogEntryType.BUY_PRODUCT
 
 
-def test_buy_products_rejects_no_buyers(sql_session: Session) -> None:
-    product = _make_product(sql_session)
+@pytest.mark.parametrize(
+    ("penalties", "amounts", "error"),
+    [
+        pytest.param([], [1], "At least one buyer", id="no-buyers"),
+        pytest.param([0], [1], "Penalty must be at least 1", id="zero-penalty"),
+        pytest.param([-1], [1], "Penalty must be at least 1", id="negative-penalty"),
+        pytest.param([1, 2], [1], "cannot have more than one penalty", id="inconsistent-penalty"),
 
-    with pytest.raises(ValueError, match="At least one buyer"):
-        buy_products(sql_session, [], [(product, 1)])
-
-
-def test_buy_products_rejects_no_products(sql_session: Session) -> None:
-    alice = _make_user(sql_session, "alice")
-
-    with pytest.raises(ValueError, match="At least one product"):
-        buy_products(sql_session, [(alice, 1)], [])
-
-
-def test_buy_products_rejects_penalty_below_one(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
-
-    with pytest.raises(ValueError, match="Penalty must be at least 1"):
-        buy_products(sql_session, [(alice, 0)], [(product, 1)])
-
-
-def test_buy_products_rejects_inconsistent_penalty_for_the_same_buyer(
+        pytest.param([1], [], "At least one product", id="no-products"),
+        pytest.param([1], [0], "Product amounts must be positive", id="zero-amount"),
+        pytest.param([1], [-1], "Product amounts must be positive", id="negative-amount"),
+        pytest.param([1], [1, 0], "Product amounts must be positive", id="valid-amount-zero-amount"),
+    ],
+)  # fmt: skip
+def test_invariants(
     sql_session: Session,
+    penalties: list[int],
+    amounts: list[int],
+    error: str,
 ) -> None:
     product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
+    alice = _make_user(sql_session, "alice", credit=100)
 
-    with pytest.raises(ValueError, match="cannot have more than one penalty"):
-        buy_products(sql_session, [(alice, 1), (alice, 2)], [(product, 1)])
+    with pytest.raises(ValueError, match=error):
+        buy_products(
+            sql_session,
+            [(alice, penalty) for penalty in penalties],
+            [(product, amount) for amount in amounts],
+        )
 
+    sql_session.expire_all()
 
-def test_buy_products_rejects_non_positive_product_amount(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
-
-    with pytest.raises(ValueError, match="Product amounts must be positive"):
-        buy_products(sql_session, [(alice, 1)], [(product, 0)])
+    assert alice.credit == 100
+    assert product.stock == DEFAULT_PEPSI_STOCK
+    assert sql_session.query(TransactionLog).count() == 0
