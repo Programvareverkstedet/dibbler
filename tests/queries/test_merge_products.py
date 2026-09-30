@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -301,36 +302,36 @@ def test_freed_barcode_after_merge_stays_freed(sql_session: Session) -> None:
     assert {bc.code for bc in target.barcodes} == {"1111111111", "2222222222"}
 
 
-def test_rejects_merging_a_product_into_itself(sql_session: Session) -> None:
-    alice = _make_user(sql_session)
-    product = _make_product(sql_session)
+@pytest.mark.parametrize(
+    ("merge_into_self", "kwargs", "error"),
+    [
+        pytest.param(True, {}, "itself", id="merge-into-self"),
 
-    with pytest.raises(ValueError, match="itself"):
-        merge_products(sql_session, alice, product, product)
+        pytest.param(False, {"name": ""}, "Name cannot be empty", id="empty-name"),
+        pytest.param(False, {"name": "x" * (Product.name_length + 1)}, "Name must be at most", id="too-long-name"),
 
-
-def test_rejects_empty_name(sql_session: Session) -> None:
-    alice = _make_user(sql_session)
-    source = _make_product(sql_session, bar_code="1111111111")
-    target = _make_product(sql_session, bar_code="2222222222")
-
-    with pytest.raises(ValueError, match="Name cannot be empty"):
-        merge_products(sql_session, alice, source, target, name="")
-
-
-def test_rejects_non_positive_price(sql_session: Session) -> None:
-    alice = _make_user(sql_session)
-    source = _make_product(sql_session, bar_code="1111111111")
-    target = _make_product(sql_session, bar_code="2222222222")
-
-    with pytest.raises(ValueError, match="Price must be positive"):
-        merge_products(sql_session, alice, source, target, price=0)
-
-
-def test_rejects_too_long_name(sql_session: Session) -> None:
+        pytest.param(False, {"price": 0}, "Price must be positive", id="zero-price"),
+        pytest.param(False, {"price": -1}, "Price must be positive", id="negative-price"),
+    ],
+)  # fmt: skip
+def test_invariants(
+    sql_session: Session,
+    merge_into_self: bool,
+    kwargs: dict[str, Any],
+    error: str,
+) -> None:
     alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
-    with pytest.raises(ValueError, match="Name must be at most"):
-        merge_products(sql_session, alice, source, target, name="x" * (Product.name_length + 1))
+    with pytest.raises(ValueError, match=error):
+        merge_products(sql_session, alice, source, source if merge_into_self else target, **kwargs)
+
+    sql_session.expire_all()
+
+    assert sql_session.get(Product, source.id) is source
+    assert {bc.code for bc in source.barcodes} == {"1111111111"}
+    assert {bc.code for bc in target.barcodes} == {"2222222222"}
+    assert (target.name, target.price, target.stock, target.hidden) == ("Cola", 15, 10, False)
+    assert sql_session.query(ProductLog).count() == 0
+    assert sql_session.query(TransactionLog).count() == 0
