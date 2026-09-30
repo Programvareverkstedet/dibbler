@@ -191,11 +191,12 @@ def test_invalid_time_range(sql_session: Session) -> None:
         )
 
 
-def test_invalid_limit(sql_session: Session) -> None:
+@pytest.mark.parametrize("limit", [0, -1])
+def test_non_positive_limit_rejected(sql_session: Session, limit: int) -> None:
     alice = _make_user(sql_session, "alice")
 
-    with pytest.raises(ValueError, match="Limit"):
-        user_product_stats(sql_session, alice, limit=0)
+    with pytest.raises(ValueError, match="Limit must be positive"):
+        user_product_stats(sql_session, alice, limit=limit)
 
 
 def test_streaming(sql_session: Session) -> None:

@@ -61,12 +61,16 @@ def test_edit_product_can_touch_only_hidden(sql_session: Session) -> None:
     ("kwargs", "error"),
     [
         pytest.param({}, "Nothing to edit", id="nothing"),
-        pytest.param({"price": 15}, "Nothing to edit", id="same-price"),
+        pytest.param({"hidden": False}, "Nothing to edit", id="same-hidden"),
 
         pytest.param({"name": ""}, "Name cannot be empty", id="empty-name"),
+        pytest.param({"name": "Cola"}, "Nothing to edit", id="same-name"),
+        pytest.param({"name": "Pep\nsi"}, "Name has an invalid format", id="invalid-chars-name"),
         pytest.param({"name": "x" * (Product.name_length + 1)}, "Name must be at most", id="too-long-name"),
 
+        pytest.param({"price": 15}, "Nothing to edit", id="same-price"),
         pytest.param({"price": 0}, "Price must be positive", id="non-positive-price"),
+        pytest.param({"price": -1}, "Price must be positive", id="negative-price"),
         pytest.param({"name": "Pepsi", "price": 0}, "Price must be positive", id="valid-name-invalid-price"),
     ],
 )  # fmt: skip

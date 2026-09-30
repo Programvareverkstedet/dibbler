@@ -59,6 +59,7 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
         pytest.param("1234567890", "Pepsi", 20, "already in use", id="duplicate-bar-code"),
 
         pytest.param("0987654321", "", 20, "Name cannot be empty", id="empty-name"),
+        pytest.param("0987654321", "Pep\nsi", 20, "Name has an invalid format", id="invalid-chars-name"),
         pytest.param("0987654321", "x" * (Product.name_length + 1), 20, "Name must be at most", id="too-long-name"),
 
         pytest.param("0987654321", "Pepsi", -3, "Price must be positive", id="negative-price"),

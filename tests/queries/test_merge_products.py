@@ -308,6 +308,7 @@ def test_freed_barcode_after_merge_stays_freed(sql_session: Session) -> None:
         pytest.param(True, {}, "itself", id="merge-into-self"),
 
         pytest.param(False, {"name": ""}, "Name cannot be empty", id="empty-name"),
+        pytest.param(False, {"name": "Pep\nsi"}, "Name has an invalid format", id="invalid-chars-name"),
         pytest.param(False, {"name": "x" * (Product.name_length + 1)}, "Name must be at most", id="too-long-name"),
 
         pytest.param(False, {"price": 0}, "Price must be positive", id="zero-price"),

@@ -134,18 +134,20 @@ def test_edit_user_allows_unused_card_and_rfid(sql_session: Session) -> None:
     ("kwargs", "error"),
     [
         pytest.param({}, "Nothing to edit", id="nothing"),
-        pytest.param({"card": "ntnu456", "rfid": "cafebabe"}, "Nothing to edit", id="same-card-and-rfid"),
 
         pytest.param({"name": ""}, "Name cannot be empty", id="empty-name"),
+        pytest.param({"name": "bob"}, "Nothing to edit", id="same-name"),
         pytest.param({"name": "Robert"}, "lowercase letters only", id="uppercase-name"),
         pytest.param({"name": "b" * (User.name_length + 1)}, "Name must be at most", id="too-long-name"),
         pytest.param({"name": "alice"}, "already exists", id="duplicate-name"),
         pytest.param({"card": "ntnu789", "name": "Robert"}, "lowercase letters only", id="valid-card-invalid-name"),
 
+        pytest.param({"card": "NTNU456"}, "Nothing to edit", id="same-card"),
         pytest.param({"card": "not-a-card"}, "invalid format", id="invalid-card"),
         pytest.param({"card": "1" * (User.card_length + 1)}, "Card number must be at most", id="too-long-card"),
         pytest.param({"card": "NTNU123"}, "already exists", id="duplicate-card"),
 
+        pytest.param({"rfid": "cafebabe"}, "Nothing to edit", id="same-rfid"),
         pytest.param({"rfid": "not-hex!"}, "invalid format", id="invalid-rfid"),
         pytest.param({"rfid": "a" * (User.rfid_length + 1)}, "RFID must be at most", id="too-long-rfid"),
         pytest.param({"rfid": "DEADBEEF"}, "already exists", id="duplicate-rfid"),
