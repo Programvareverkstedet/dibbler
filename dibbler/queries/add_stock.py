@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import (
     Product,
+    ProductLog,
     Purchase,
     PurchaseEntry,
     Transaction,
@@ -13,7 +14,7 @@ from dibbler.models import (
     TransactionLogUser,
     User,
 )
-from dibbler.models.enums import TransactionLogEntryType
+from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
 
 
 def add_stock(
@@ -37,6 +38,8 @@ def add_stock(
 
     if any(paid_amount < 0 for _, _, paid_amount in products):
         raise ValueError("Paid amounts must not be negative.")
+
+    unhidden = [product for product, _amount, _paid_amount in products if product.hidden]
 
     for product, amount, paid_amount in products:
         value = max(product.stock, 0) * product.price + paid_amount
@@ -74,6 +77,15 @@ def add_stock(
             price_at_time=product.price,
         )
         for product, amount, _paid_amount in products
+    )
+    sql_session.add_all(
+        ProductLog(
+            type=ProductLogEntryType.EDIT,
+            time=header.time,
+            product_id=product.id,
+            hidden=False,
+        )
+        for product in unhidden
     )
     sql_session.flush()
 

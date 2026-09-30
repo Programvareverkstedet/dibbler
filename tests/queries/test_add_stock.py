@@ -3,8 +3,8 @@ import math
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, TransactionLog, User
-from dibbler.models.enums import TransactionLogEntryType
+from dibbler.models import Product, ProductLog, TransactionLog, User
+from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
 from dibbler.queries import add_stock
 
 
@@ -140,6 +140,37 @@ def test_add_stock_records_a_transaction_log_entry(sql_session: Session) -> None
 
     log = sql_session.query(TransactionLog).one()
     assert log.type == TransactionLogEntryType.ADD_PRODUCT
+
+
+def test_add_stock_logs_unhiding_a_hidden_product(sql_session: Session) -> None:
+    product = _make_product(sql_session, hidden=True)
+    alice = _make_user(sql_session, "alice")
+
+    add_stock(sql_session, [alice], [(product, 5, 100)], total_price=100)
+
+    sql_session.expire_all()
+
+    header = sql_session.query(TransactionLog).one()
+    edit = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.EDIT).one()
+    assert edit.product_id == product.id
+    assert edit.hidden is False
+    assert edit.name is None
+    assert edit.price is None
+    assert edit.time == header.time
+
+
+def test_add_stock_does_not_log_an_edit_for_a_visible_product(sql_session: Session) -> None:
+    product = _make_product(sql_session, hidden=False)
+    alice = _make_user(sql_session, "alice")
+
+    add_stock(sql_session, [alice], [(product, 5, 100)], total_price=100)
+
+    sql_session.expire_all()
+
+    assert (
+        sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.EDIT).count()
+        == 0
+    )
 
 
 def test_add_stock_rejects_no_users(sql_session: Session) -> None:
