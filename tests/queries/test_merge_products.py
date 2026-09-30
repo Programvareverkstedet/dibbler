@@ -13,7 +13,7 @@ from dibbler.models import (
     User,
 )
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
-from dibbler.queries import buy_products, merge_products
+from dibbler.queries import add_stock, buy_products, merge_products
 
 
 def _make_product(
@@ -132,7 +132,7 @@ def test_repoints_purchase_history_to_the_target(sql_session: Session) -> None:
 
     purchase = buy_products(sql_session, [(alice, 1)], [(source, 1)])
 
-    merge_products(sql_session, alice, source, target)
+    merge_products(sql_session, alice, source, target, stock=source.stock + target.stock)
 
     sql_session.expire_all()
 
@@ -155,7 +155,7 @@ def test_records_logs(sql_session: Session) -> None:
         source,
         target,
         name="Cola",
-        stock=source.stock + target.stock,
+        stock=source.stock + target.stock - 1,
     )
 
     sql_session.expire_all()
@@ -207,6 +207,41 @@ def test_no_change_implies_no_edit_log(sql_session: Session) -> None:
 
 def test_no_stock_change_implies_no_transaction_log(sql_session: Session) -> None:
     alice = _make_user(sql_session)
+    source = _make_product(sql_session, bar_code="1111111111", stock=0)
+    target = _make_product(sql_session, bar_code="2222222222", stock=5)
+
+    merge_products(sql_session, alice, source, target)
+
+    sql_session.expire_all()
+
+    assert target.stock == 5
+    assert sql_session.query(TransactionLog).count() == 0
+
+
+def test_summed_stock_is_not_logged(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
+    source = _make_product(sql_session, bar_code="1111111111", stock=10)
+    target = _make_product(sql_session, bar_code="2222222222", stock=5)
+
+    merge_products(sql_session, alice, source, target, stock=15)
+
+    sql_session.expire_all()
+
+    assert target.stock == 15
+    assert sql_session.query(TransactionLog).count() == 0
+
+
+def _stock_adjustment(sql_session: Session) -> int:
+    log = (
+        sql_session.query(TransactionLog)
+        .filter(TransactionLog.type == TransactionLogEntryType.ADJUST_STOCK)
+        .one()
+    )
+    return log.products.pop().amount
+
+
+def test_keeping_target_stock_is_logged(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111", stock=10)
     target = _make_product(sql_session, bar_code="2222222222", stock=5)
 
@@ -214,7 +249,49 @@ def test_no_stock_change_implies_no_transaction_log(sql_session: Session) -> Non
 
     sql_session.expire_all()
 
-    assert sql_session.query(TransactionLog).count() == 0
+    assert target.stock == 5
+    assert _stock_adjustment(sql_session) == -10
+
+
+def test_custom_stock_is_logged(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
+    source = _make_product(sql_session, bar_code="1111111111", stock=10)
+    target = _make_product(sql_session, bar_code="2222222222", stock=5)
+
+    merge_products(sql_session, alice, source, target, stock=12)
+
+    sql_session.expire_all()
+
+    assert target.stock == 12
+    assert _stock_adjustment(sql_session) == -3
+
+
+@pytest.mark.parametrize("choice", ["source", "target", "sum", "custom"])
+def test_log_sum_matches_stock(sql_session: Session, choice: str) -> None:
+    alice = _make_user(sql_session)
+    source = _make_product(sql_session, bar_code="1111111111", stock=0)
+    target = _make_product(sql_session, bar_code="2222222222", stock=0)
+    add_stock(sql_session, [alice], [(source, 10, 100), (target, 5, 50)], total_price=150)
+    buy_products(sql_session, [(alice, 1)], [(source, 2), (target, 1)])
+
+    stock = {
+        "source": source.stock,
+        "target": target.stock,
+        "sum": source.stock + target.stock,
+        "custom": 3,
+    }[choice]
+    merge_products(sql_session, alice, source, target, stock=stock)
+
+    sql_session.expire_all()
+
+    logged = sum(
+        x.amount
+        for x in sql_session.query(TransactionLogProduct).filter(
+            TransactionLogProduct.product_id == target.id,
+        )
+    )
+    assert target.stock == stock
+    assert logged == stock
 
 
 def test_freed_barcode_after_merge_stays_freed(sql_session: Session) -> None:

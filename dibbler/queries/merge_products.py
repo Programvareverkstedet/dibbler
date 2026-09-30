@@ -90,9 +90,13 @@ def merge_products(
             ),
         )
 
-    if stock is not UNSET and stock != target.stock:
-        diff = stock - target.stock
-        target.stock = stock
+    logged_stock = target.stock + source.stock
+    if stock is UNSET:
+        stock = target.stock
+    target.stock = stock
+
+    if stock != logged_stock:
+        diff = stock - logged_stock
 
         header = TransactionLog(
             type=TransactionLogEntryType.ADJUST_STOCK,
