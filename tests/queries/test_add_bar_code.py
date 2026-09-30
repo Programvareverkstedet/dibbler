@@ -39,39 +39,21 @@ def test_records_a_log_entry(sql_session: Session) -> None:
     assert log.bar_code == "0987654321"
 
 
-def test_rejects_empty_code(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-
-    with pytest.raises(ValueError, match="Barcode cannot be empty"):
-        add_bar_code(sql_session, product, "")
-
-
-def test_rejects_non_digit_code(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-
-    with pytest.raises(ValueError, match="digits only"):
-        add_bar_code(sql_session, product, "123abc")
-
-
-def test_rejects_code_already_used_by_another_product(sql_session: Session) -> None:
+@pytest.mark.parametrize(
+    ("bar_code", "error"),
+    [
+        pytest.param("", "Barcode cannot be empty", id="empty"),
+        pytest.param("123abc", "digits only", id="non-digit"),
+        pytest.param("1111111111", "already in use", id="used-by-other-product"),
+        pytest.param("1234567890", "already in use", id="used-by-same-product"),
+        pytest.param("1" * (Product.bar_code_length + 1), "Barcode must be at most", id="too-long"),
+    ],
+)
+def test_invariants(sql_session: Session, bar_code: str, error: str) -> None:
     product = _make_product(sql_session)
     other = Product("1111111111", "Pepsi", 15)
     sql_session.add(other)
     sql_session.flush()
 
-    with pytest.raises(ValueError, match="already in use"):
-        add_bar_code(sql_session, product, "1111111111")
-
-
-def test_rejects_code_already_on_the_same_product(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-
-    with pytest.raises(ValueError, match="already in use"):
-        add_bar_code(sql_session, product, "1234567890")
-
-
-def test_rejects_too_long_code(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-
-    with pytest.raises(ValueError, match="Barcode must be at most"):
-        add_bar_code(sql_session, product, "1" * (Product.bar_code_length + 1))
+    with pytest.raises(ValueError, match=error):
+        add_bar_code(sql_session, product, bar_code)

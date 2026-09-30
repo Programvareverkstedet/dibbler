@@ -41,29 +41,6 @@ def test_records_a_log_entry(sql_session: Session) -> None:
     assert log.bar_code == "0987654321"
 
 
-def test_rejects_removing_the_last_code(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-
-    with pytest.raises(ValueError, match="last barcode"):
-        remove_bar_code(sql_session, product, "1234567890")
-
-
-def test_rejects_unknown_code(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    add_bar_code(sql_session, product, "0987654321")
-
-    with pytest.raises(ValueError, match="not found"):
-        remove_bar_code(sql_session, product, "1111111111")
-
-
-def test_rejects_empty_code(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    add_bar_code(sql_session, product, "0987654321")
-
-    with pytest.raises(ValueError, match="cannot be empty"):
-        remove_bar_code(sql_session, product, "")
-
-
 def test_freed_code_can_be_used_by_another_product(sql_session: Session) -> None:
     product = _make_product(sql_session)
     add_bar_code(sql_session, product, "0987654321")
@@ -74,3 +51,25 @@ def test_freed_code_can_be_used_by_another_product(sql_session: Session) -> None
     sql_session.expire_all()
 
     assert {bc.code for bc in other.barcodes} == {"0987654321"}
+
+
+@pytest.mark.parametrize(
+    ("add_extra_bar_code", "bar_code", "error"),
+    [
+        pytest.param(False, "1234567890", "last barcode", id="last-code"),
+        pytest.param(True, "1111111111", "not found", id="unknown"),
+        pytest.param(True, "", "cannot be empty", id="empty"),
+    ],
+)
+def test_invariants(
+    sql_session: Session,
+    add_extra_bar_code: bool,
+    bar_code: str,
+    error: str,
+) -> None:
+    product = _make_product(sql_session)
+    if add_extra_bar_code:
+        add_bar_code(sql_session, product, "0987654321")
+
+    with pytest.raises(ValueError, match=error):
+        remove_bar_code(sql_session, product, bar_code)
