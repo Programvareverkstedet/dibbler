@@ -37,25 +37,15 @@ def _make_user(sql_session: Session, name: str = "alice", credit: int = 1000) ->
     return user
 
 
-def test_moves_barcodes_onto_the_target(sql_session: Session) -> None:
+@pytest.mark.parametrize("preload", [True, False])
+def test_moves_barcodes_onto_the_target(sql_session: Session, preload: bool) -> None:
     alice = _make_user(sql_session)
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
 
-    merge_products(sql_session, alice, source, target)
-
-    sql_session.expire_all()
-
-    assert {bc.code for bc in target.barcodes} == {"1111111111", "2222222222"}
-
-
-def test_moves_barcodes_to_target_when_preloaded(sql_session: Session) -> None:
-    alice = _make_user(sql_session)
-    source = _make_product(sql_session, bar_code="1111111111")
-    target = _make_product(sql_session, bar_code="2222222222")
-
-    preloaded = set(source.barcodes)
-    assert len(preloaded) == 1
+    if preload:
+        preloaded = set(source.barcodes)
+        assert len(preloaded) == 1
 
     merge_products(sql_session, alice, source, target)
 
