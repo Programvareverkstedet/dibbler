@@ -6,8 +6,15 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+import dibbler.subcommands.loop as loop
+import dibbler.subcommands.makedb as makedb
+import dibbler.subcommands.seed_test_data as seed_test_data
+import dibbler.subcommands.slabbedasker as slabbedasker
+import dibbler.subcommands.transaction_log as transaction_log
 from dibbler.conf import config_db_string, load_config
 from dibbler.lib.check_db_health import check_db_health
+
+from ._version import commit_id, version
 
 
 def _parse_time(string: str) -> datetime:
@@ -87,8 +94,6 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.version:
-        from ._version import commit_id, version
-
         print(f"Dibbler version {version}, commit {commit_id if commit_id else '<unknown>'}")
         return
 
@@ -104,8 +109,6 @@ def main() -> None:
     engine = create_engine(config_db_string())
 
     if args.subcommand == "create-db":
-        import dibbler.subcommands.makedb as makedb
-
         makedb.main(engine)
         return
 
@@ -120,23 +123,15 @@ def main() -> None:
     check_db_health(engine, verify_table_existence=True)
 
     if args.subcommand == "loop":
-        import dibbler.subcommands.loop as loop
-
         loop.main(sql_session)
 
     elif args.subcommand == "slabbedasker":
-        import dibbler.subcommands.slabbedasker as slabbedasker
-
         slabbedasker.main(sql_session)
 
     elif args.subcommand == "seed-data":
-        import dibbler.subcommands.seed_test_data as seed_test_data
-
         seed_test_data.main(sql_session)
 
     elif args.subcommand == "transaction-log":
-        import dibbler.subcommands.transaction_log as transaction_log
-
         transaction_log.main(
             sql_session,
             user=args.user,
