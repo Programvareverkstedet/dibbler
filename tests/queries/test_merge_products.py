@@ -125,12 +125,17 @@ def test_can_set_a_custom_stock(sql_session: Session) -> None:
     assert target.stock == 15
 
 
-def test_repoints_purchase_history_to_the_target(sql_session: Session) -> None:
+@pytest.mark.parametrize("preload", [True, False])
+def test_repoints_purchase_history_to_the_target(sql_session: Session, preload: bool) -> None:
     source = _make_product(sql_session, bar_code="1111111111")
     target = _make_product(sql_session, bar_code="2222222222")
     alice = _make_user(sql_session)
 
     purchase = buy_products(sql_session, [(alice, 1)], [(source, 1)])
+
+    if preload:
+        preloaded = set(source.purchases)
+        assert len(preloaded) == 1
 
     merge_products(sql_session, alice, source, target, stock=source.stock + target.stock)
 

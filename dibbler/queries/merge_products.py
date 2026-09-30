@@ -60,6 +60,8 @@ def merge_products(
         .values(product_id=target.id),
     )
 
+    sql_session.expire(source, ["purchases"])
+
     sql_session.execute(
         update(TransactionLogProduct)
         .where(TransactionLogProduct.product_id == source.id)
