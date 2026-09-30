@@ -16,6 +16,10 @@ from dibbler.models import (
 )
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
 
+from .adjust_stock import adjust_stock
+
+NEGATIVE_STOCK_RESET_DESCRIPTION = "Autonullstilling av negativ beholdning ved innkjøp"
+
 
 def add_stock(
     sql_session: Session,
@@ -39,12 +43,22 @@ def add_stock(
     if any(paid_amount < 0 for _, _, paid_amount in products):
         raise ValueError("Paid amounts must not be negative.")
 
+    for product, _amount, _paid_amount in products:
+        if product.stock < 0:
+            adjust_stock(
+                sql_session,
+                users[0],
+                product,
+                -product.stock,
+                description=NEGATIVE_STOCK_RESET_DESCRIPTION,
+            )
+
     unhidden = [product for product, _amount, _paid_amount in products if product.hidden]
 
     for product, amount, paid_amount in products:
         value = max(product.stock, 0) * product.price + paid_amount
         product.price = int(ceil(float(value) / (max(product.stock, 0) + amount)))
-        product.stock = max(amount, product.stock + amount)
+        product.stock += amount
         product.hidden = False
 
     purchase = Purchase()

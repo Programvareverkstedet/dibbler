@@ -17,13 +17,18 @@ def adjust_stock(
     user: User,
     product: Product,
     delta: int,
+    description: str | None = None,
 ) -> Product:
     if delta == 0:
         raise ValueError("Delta must be non-zero.")
 
     product.stock += delta
 
-    header = TransactionLog(type=TransactionLogEntryType.ADJUST_STOCK, time=datetime.now())
+    header = TransactionLog(
+        type=TransactionLogEntryType.ADJUST_STOCK,
+        time=datetime.now(),
+        description=description,
+    )
     sql_session.add(header)
     sql_session.add(
         TransactionLogUser(

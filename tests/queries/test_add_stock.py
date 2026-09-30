@@ -3,9 +3,10 @@ import math
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, ProductLog, TransactionLog, User
+from dibbler.models import Product, ProductLog, TransactionLog, TransactionLogProduct, User
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
-from dibbler.queries import add_stock
+from dibbler.queries import add_stock, adjust_stock
+from dibbler.queries.add_stock import NEGATIVE_STOCK_RESET_DESCRIPTION
 
 
 def _make_product(
@@ -52,6 +53,56 @@ def test_add_stock_floors_stock_at_added_amount_when_starting_negative(
     sql_session.expire_all()
 
     assert product.stock == 5
+
+
+def test_add_stock_logs_resetting_negative_stock(sql_session: Session) -> None:
+    product = _make_product(sql_session, stock=-3, price=15)
+    alice = _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob")
+
+    add_stock(sql_session, [alice, bob], [(product, 5, 50)], total_price=50)
+
+    sql_session.expire_all()
+
+    reset = (
+        sql_session.query(TransactionLog)
+        .filter(TransactionLog.type == TransactionLogEntryType.ADJUST_STOCK)
+        .one()
+    )
+    assert reset.description == NEGATIVE_STOCK_RESET_DESCRIPTION
+    assert [(u.user, u.amount) for u in reset.users] == [(alice, None)]
+    assert [(p.product, p.amount, p.price_at_time) for p in reset.products] == [(product, 3, 15)]
+
+
+def test_add_stock_does_not_reset_non_negative_stock(sql_session: Session) -> None:
+    product = _make_product(sql_session, stock=0)
+    alice = _make_user(sql_session, "alice")
+
+    add_stock(sql_session, [alice], [(product, 5, 50)], total_price=50)
+
+    sql_session.expire_all()
+
+    assert sql_session.query(TransactionLog).one().type == TransactionLogEntryType.ADD_PRODUCT
+
+
+@pytest.mark.parametrize("stock", [-3, 0, 4])
+def test_add_stock_keeps_log_sum_equal_to_stock(sql_session: Session, stock: int) -> None:
+    product = _make_product(sql_session, stock=0)
+    alice = _make_user(sql_session, "alice")
+    if stock:
+        adjust_stock(sql_session, alice, product, stock)
+
+    add_stock(sql_session, [alice], [(product, 5, 50)], total_price=50)
+
+    sql_session.expire_all()
+
+    logged = sum(
+        x.amount
+        for x in sql_session.query(TransactionLogProduct).filter(
+            TransactionLogProduct.product_id == product.id,
+        )
+    )
+    assert logged == product.stock
 
 
 def test_add_stock_splits_total_price_evenly_across_users(sql_session: Session) -> None:
