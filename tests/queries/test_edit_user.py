@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from sqlalchemy.orm import Session
 
@@ -27,20 +29,6 @@ def test_edit_user_updates_only_the_given_fields(sql_session: Session) -> None:
 
     assert user.card == "ntnu456"
     assert user.rfid is None
-
-
-def test_edit_user_rejects_editing_nothing(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="Nothing to edit"):
-        edit_user(sql_session, user)
-
-
-def test_edit_user_rejects_resubmitting_the_same_card_and_rfid(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="Nothing to edit"):
-        edit_user(sql_session, user, card="ntnu123", rfid="deadbeef")
 
 
 def test_edit_user_records_the_users_id_as_user_id(sql_session: Session) -> None:
@@ -73,41 +61,6 @@ def test_edit_user_rename_keeps_the_same_user_id(sql_session: Session) -> None:
     assert rename_entry.user_id == user.id
 
 
-def test_edit_user_does_not_apply_any_change_when_the_call_fails(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError):
-        edit_user(sql_session, user, card="ntnu456", name="Alicia")
-
-    sql_session.expire_all()
-
-    assert user.card == "ntnu123"
-    assert user.name == "alice"
-
-
-def test_edit_user_rejects_empty_name(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="Name cannot be empty"):
-        edit_user(sql_session, user, name="")
-
-    sql_session.expire_all()
-
-    assert user.name == "alice"
-
-
-def test_edit_user_rejects_duplicate_name(sql_session: Session) -> None:
-    _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
-
-    with pytest.raises(ValueError, match="already exists"):
-        edit_user(sql_session, bob, name="alice")
-
-    sql_session.expire_all()
-
-    assert bob.name == "bob"
-
-
 def test_edit_user_allows_resubmitting_the_same_name(sql_session: Session) -> None:
     user = _make_user(sql_session, "alice")
 
@@ -130,51 +83,6 @@ def test_edit_user_lowercases_card_and_rfid(sql_session: Session) -> None:
     assert user.rfid == "deadbeef"
 
 
-def test_edit_user_rejects_invalid_card(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="invalid format"):
-        edit_user(sql_session, user, card="not-a-card")
-
-    sql_session.expire_all()
-
-    assert user.card == "ntnu123"
-
-
-def test_edit_user_rejects_invalid_rfid(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="invalid format"):
-        edit_user(sql_session, user, rfid="not-hex!")
-
-    sql_session.expire_all()
-
-    assert user.rfid == "deadbeef"
-
-
-def test_edit_user_does_not_apply_card_change_when_rfid_is_invalid(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="invalid format"):
-        edit_user(sql_session, user, card="ntnu456", rfid="not-hex!")
-
-    sql_session.expire_all()
-
-    assert user.card == "ntnu123"
-    assert user.rfid == "deadbeef"
-
-
-def test_edit_user_rejects_uppercase_rename(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="lowercase letters only"):
-        edit_user(sql_session, user, name="Alicia")
-
-    sql_session.expire_all()
-
-    assert user.name == "alice"
-
-
 def test_edit_user_can_rename(sql_session: Session) -> None:
     user = _make_user(sql_session, "alice")
 
@@ -185,30 +93,6 @@ def test_edit_user_can_rename(sql_session: Session) -> None:
     assert sql_session.get(User, user.id) is user
     assert user.name == "alicia"
     assert sql_session.query(User).filter_by(name="alice").first() is None
-
-
-def test_edit_user_rejects_duplicate_card(sql_session: Session) -> None:
-    _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
-
-    with pytest.raises(ValueError, match="already exists"):
-        edit_user(sql_session, bob, card="NTNU123")
-
-    sql_session.expire_all()
-
-    assert bob.card == "ntnu456"
-
-
-def test_edit_user_rejects_duplicate_rfid(sql_session: Session) -> None:
-    _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
-
-    with pytest.raises(ValueError, match="already exists"):
-        edit_user(sql_session, bob, rfid="DEADBEEF")
-
-    sql_session.expire_all()
-
-    assert bob.rfid == "cafebabe"
 
 
 def test_edit_user_allows_resubmitting_the_same_card_and_rfid_with_other_changes(
@@ -246,22 +130,35 @@ def test_edit_user_allows_unused_card_and_rfid(sql_session: Session) -> None:
     assert (bob.card, bob.rfid) == ("ntnu789", "f00dface")
 
 
-def test_edit_user_rejects_too_long_name(sql_session: Session) -> None:
-    user = _make_user(sql_session)
+@pytest.mark.parametrize(
+    ("kwargs", "error"),
+    [
+        pytest.param({}, "Nothing to edit", id="nothing"),
+        pytest.param({"card": "ntnu456", "rfid": "cafebabe"}, "Nothing to edit", id="same-card-and-rfid"),
 
-    with pytest.raises(ValueError, match="Name must be at most"):
-        edit_user(sql_session, user, name="a" * (User.name_length + 1))
+        pytest.param({"name": ""}, "Name cannot be empty", id="empty-name"),
+        pytest.param({"name": "Robert"}, "lowercase letters only", id="uppercase-name"),
+        pytest.param({"name": "b" * (User.name_length + 1)}, "Name must be at most", id="too-long-name"),
+        pytest.param({"name": "alice"}, "already exists", id="duplicate-name"),
+        pytest.param({"card": "ntnu789", "name": "Robert"}, "lowercase letters only", id="valid-card-invalid-name"),
 
+        pytest.param({"card": "not-a-card"}, "invalid format", id="invalid-card"),
+        pytest.param({"card": "1" * (User.card_length + 1)}, "Card number must be at most", id="too-long-card"),
+        pytest.param({"card": "NTNU123"}, "already exists", id="duplicate-card"),
 
-def test_edit_user_rejects_too_long_card(sql_session: Session) -> None:
-    user = _make_user(sql_session)
+        pytest.param({"rfid": "not-hex!"}, "invalid format", id="invalid-rfid"),
+        pytest.param({"rfid": "a" * (User.rfid_length + 1)}, "RFID must be at most", id="too-long-rfid"),
+        pytest.param({"rfid": "DEADBEEF"}, "already exists", id="duplicate-rfid"),
+        pytest.param({"card": "ntnu789", "rfid": "not-hex!"}, "invalid format", id="valid-card-invalid-rfid"),
+    ],
+)  # fmt: skip
+def test_invariants(sql_session: Session, kwargs: dict[str, Any], error: str) -> None:
+    _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob", card="ntnu456", rfid="cafebabe")
 
-    with pytest.raises(ValueError, match="Card number must be at most"):
-        edit_user(sql_session, user, card="1" * (User.card_length + 1))
+    with pytest.raises(ValueError, match=error):
+        edit_user(sql_session, bob, **kwargs)
 
+    sql_session.expire_all()
 
-def test_edit_user_rejects_too_long_rfid(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    with pytest.raises(ValueError, match="RFID must be at most"):
-        edit_user(sql_session, user, rfid="a" * (User.rfid_length + 1))
+    assert (bob.name, bob.card, bob.rfid) == ("bob", "ntnu456", "cafebabe")

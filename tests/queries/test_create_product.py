@@ -50,38 +50,29 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
     assert log.bar_code == "1234567890"
 
 
-def test_create_product_rejects_empty_bar_code(sql_session: Session) -> None:
-    with pytest.raises(ValueError, match="Barcode cannot be empty"):
-        create_product(sql_session, "", "Cola", 15)
+@pytest.mark.parametrize(
+    ("bar_code", "name", "price", "error"),
+    [
+        pytest.param("", "Pepsi", 20, "Barcode cannot be empty", id="empty-bar-code"),
+        pytest.param("123abc", "Pepsi", 20, "digits only", id="non-digit-bar-code"),
+        pytest.param("1" * (Product.bar_code_length + 1), "Pepsi", 20, "Barcode must be at most", id="too-long-bar-code"),
+        pytest.param("1234567890", "Pepsi", 20, "already in use", id="duplicate-bar-code"),
 
+        pytest.param("0987654321", "", 20, "Name cannot be empty", id="empty-name"),
+        pytest.param("0987654321", "x" * (Product.name_length + 1), 20, "Name must be at most", id="too-long-name"),
 
-def test_create_product_rejects_empty_name(sql_session: Session) -> None:
-    with pytest.raises(ValueError, match="Name cannot be empty"):
-        create_product(sql_session, "1234567890", "", 15)
-
-
-def test_create_product_rejects_non_positive_price(sql_session: Session) -> None:
-    with pytest.raises(ValueError, match="Price must be positive"):
-        create_product(sql_session, "1234567890", "Cola", 0)
-
-
-def test_create_product_rejects_non_digit_bar_code(sql_session: Session) -> None:
-    with pytest.raises(ValueError, match="digits only"):
-        create_product(sql_session, "123abc", "Cola", 15)
-
-
-def test_create_product_rejects_duplicate_bar_code(sql_session: Session) -> None:
+        pytest.param("0987654321", "Pepsi", -3, "Price must be positive", id="negative-price"),
+        pytest.param("0987654321", "Pepsi", 0, "Price must be positive", id="non-positive-price"),
+    ],
+)  # fmt: skip
+def test_invariants(
+    sql_session: Session,
+    bar_code: str,
+    name: str,
+    price: int,
+    error: str,
+) -> None:
     create_product(sql_session, "1234567890", "Cola", 15)
 
-    with pytest.raises(ValueError, match="already in use"):
-        create_product(sql_session, "1234567890", "Pepsi", 20)
-
-
-def test_create_product_rejects_too_long_bar_code(sql_session: Session) -> None:
-    with pytest.raises(ValueError, match="Barcode must be at most"):
-        create_product(sql_session, "1" * (Product.bar_code_length + 1), "Cola", 15)
-
-
-def test_create_product_rejects_too_long_name(sql_session: Session) -> None:
-    with pytest.raises(ValueError, match="Name must be at most"):
-        create_product(sql_session, "1234567890", "x" * (Product.name_length + 1), 15)
+    with pytest.raises(ValueError, match=error):
+        create_product(sql_session, bar_code, name, price)
