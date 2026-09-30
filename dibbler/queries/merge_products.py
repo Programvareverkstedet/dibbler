@@ -105,10 +105,10 @@ def merge_products(
         )
         sql_session.add(header)
         sql_session.add(
-          TransactionLogUser(
-            transaction=header,
-            user=user,
-          ),
+            TransactionLogUser(
+                transaction=header,
+                user=user,
+            ),
         )
         sql_session.add(
             TransactionLogProduct(

@@ -68,8 +68,8 @@ _EXPECTED_COUNTS: dict[
 
 
 _USER_AMOUNT_RULES: dict[
-  TransactionLogEntryType,
-  tuple[Callable[[int | None], bool], str],
+    TransactionLogEntryType,
+    tuple[Callable[[int | None], bool], str],
 ] = {
     TransactionLogEntryType.BUY_PRODUCT: (lambda amount: bool(amount), "a non-zero amount"),
     TransactionLogEntryType.ADD_PRODUCT: (lambda amount: amount is not None, "an amount"),
