@@ -29,6 +29,20 @@ env:
   DEBUG_SQL: ${{ inputs.debug_sql || true }}
 
 jobs:
+  verify-example-config:
+    runs-on: debian-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Verify example config
+        run: uv run -- dibbler -c ./example-config.toml verify-config
+
   test-sqlite:
     runs-on: debian-latest
     if: ${{ inputs.enable_sqlite != 'false' }}
