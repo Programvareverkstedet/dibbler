@@ -320,7 +320,7 @@ jobs:
       - name: Add coverage report to job summary
         run: |
           {
-            echo "<details><summary><b>Coverage Report</b> <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/coverage/\">(HTML report)</a></summary>"
+            echo "<details><summary><img src="https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/coverage/badge.svg" alt="Coverage badge" /><b>Coverage Report</b> <a href=\"https://pages.pvv.ntnu.no/${{ gitea.repository }}/${{ gitea.ref_name }}/coverage/\">(HTML report)</a></summary>"
             echo
             uv run -- coverage report --format=markdown
             echo
