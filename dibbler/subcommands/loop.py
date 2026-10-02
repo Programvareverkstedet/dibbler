@@ -43,6 +43,10 @@ from ..menus import (
     TransactionLogMenu,
     TransferMenu,
     UserListMenu,
+    UsersByDepositsMenu,
+    UsersByRestockingMenu,
+    UsersBySpendingMenu,
+    UsersByWithdrawalsMenu,
 )
 
 try:
@@ -99,6 +103,10 @@ def main(sql_session: Session) -> None:
                 items=[
                     ProductPopularityMenu(sql_session),
                     ProductRevenueMenu(sql_session),
+                    UsersBySpendingMenu(sql_session),
+                    UsersByRestockingMenu(sql_session),
+                    UsersByDepositsMenu(sql_session),
+                    UsersByWithdrawalsMenu(sql_session),
                     BalanceMenu(sql_session),
                     LoggedStatisticsMenu(sql_session),
                 ],

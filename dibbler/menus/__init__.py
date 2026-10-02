@@ -23,6 +23,10 @@ __all__ = [
     "TransactionLogMenu",
     "TransferMenu",
     "UserListMenu",
+    "UsersByDepositsMenu",
+    "UsersByRestockingMenu",
+    "UsersBySpendingMenu",
+    "UsersByWithdrawalsMenu",
 ]
 
 from .addstock import AddStockMenu
@@ -54,4 +58,8 @@ from .stats import (
     LoggedStatisticsMenu,
     ProductPopularityMenu,
     ProductRevenueMenu,
+    UsersByDepositsMenu,
+    UsersByRestockingMenu,
+    UsersBySpendingMenu,
+    UsersByWithdrawalsMenu,
 )
