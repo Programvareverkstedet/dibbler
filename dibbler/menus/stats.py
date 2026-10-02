@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.sql_helpers import iter_rows_in_chunks
-from dibbler.lib.statistikkHelpers import statisticsTextOnly
 from dibbler.models import Product, User
 from dibbler.queries.stats import (
     list_products_top_selling_query,
@@ -21,7 +20,6 @@ from .helpermenus import Menu
 
 __all__ = [
     "BalanceMenu",
-    "LoggedStatisticsMenu",
     "ProductPopularityMenu",
     "ProductRevenueMenu",
     "UsersByDepositsMenu",
@@ -149,11 +147,3 @@ class UsersByWithdrawalsMenu(_UserRankingMenu):
             list_users_top_withdrawing_query,
             "withdrawn",
         )
-
-
-class LoggedStatisticsMenu(Menu):
-    def __init__(self, sql_session: Session) -> None:
-        super().__init__("Statistics from log", sql_session)
-
-    def _execute(self, **_kwargs) -> None:
-        statisticsTextOnly(self.sql_session)
