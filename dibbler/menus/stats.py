@@ -6,7 +6,11 @@ from dibbler.lib.pager import streaming_pager
 from dibbler.lib.sql_helpers import iter_rows_in_chunks
 from dibbler.lib.statistikkHelpers import statisticsTextOnly
 from dibbler.models import Product
-from dibbler.queries.stats import list_products_top_selling_query
+from dibbler.queries.stats import (
+    list_products_top_selling_query,
+    summarize_product_stock,
+    summarize_user_balance,
+)
 
 from .helpermenus import Menu
 
@@ -60,35 +64,19 @@ class BalanceMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        text = ""
-        total_value = 0
-        product_list = self.sql_session.query(Product).filter(Product.stock > 0).all()
-        for p in product_list:
-            total_value += p.stock * p.price
-
-        total_positive_credit = (
-            self.sql_session.query(func.coalesce(func.sum(User.credit), 0))
-            .filter(User.credit > 0)
-            .first()[0]
-        )
-        total_negative_credit = (
-            self.sql_session.query(func.coalesce(func.sum(User.credit), 0))
-            .filter(User.credit < 0)
-            .first()[0]
-        )
-
-        total_credit = total_positive_credit + total_negative_credit
-        total_balance = total_value - total_credit
+        stock = summarize_product_stock(self.sql_session, include_hidden=True)
+        balance = summarize_user_balance(self.sql_session)
 
         line_format = "%15s | %5d \n"
-        text += line_format % ("Total value", total_value)
+        text = line_format % ("Total value", stock.in_stock_value)
         text += 24 * "-" + "\n"
-        text += line_format % ("Positive credit", total_positive_credit)
-        text += line_format % ("Negative credit", total_negative_credit)
-        text += line_format % ("Total credit", total_credit)
+        text += line_format % ("Positive credit", balance.positive_balance)
+        text += line_format % ("Negative credit", balance.negative_balance)
+        text += line_format % ("Total credit", balance.total)
         text += 24 * "-" + "\n"
-        text += line_format % ("Total balance", total_balance)
-        pager(text)
+        text += line_format % ("Total balance", stock.in_stock_value - balance.total)
+        print(text)
+        self.pause()
 
 
 class LoggedStatisticsMenu(Menu):
