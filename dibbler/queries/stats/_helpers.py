@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import ColumnElement, SQLColumnExpression
+from sqlalchemy import ColumnElement, Integer, SQLColumnExpression, case, func
 
 
 def time_window_conditions(
@@ -24,3 +24,15 @@ def time_window_conditions(
         conditions.append(column < before_time)
     return conditions
 
+
+def count_where(condition: ColumnElement[bool]) -> ColumnElement[int]:
+    """Number of rows matching `condition`."""
+    return func.count(case((condition, 1)))
+
+
+def sum_where(
+    condition: ColumnElement[bool],
+    value: SQLColumnExpression[int],
+) -> ColumnElement[int]:
+    """Sum of `value` over rows matching `condition`, or 0 if there are none."""
+    return func.coalesce(func.sum(case((condition, value))), 0, type_=Integer)
