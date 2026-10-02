@@ -24,11 +24,23 @@ from dibbler.queries.stats import (
     list_products_nonzero_stock_query,
     list_products_top_selling,
     list_products_top_selling_query,
+    list_users_top_depositing,
+    list_users_top_depositing_query,
+    list_users_top_restocking,
+    list_users_top_restocking_query,
+    list_users_top_spending,
+    list_users_top_spending_query,
+    list_users_top_withdrawing,
+    list_users_top_withdrawing_query,
 )
 
 STATS_QUERIES: list[Callable[[Session], object]] = [
     list_products_nonzero_stock,
     list_products_top_selling,
+    list_products_top_selling,
+    list_users_top_depositing,
+    list_users_top_restocking,
+    list_users_top_spending,
 ]
 
 STREAMABLE_QUERIES = [
@@ -50,6 +62,19 @@ STREAMABLE_QUERIES = [
             rank_by_credit=True,
         ),
         id="list_products_top_selling(rank_by_credit)",
+    ),
+    *(
+        pytest.param(
+            query,
+            lambda sql_session, list_function=list_function: list_function(sql_session, limit=None),
+            id=list_function.__name__,
+        )
+        for query, list_function in [
+            (list_users_top_depositing_query, list_users_top_depositing),
+            (list_users_top_restocking_query, list_users_top_restocking),
+            (list_users_top_spending_query, list_users_top_spending),
+            (list_users_top_withdrawing_query, list_users_top_withdrawing),
+        ]
     ),
 ]
 
