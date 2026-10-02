@@ -21,10 +21,10 @@ if TYPE_CHECKING:
 
 
 class TransactionLogUser(XrefMixin, Base, UidMixin):
-    transaction_log_id: Mapped[int] = mapped_column(ForeignKey("transaction_log.id"))
+    transaction_log_id: Mapped[int] = mapped_column(ForeignKey("transaction_log.id"), index=True)
     transaction: Mapped[TransactionLog] = relationship(back_populates="users")
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     user: Mapped[User] = relationship()
 
     amount: Mapped[int | None] = mapped_column(Integer)
