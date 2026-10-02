@@ -42,6 +42,22 @@ def test_add_stock_recomputes_price_stock_and_unhides_product(sql_session: Sessi
     assert product.hidden is False
 
 
+def test_add_stock_with_expired_users_and_products(sql_session: Session) -> None:
+    product = _make_product(sql_session, stock=10, price=15)
+    alice = _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob")
+
+    sql_session.expire_all()
+
+    add_stock(sql_session, [alice, bob], [(product, 5, 100)], total_price=100)
+
+    sql_session.expire_all()
+
+    assert alice.credit == 50
+    assert bob.credit == 50
+    assert product.stock == 15
+
+
 def test_add_stock_floors_stock_at_added_amount_when_starting_negative(
     sql_session: Session,
 ) -> None:

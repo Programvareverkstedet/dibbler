@@ -66,16 +66,19 @@ def add_stock(
         product.stock += amount
         product.hidden = False
 
-    purchase = Purchase()
-    sql_session.add(purchase)
+    with sql_session.no_autoflush:
+        purchase = Purchase()
+        sql_session.add(purchase)
 
-    transactions = [Transaction(user, purchase=purchase, description=description) for user in users]
-    sql_session.add_all(transactions)
-    sql_session.add_all(
-        PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
-    )
+        transactions = [
+            Transaction(user, purchase=purchase, description=description) for user in users
+        ]
+        sql_session.add_all(transactions)
+        sql_session.add_all(
+            PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
+        )
 
-    purchase.perform_soft_purchase(-total_price, round_up=False)
+        purchase.perform_soft_purchase(-total_price, round_up=False)
     sql_session.flush()
 
     header = TransactionLog(

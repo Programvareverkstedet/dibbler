@@ -45,6 +45,24 @@ def test_buy_products_charges_a_single_buyer_and_decrements_stock(sql_session: S
     assert product.stock == DEFAULT_PEPSI_STOCK - amount
 
 
+def test_buy_products_with_expired_buyers_and_products(sql_session: Session) -> None:
+    product = _make_product(sql_session)
+    alice = _make_user(sql_session, "alice", credit=100)
+    bob = _make_user(sql_session, "bob", credit=100)
+    amount = 2
+
+    sql_session.expire_all()
+
+    buy_products(sql_session, [(alice, 1), (bob, 1)], [(product, amount)])
+
+    sql_session.expire_all()
+
+    buyer_share = math.ceil(amount * DEFAULT_PEPSI_PRICE / 2)
+    assert alice.credit == 100 - buyer_share
+    assert bob.credit == 100 - buyer_share
+    assert product.stock == DEFAULT_PEPSI_STOCK - amount
+
+
 def test_buy_products_splits_the_price_evenly_across_buyers(sql_session: Session) -> None:
     product = _make_product(sql_session)
     alice = _make_user(sql_session, "alice")

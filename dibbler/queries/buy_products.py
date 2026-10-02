@@ -40,16 +40,19 @@ def buy_products(
 
     buyers = buyers[:1] if len({user for user, _ in buyers}) == 1 else buyers
 
-    purchase = Purchase()
-    sql_session.add(purchase)
+    with sql_session.no_autoflush:
+        purchase = Purchase()
+        sql_session.add(purchase)
 
-    transactions = [
-        Transaction(user, purchase=purchase, penalty=penalty) for user, penalty in buyers
-    ]
-    sql_session.add_all(transactions)
-    sql_session.add_all(PurchaseEntry(purchase, product, amount) for product, amount in products)
+        transactions = [
+            Transaction(user, purchase=purchase, penalty=penalty) for user, penalty in buyers
+        ]
+        sql_session.add_all(transactions)
+        sql_session.add_all(
+            PurchaseEntry(purchase, product, amount) for product, amount in products
+        )
 
-    purchase.perform_purchase()
+        purchase.perform_purchase()
     sql_session.flush()
 
     header = TransactionLog(type=TransactionLogEntryType.BUY_PRODUCT, time=datetime.now())
