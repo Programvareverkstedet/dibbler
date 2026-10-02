@@ -1,9 +1,12 @@
-from sqlalchemy import desc, func
+from collections.abc import Iterator
+
 from sqlalchemy.orm import Session
 
-from dibbler.lib.pager import pager
+from dibbler.lib.pager import pager, streaming_pager
+from dibbler.lib.sql_helpers import iter_rows_in_chunks
 from dibbler.lib.statistikkHelpers import statisticsTextOnly
-from dibbler.models import Product, PurchaseEntry, User
+from dibbler.models import Product
+from dibbler.queries.stats import list_products_top_selling_query
 
 from .helpermenus import Menu
 
@@ -21,31 +24,16 @@ class ProductPopularityMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        text = ""
-        sub = (
-            self.sql_session.query(
-                PurchaseEntry.product_id,
-                func.sum(PurchaseEntry.amount).label("purchase_count"),
-            )
-            .filter(PurchaseEntry.amount > 0)
-            .group_by(PurchaseEntry.product_id)
-            .subquery()
-        )
-        product_list = (
-            self.sql_session.query(Product, sub.c.purchase_count)
-            .outerjoin(sub, Product.id == sub.c.product_id)
-            .order_by(desc(sub.c.purchase_count))
-            .filter(sub.c.purchase_count.isnot(None))
-            .all()
-        )
-        line_format = "{0:10s} | {1:>45s}\n"
-        text += line_format.format("items sold", "product")
-        text += "-" * (31 + Product.name_length) + "\n"
-        for product, number in product_list:
-            if number is None:
-                continue
-            text += line_format.format(str(number), product.name)
-        pager(text)
+
+        def lines() -> Iterator[str]:
+            line_format = "%10s | %s\n"
+            yield line_format % ("items sold", "product")
+            yield "-" * (13 + Product.name_length) + "\n"
+            rows = iter_rows_in_chunks(self.sql_session, list_products_top_selling_query())
+            for product, sold_amount, _sold_credit in rows:
+                yield line_format % (sold_amount, product.name)
+
+        streaming_pager(lines())
 
 
 class ProductRevenueMenu(Menu):
@@ -54,36 +42,16 @@ class ProductRevenueMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        text = ""
-        sub = (
-            self.sql_session.query(
-                PurchaseEntry.product_id,
-                func.sum(PurchaseEntry.amount).label("purchase_count"),
-            )
-            .filter(PurchaseEntry.amount > 0)
-            .group_by(PurchaseEntry.product_id)
-            .subquery()
-        )
-        product_list = (
-            self.sql_session.query(Product, sub.c.purchase_count)
-            .outerjoin(sub, Product.id == sub.c.product_id)
-            .order_by(desc(sub.c.purchase_count * Product.price))
-            .filter(sub.c.purchase_count.isnot(None))
-            .all()
-        )
-        line_format = "{0:7s} | {1:10s} | {2:6s} | {3:>45s}\n"
-        text += line_format.format("revenue", "items sold", "price", "product")
-        text += "-" * (31 + Product.name_length) + "\n"
-        for product, number in product_list:
-            if number is None:
-                continue
-            text += line_format.format(
-                str(number * product.price),
-                str(number),
-                str(product.price),
-                product.name,
-            )
-        pager(text)
+
+        def lines() -> Iterator[str]:
+            line_format = "%7s | %10s | %s\n"
+            yield line_format % ("revenue", "items sold", "product")
+            yield "-" * (23 + Product.name_length) + "\n"
+            query = list_products_top_selling_query(rank_by_credit=True)
+            for product, sold_amount, sold_credit in iter_rows_in_chunks(self.sql_session, query):
+                yield line_format % (sold_credit, sold_amount, product.name)
+
+        streaming_pager(lines())
 
 
 class BalanceMenu(Menu):
