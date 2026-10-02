@@ -32,6 +32,8 @@ from dibbler.queries.stats import (
     list_users_top_spending_query,
     list_users_top_withdrawing,
     list_users_top_withdrawing_query,
+    summarize_product_stock,
+    summarize_user_balance,
 )
 
 STATS_QUERIES: list[Callable[[Session], object]] = [
@@ -41,6 +43,8 @@ STATS_QUERIES: list[Callable[[Session], object]] = [
     list_users_top_depositing,
     list_users_top_restocking,
     list_users_top_spending,
+    summarize_product_stock,
+    summarize_user_balance,
 ]
 
 STREAMABLE_QUERIES = [
