@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import codecs
+import io
 import random
 import sys
 import traceback
@@ -58,12 +60,29 @@ random.seed()
 
 logger = get_syslog_logger()
 
+_QUESTION_MARK_CODEC_ERROR_HANDLER_ID = "dibbler-question-mark"
+
+
+def _replace_with_question_mark(error: UnicodeError) -> tuple[str, int]:
+    if not isinstance(error, UnicodeDecodeError):
+        raise error
+    return "?", error.end
+
+
+codecs.register_error(
+    _QUESTION_MARK_CODEC_ERROR_HANDLER_ID,
+    _replace_with_question_mark,
+)
+
 
 def main(sql_session: Session) -> None:
     logger.info(
         "Starting dibbler loop"
         + (f" (version {version}, commit {commit_id or '<unknown>'})" if version else ""),
     )
+
+    if isinstance(sys.stdin, io.TextIOWrapper):
+        sys.stdin.reconfigure(errors=_QUESTION_MARK_CODEC_ERROR_HANDLER_ID)
 
     if not config["general"]["stop_allowed"]:
         set_signal_handler(SIGQUIT, SIG_IGN)
