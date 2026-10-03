@@ -3,6 +3,8 @@ __all__ = [
     "Product",
     "ProductBarcode",
     "ProductLog",
+    "ProductMergedBarcode",
+    "ProductMergedTransaction",
     "Purchase",
     "PurchaseEntry",
     "Transaction",
@@ -23,4 +25,9 @@ from .Transaction import Transaction
 from .TransactionLog import TransactionLog
 from .User import User
 from .UserLog import UserLog
-from .xref_tables import TransactionLogProduct, TransactionLogUser
+from .xref_tables import (
+    ProductMergedBarcode,
+    ProductMergedTransaction,
+    TransactionLogProduct,
+    TransactionLogUser,
+)

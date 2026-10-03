@@ -7,7 +7,10 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import (
     Product,
+    ProductBarcode,
     ProductLog,
+    ProductMergedBarcode,
+    ProductMergedTransaction,
     PurchaseEntry,
     TransactionLog,
     TransactionLogProduct,
@@ -184,6 +187,74 @@ def test_records_logs(sql_session: Session) -> None:
     )
     assert adjustment_log.merge_ref_id == merge_log.id
     assert [(u.user, u.amount) for u in adjustment_log.users] == [(alice, None)]
+
+
+def _tracked(
+    sql_session: Session,
+    source_id: int,
+) -> tuple[
+    # set[ProductBarcode.id]
+    set[str],
+    # set[TransactionLogProduct.id]
+    set[int],
+]:
+    merge_log = (
+        sql_session.query(ProductLog)
+        .filter(
+            ProductLog.type == ProductLogEntryType.MERGE,
+            ProductLog.merged_product_id == source_id,
+        )
+        .one()
+    )
+    barcodes = sql_session.query(ProductMergedBarcode).filter_by(merge_log=merge_log)
+    transactions = sql_session.query(ProductMergedTransaction).filter_by(merge_log=merge_log)
+    return (
+        {x.bar_code for x in barcodes},
+        {x.transaction_log_product_id for x in transactions},
+    )
+
+
+def _transaction_ids(sql_session: Session, product: Product) -> set[int]:
+    return {x.id for x in sql_session.query(TransactionLogProduct).filter_by(product=product)}
+
+
+def test_tracks_rows_moved_from_the_source(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
+    source = _make_product(sql_session, bar_code="1111111111", stock=0)
+    target = _make_product(sql_session, bar_code="2222222222", stock=0)
+    add_stock(sql_session, [alice], [(source, 10, 100), (target, 5, 50)], total_price=150)
+    buy_products(sql_session, [(alice, 1)], [(source, 2), (target, 1)])
+
+    source_id = source.id
+    source_rows = _transaction_ids(sql_session, source)
+
+    # NOTE: Keeping the target stock logs a stock adjustment, which should not be tracked.
+    merge_products(sql_session, alice, source, target)
+
+    sql_session.expire_all()
+
+    assert _tracked(sql_session, source_id) == ({"1111111111"}, source_rows)
+
+
+def test_tracks_rows_across_nested_merges(sql_session: Session) -> None:
+    alice = _make_user(sql_session)
+    a = _make_product(sql_session, bar_code="1111111111", stock=0)
+    b = _make_product(sql_session, bar_code="2222222222", stock=0)
+    c = _make_product(sql_session, bar_code="3333333333", stock=0)
+    add_stock(sql_session, [alice], [(a, 1, 10), (b, 2, 20), (c, 3, 30)], total_price=60)
+    a_id, b_id = a.id, b.id
+    b_rows = _transaction_ids(sql_session, b)
+
+    # (A, B, C) -> (AB, C) -> (ABC)
+    merge_products(sql_session, alice, b, a)
+    buy_products(sql_session, [(alice, 1)], [(a, 1)])
+    ab_rows = _transaction_ids(sql_session, a)
+    merge_products(sql_session, alice, a, c)
+
+    sql_session.expire_all()
+
+    assert _tracked(sql_session, b_id) == ({"2222222222"}, b_rows)
+    assert _tracked(sql_session, a_id) == ({"1111111111", "2222222222"}, ab_rows)
 
 
 def test_no_change_implies_no_edit_log(sql_session: Session) -> None:

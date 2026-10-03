@@ -2,13 +2,15 @@ import re
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import update
+from sqlalchemy import insert, literal, select, update
 from sqlalchemy.orm import Session
 
 from dibbler.models import (
     Product,
     ProductBarcode,
     ProductLog,
+    ProductMergedBarcode,
+    ProductMergedTransaction,
     PurchaseEntry,
     TransactionLog,
     TransactionLogProduct,
@@ -53,6 +55,24 @@ def merge_products(
     )
     sql_session.add(merge_log)
     sql_session.flush()
+
+    # Remember which rows belonged to the source, so that the merge can be undone later.
+    sql_session.execute(
+        insert(ProductMergedBarcode).from_select(
+            ["merge_log_id", "bar_code"],
+            select(literal(merge_log.id), ProductBarcode.code).where(
+                ProductBarcode.product_id == source.id,
+            ),
+        ),
+    )
+    sql_session.execute(
+        insert(ProductMergedTransaction).from_select(
+            ["merge_log_id", "transaction_log_product_id"],
+            select(literal(merge_log.id), TransactionLogProduct.id).where(
+                TransactionLogProduct.product_id == source.id,
+            ),
+        ),
+    )
 
     sql_session.execute(
         update(ProductBarcode)
