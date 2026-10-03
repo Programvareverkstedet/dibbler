@@ -5,6 +5,8 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Any
 
+from sqlalchemy.engine import URL
+
 from dibbler.lib.helpers import file_is_submissive_and_readable
 
 DEFAULT_CONFIG_PATH = Path("/etc/dibbler/dibbler.toml")
@@ -146,12 +148,12 @@ def validate_config() -> None:
         sys.exit(1)
 
 
-def config_db_string() -> str:
+def config_db_string() -> URL:
     db_type = config["database"]["type"]
 
     if db_type == "sqlite":
         path = Path(config["database"]["sqlite"]["path"])
-        return f"sqlite:///{path.absolute()}"
+        return URL.create("sqlite", database=str(path.absolute()))
 
     postgresql = config["database"]["postgresql"]
     host = postgresql["host"]
@@ -166,5 +168,19 @@ def config_db_string() -> str:
         password = postgresql["password"]
 
     if host.startswith("/"):
-        return f"postgresql+psycopg2://{username}:{password}@/{dbname}?host={host}&application_name=dibbler"
-    return f"postgresql+psycopg2://{username}:{password}@{host}:{port}/{dbname}?application_name=dibbler"
+        return URL.create(
+            "postgresql+psycopg2",
+            username=username,
+            password=password,
+            database=dbname,
+            query={"host": host, "application_name": "dibbler"},
+        )
+    return URL.create(
+        "postgresql+psycopg2",
+        username=username,
+        password=password,
+        host=host,
+        port=port,
+        database=dbname,
+        query={"application_name": "dibbler"},
+    )
