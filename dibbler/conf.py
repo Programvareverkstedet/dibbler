@@ -8,6 +8,7 @@ from typing import Any
 from sqlalchemy.engine import URL
 
 from dibbler.lib.helpers import file_is_submissive_and_readable
+from dibbler.lib.syslog import get_syslog_logger
 
 DEFAULT_CONFIG_PATH = Path("/etc/dibbler/dibbler.toml")
 
@@ -15,6 +16,8 @@ DEFAULT_POSTGRESQL_PORT = 5432
 DEFAULT_POSTGRESQL_USERNAME = "dibbler"
 DEFAULT_POSTGRESQL_DBNAME = "dibbler"
 
+
+logger = get_syslog_logger()
 
 config: dict[str, dict[str, Any]] = {}
 
@@ -60,17 +63,25 @@ POSTGRESQL_SCHEMA: dict[str, ConfigField] = {
 
 def load_config(config_path: Path | None = None) -> None:
     global config
-    if config_path is not None:
+    if config_path is None:
+        if not file_is_submissive_and_readable(DEFAULT_CONFIG_PATH):
+            print(
+                "Could not read config file, it was neither provided nor readable in default location",
+                file=sys.stderr,
+            )
+            logger.error(
+                "Could not read config file, it was neither provided nor readable at %s",
+                DEFAULT_CONFIG_PATH,
+            )
+            sys.exit(1)
+        config_path = DEFAULT_CONFIG_PATH
+
+    try:
         with Path(config_path).open("rb") as file:
             loaded = tomllib.load(file)
-    elif file_is_submissive_and_readable(DEFAULT_CONFIG_PATH):
-        with DEFAULT_CONFIG_PATH.open("rb") as file:
-            loaded = tomllib.load(file)
-    else:
-        print(
-            "Could not read config file, it was neither provided nor readable in default location",
-            file=sys.stderr,
-        )
+    except (OSError, tomllib.TOMLDecodeError) as e:
+        print(f"Could not load config file {config_path}: {e}", file=sys.stderr)
+        logger.error("Could not load config file %s: %s", config_path, e)
         sys.exit(1)
 
     config.clear()
@@ -142,9 +153,9 @@ def validate_config() -> None:
             )
 
     if errors:
-        print("Invalid configuration:", file=sys.stderr)
-        for error in errors:
-            print(f"  - {error}", file=sys.stderr)
+        message = "Invalid configuration:\n" + "\n".join(f"  - {error}" for error in errors)
+        print(message, file=sys.stderr)
+        logger.error(message)
         sys.exit(1)
 
 
@@ -162,8 +173,14 @@ def config_db_string() -> URL:
     dbname = postgresql["dbname"]
 
     if "password_file" in postgresql:
-        with Path(postgresql["password_file"]).open("r") as f:
-            password = f.read().strip()
+        password_file = Path(postgresql["password_file"])
+        try:
+            with password_file.open("r") as f:
+                password = f.read().strip()
+        except OSError as e:
+            print(f"Could not read Postgres password file: {e}", file=sys.stderr)
+            logger.error("Could not read Postgres password file %s: %s", password_file, e)
+            sys.exit(1)
     else:
         password = postgresql["password"]
 
