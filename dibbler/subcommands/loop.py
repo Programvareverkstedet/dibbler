@@ -14,7 +14,7 @@ from signal import (
 from signal import (
     signal as set_signal_handler,
 )
-from time import ctime, time
+from time import ctime, time_ns
 
 from sqlalchemy.orm import Session
 
@@ -60,6 +60,8 @@ random.seed()
 
 logger = get_syslog_logger()
 
+CRASHDUMP_DIR = Path("/var/lib/dibbler/crashdumps")
+
 _QUESTION_MARK_CODEC_ERROR_HANDLER_ID = "dibbler-question-mark"
 
 
@@ -73,6 +75,20 @@ codecs.register_error(
     _QUESTION_MARK_CODEC_ERROR_HANDLER_ID,
     _replace_with_question_mark,
 )
+
+
+def write_crashdump(exception: BaseException) -> Path:
+    CRASHDUMP_DIR.mkdir(parents=True, exist_ok=True)
+    crashdump_path = CRASHDUMP_DIR / f"crashdump_{time_ns()}.log"
+    with crashdump_path.open("x") as f:
+        f.write(f"Dibbler crashdump @ {ctime()}\n")
+        if version is not None:
+            f.write(
+                f"Dibbler version {version}, commit {commit_id if commit_id else '<unknown>'}\n",
+            )
+        f.write("\n")
+        traceback.print_exception(exception, file=f)
+    return crashdump_path
 
 
 def main(sql_session: Session) -> None:
@@ -145,33 +161,25 @@ def main(sql_session: Session) -> None:
         except KeyboardInterrupt:
             print("")
             print("Interrupted.")
-        except:
+        except Exception as e:
+            print("Something went wrong.")
+            print(f"{type(e)}: {e}")
+            if config["general"]["show_tracebacks"]:
+                traceback.print_tb(e.__traceback__)
+
+            logger.error(
+                "Unhandled exception in main loop: %s: %s",
+                type(e).__name__,
+                e,
+                exc_info=e,
+            )
             try:
-                print("Something went wrong.")
-                print(f"{sys.exc_info()[0]}: {sys.exc_info()[1]}")
-                if config["general"]["show_tracebacks"]:
-                    traceback.print_tb(sys.exc_info()[2])
-                crashlog_dir = Path("/var/lib/dibbler/crashdumps")
-                if not crashlog_dir.exists():
-                    crashlog_dir.mkdir(parents=True, exist_ok=True)
-                crashlog_path = crashlog_dir / f"crashdump_{int(time())}.log"
-                with crashlog_path.open("w") as f:
-                    f.write(f"Dibbler crashdump @ {ctime()}\n")
-                    if version is not None:
-                        f.write(
-                            f"Dibbler version {version}, "
-                            f"commit {commit_id if commit_id else '<unknown>'}\n",
-                        )
-                    f.write("\n")
-                    traceback.print_exc(file=f)
-                logger.error(
-                    "Unhandled exception in main loop: %s: %s (see %s for full traceback)",
-                    sys.exc_info()[0].__name__,
-                    sys.exc_info()[1],
-                    crashlog_path,
-                )
-            except:  # noqa: S110
-                pass
+                crashdump_path = write_crashdump(e)
+            except OSError as crashdump_error:
+                print(f"Could not write crash dump: {crashdump_error}")
+                logger.error("Could not write crash dump: %s", crashdump_error)
+            else:
+                logger.info("Wrote crash dump to %s", crashdump_path)
         else:
             break
         print("Restarting main menu.")
