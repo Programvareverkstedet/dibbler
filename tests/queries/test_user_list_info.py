@@ -106,11 +106,16 @@ def test_matches_user_info(sql_session: Session) -> None:
     ]
 
     for row in rows:
-        assert UserInfo(
+        user_info_result = user_info(sql_session, row.user)
+        assert (
             row.last_activity,
             row.products_bought,
             row.products_added,
-        ) == user_info(sql_session, row.user), row.user.name
+        ) == (
+            user_info_result.last_activity,
+            user_info_result.products_bought,
+            user_info_result.products_added,
+        ), row.user.name
 
 
 def test_user_listed_twice_in_trx(sql_session: Session) -> None:
@@ -121,7 +126,7 @@ def test_user_listed_twice_in_trx(sql_session: Session) -> None:
     _set_last_entry_time(sql_session, datetime(2024, 1, 1))
 
     assert user_list_info(sql_session) == [UserListInfo(alice, 0, 3, datetime(2024, 1, 1))]
-    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 3)
+    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 3, 0, 0)
 
 
 def test_streaming(sql_session: Session) -> None:

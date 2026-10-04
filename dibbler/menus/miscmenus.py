@@ -63,12 +63,13 @@ class ShowUserMenu(Menu):
         print(f"RFID: {user.rfid}")
         print(f"Credit: {user.credit} kr")
         info = user_info(self.sql_session, user)
-        last_activity = (
-            f"{info.last_activity:%Y-%m-%d %H:%M:%S}" if info.last_activity is not None else "never"
-        )
-        print(f"Last activity: {last_activity}")
+        print(f"Last activity: {_format_last_activity(info.last_activity)}")
         print(f"Products bought: {info.products_bought}")
         print(f"Products added: {info.products_added}")
+        print(
+            f"Balance adjustments: {info.balance_adjustments} "
+            f"(net {info.balance_adjustment_sum:+} kr)",
+        )
         selector = Selector(
             f"What do you want to know about {user.name}?",
             self.sql_session,

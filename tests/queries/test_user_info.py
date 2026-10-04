@@ -48,7 +48,7 @@ def _add(sql_session: Session, users: list[User], product: Product, amount: int)
 def test_no_activity(sql_session: Session) -> None:
     alice = _make_user(sql_session, "alice")
 
-    assert user_info(sql_session, alice) == UserInfo(None, 0, 0)
+    assert user_info(sql_session, alice) == UserInfo(None, 0, 0, 0, 0)
 
 
 def test_last_activity(sql_session: Session) -> None:
@@ -130,7 +130,7 @@ def test_activity_without_products(sql_session: Session) -> None:
     adjust_balance(sql_session, alice, 10)
     _set_last_entry_time(sql_session, datetime(2024, 1, 1))
 
-    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 0)
+    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 0, 1, -10)
 
 
 def test_time_filter(sql_session: Session) -> None:
@@ -148,26 +148,26 @@ def test_time_filter(sql_session: Session) -> None:
         sql_session,
         alice,
         after_time=datetime(2024, 1, 2),
-    ) == UserInfo(datetime(2024, 1, 3), 2, 4)
+    ) == UserInfo(datetime(2024, 1, 3), 2, 4, 0, 0)
 
     assert user_info(
         sql_session,
         alice,
         before_time=datetime(2024, 1, 2),
-    ) == UserInfo(datetime(2024, 1, 1), 1, 0)
+    ) == UserInfo(datetime(2024, 1, 1), 1, 0, 0, 0)
 
     assert user_info(
         sql_session,
         alice,
         after_time=datetime(2024, 1, 2),
         before_time=datetime(2024, 1, 3),
-    ) == UserInfo(datetime(2024, 1, 2), 2, 0)
+    ) == UserInfo(datetime(2024, 1, 2), 2, 0, 0, 0)
 
     assert user_info(
         sql_session,
         alice,
         after_time=datetime(2024, 1, 4),
-    ) == UserInfo(None, 0, 0)
+    ) == UserInfo(None, 0, 0, 0, 0)
 
 
 def test_invalid_time_range(sql_session: Session) -> None:
@@ -180,3 +180,43 @@ def test_invalid_time_range(sql_session: Session) -> None:
             after_time=datetime(2024, 1, 2),
             before_time=datetime(2024, 1, 1),
         )
+
+
+def test_adjustments(sql_session: Session) -> None:
+    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
+    cola = _make_product(sql_session, "2222222222", "Cola")
+    alice = _make_user(sql_session, "alice")
+    bob = _make_user(sql_session, "bob")
+
+    adjust_stock(sql_session, alice, pepsi, -2)
+    adjust_stock(sql_session, alice, cola, 5)
+    adjust_stock(sql_session, bob, pepsi, 1)
+    adjust_balance(sql_session, alice, 100)
+    adjust_balance(sql_session, alice, -30)
+    adjust_balance(sql_session, bob, 50)
+    transfer(sql_session, bob, alice, 10)
+
+    info = user_info(sql_session, alice)
+
+    assert (info.balance_adjustments, info.balance_adjustment_sum) == (2, -70)
+    assert info.balance_adjustment_sum == alice.credit - 1000 - 10
+
+
+def test_adjustments_time_filter(sql_session: Session) -> None:
+    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
+    alice = _make_user(sql_session, "alice")
+
+    adjust_stock(sql_session, alice, pepsi, -2)
+    _set_last_entry_time(sql_session, datetime(2024, 1, 1))
+    adjust_balance(sql_session, alice, 100)
+    _set_last_entry_time(sql_session, datetime(2024, 1, 1))
+    adjust_stock(sql_session, alice, pepsi, 3)
+    _set_last_entry_time(sql_session, datetime(2024, 1, 2))
+    adjust_balance(sql_session, alice, -30)
+    _set_last_entry_time(sql_session, datetime(2024, 1, 2))
+
+    assert user_info(
+        sql_session,
+        alice,
+        after_time=datetime(2024, 1, 2),
+    ) == UserInfo(datetime(2024, 1, 2), 0, 0, 1, 30)
