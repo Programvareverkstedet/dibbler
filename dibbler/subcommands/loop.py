@@ -194,5 +194,5 @@ def main(sql_session: Session) -> None:
         print("Restarting main menu.")
         try:
             main_menu.sql_session.reset()
-        except:  # noqa: S110
-            pass
+        except Exception as e:
+            logger.error("Could not reset SQL session after crash", exc_info=e)
