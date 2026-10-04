@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+from typing import NoReturn
 
 from sqlalchemy import Engine, create_engine, inspect, select
 from sqlalchemy.exc import DBAPIError, OperationalError
@@ -7,7 +8,20 @@ from sqlalchemy.orm import RelationshipProperty
 from sqlalchemy.orm.clsregistry import _ModuleMarker
 
 from dibbler.lib.helpers import file_is_submissive_and_readable
+from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Base
+
+logger = get_syslog_logger()
+
+
+def _report(message: str) -> None:
+    print(message, file=sys.stderr)
+    logger.error(message)
+
+
+def _fail(message: str) -> NoReturn:
+    _report(message)
+    sys.exit(1)
 
 
 def check_db_health(engine: Engine, verify_table_existence: bool = False) -> None:
@@ -29,14 +43,9 @@ def check_postgres_ping(engine: Engine) -> None:
             result = conn.execute(select(1))
             scalar = result.scalar()
             if scalar != 1 and scalar is not None:
-                print(
-                    "Unexpected response from Postgres when running 'SELECT 1'",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
+                _fail(f"Unexpected response from Postgres when running 'SELECT 1': {scalar!r}")
     except (OperationalError, DBAPIError) as exc:
-        print(f"Failed to connect to Postgres database: {exc}", file=sys.stderr)
-        sys.exit(1)
+        _fail(f"Failed to connect to Postgres database: {exc}")
 
 
 def check_sqlite_file(engine: Engine) -> None:
@@ -55,16 +64,13 @@ def check_sqlite_file(engine: Engine) -> None:
     path = Path(db_path)
 
     if not path.exists():
-        print(f"SQLite database file does not exist: {path}", file=sys.stderr)
-        sys.exit(1)
+        _fail(f"SQLite database file does not exist: {path}")
 
     if not path.is_file():
-        print(f"SQLite database path is not a file: {path}", file=sys.stderr)
-        sys.exit(1)
+        _fail(f"SQLite database path is not a file: {path}")
 
     if not file_is_submissive_and_readable(path):
-        print(f"SQLite database file is not submissive and readable: {path}", file=sys.stderr)
-        sys.exit(1)
+        _fail(f"SQLite database file is not submissive and readable: {path}")
 
     return
 
@@ -91,15 +97,13 @@ def verify_tables_and_columns(engine: Engine) -> None:
                 else:
                     for column in column_prop.columns:
                         if not column.key in columns:
-                            print(
+                            _report(
                                 f"Model '{klass}' declares column '{column.key}' which does not exist in database {engine}",
-                                file=sys.stderr,
                             )
                             errors = True
         else:
-            print(
+            _report(
                 f"Model '{klass}' declares table '{table}' which does not exist in database {engine}",
-                file=sys.stderr,
             )
             errors = True
 
