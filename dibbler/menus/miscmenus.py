@@ -1,15 +1,17 @@
 from collections.abc import Iterator
+from datetime import datetime
 from itertools import chain
 
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
 from dibbler.lib.sql_helpers import iter_in_chunks, iter_rows_in_chunks
-from dibbler.models import Product, User
+from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import (
     adjust_balance,
+    product_info,
     transaction_log_query,
     transfer,
     user_info,
@@ -20,6 +22,22 @@ from dibbler.queries import (
 from .helpermenus import Menu, Selector
 
 MAX_SCREEN_SIZE = 80
+
+
+def _format_last_activity(last_activity: datetime | None) -> str:
+    if last_activity is not None:
+        return f"{last_activity:%Y-%m-%d %H:%M:%S}"
+    return "never"
+
+
+def _page_transaction_log(sql_session: Session, query: Select[tuple[TransactionLog]]) -> None:
+    entries = iter_in_chunks(sql_session, query)
+    first = next(entries, None)
+    if first is None:
+        print("No transactions yet")
+        return
+
+    streaming_pager(render_transaction_log(chain([first], entries), ascii_only=True))
 
 
 class TransferMenu(Menu):
@@ -87,14 +105,10 @@ class ShowUserMenu(Menu):
             print("What what?")
 
     def print_transactions(self, user: User) -> None:
-        query = transaction_log_query(user=user, newest_first=True)
-        entries = iter_in_chunks(self.sql_session, query)
-        first = next(entries, None)
-        if first is None:
-            print("No transactions yet")
-            return
-
-        streaming_pager(render_transaction_log(chain([first], entries), ascii_only=True))
+        _page_transaction_log(
+            self.sql_session,
+            transaction_log_query(user=user, newest_first=True),
+        )
 
     def print_product_stats(self, user: User) -> None:
         query = user_product_stats_query(user=user)
@@ -139,10 +153,13 @@ class UserListMenu(Menu):
             rows = iter_rows_in_chunks(self.sql_session, user_list_info_query())
             for user, bought, added, last_activity in rows:
                 total_credit += user.credit
-                last_activity_str = (
-                    f"{last_activity:%Y-%m-%d %H:%M:%S}" if last_activity is not None else "never"
+                yield line_format % (
+                    user.name,
+                    user.credit,
+                    bought,
+                    added,
+                    _format_last_activity(last_activity),
                 )
-                yield line_format % (user.name, user.credit, bought, added, last_activity_str)
             yield hline
             yield (line_format % ("total credit", total_credit, "", "", "")).rstrip() + "\n"
 
@@ -239,7 +256,26 @@ class ProductSearchMenu(Menu):
         print("barcodes:")
         for code in sorted(bc.code for bc in product.barcodes):
             print(f"  - {code}")
-        # self.pause()
+        info = product_info(self.sql_session, product)
+        print(f"Last activity: {_format_last_activity(info.last_activity)}")
+        print(f"Times bought: {info.times_bought}")
+        print(f"Times added: {info.times_added}")
+        print(f"Stock adjustments: {info.stock_adjustments} (net {info.stock_adjustment_sum:+})")
+        selector = Selector(
+            f"What do you want to know about {product.name}?",
+            self.sql_session,
+            items=[
+                ("transactions", "Transactions"),
+            ],
+        )
+        what = selector.execute()
+        if what == "transactions":
+            _page_transaction_log(
+                self.sql_session,
+                transaction_log_query(product=product, newest_first=True),
+            )
+        else:
+            print("What what?")
 
 
 class TransactionLogMenu(Menu):
@@ -248,12 +284,7 @@ class TransactionLogMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-
-        query = transaction_log_query(newest_first=True)
-        entries = iter_in_chunks(self.sql_session, query)
-        first = next(entries, None)
-        if first is None:
-            print("No transactions yet")
-            return
-
-        streaming_pager(render_transaction_log(chain([first], entries), ascii_only=True))
+        _page_transaction_log(
+            self.sql_session,
+            transaction_log_query(newest_first=True),
+        )
