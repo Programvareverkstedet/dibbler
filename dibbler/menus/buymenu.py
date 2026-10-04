@@ -4,10 +4,13 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
+from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Product, User
 from dibbler.queries import buy_products
 
 from .helpermenus import Menu
+
+logger = get_syslog_logger()
 
 PENALTY_MULTIPLIER = 2
 
@@ -186,7 +189,16 @@ When finished, write an empty line to confirm the purchase.\n"""
                 list(self.products.items()),
             )
             self.sql_session.commit()
+        except ValueError as e:
+            self.sql_session.rollback()
+            print(f"Could not store purchase: {e}")
         except Exception as e:
+            logger.error(
+                "Could not store purchase of %r by %r",
+                {product.name: amount for product, amount in self.products.items()},
+                [user.name for user, _ in self.buyers],
+                exc_info=e,
+            )
             self.sql_session.rollback()
             print(f"Could not store purchase: {e}")
         else:

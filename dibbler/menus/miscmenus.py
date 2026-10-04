@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
 from dibbler.lib.sql_helpers import iter_in_chunks, iter_rows_in_chunks
+from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import (
     adjust_balance,
@@ -20,6 +21,8 @@ from dibbler.queries import (
 )
 
 from .helpermenus import Menu, Selector
+
+logger = get_syslog_logger()
 
 MAX_SCREEN_SIZE = 80
 
@@ -63,7 +66,17 @@ class TransferMenu(Menu):
             print(f"User {user1}'s credit is now {user1.credit:d} kr")
             print(f"User {user2}'s credit is now {user2.credit:d} kr")
             print(f"Comment: {comment}")
+        except ValueError as e:
+            self.sql_session.rollback()
+            print(f"Could not perform transfer: {e}")
         except Exception as e:
+            logger.error(
+                "Could not transfer %d kr from %r to %r",
+                amount,
+                user1.name,
+                user2.name,
+                exc_info=e,
+            )
             self.sql_session.rollback()
             print(f"Could not perform transfer: {e}")
             # self.pause()
@@ -189,7 +202,16 @@ class AdjustCreditMenu(Menu):
             adjust_balance(self.sql_session, user, -amount, description=description)
             self.sql_session.commit()
             print(f"User {user.name}'s credit is now {user.credit:d} kr")
+        except ValueError as e:
+            self.sql_session.rollback()
+            print(f"Could not store transaction: {e}")
         except Exception as e:
+            logger.error(
+                "Could not adjust credit of %r by %d kr",
+                user.name,
+                amount,
+                exc_info=e,
+            )
             self.sql_session.rollback()
             print(f"Could not store transaction: {e}")
             # self.pause()
