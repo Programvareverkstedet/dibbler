@@ -11,6 +11,7 @@ from dibbler.lib.helpers import (
     argmax,
     guess_data_type,
 )
+from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Product, User
 from dibbler.queries import create_user, edit_user, search_product, search_user
 
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
 
     from sqlalchemy.orm import Session
+
+logger = get_syslog_logger()
 
 exit_commands: list[str] = ["exit", "abort", "quit", "bye", "eat flaming death", "q"]
 help_commands: list[str] = ["help", "?"]
@@ -617,12 +620,31 @@ class Menu:
     def execute(self, **_kwargs) -> MenuItemType | int | None:
         self.set_context(None)
         try:
-            return self._execute(**_kwargs)
+            result = self._execute(**_kwargs)
         except ExitMenuException:
             if self.rollback_on_exit:
+                self.warn_if_dirty()
                 self.sql_session.rollback()
             self.at_exit()
             return None
+        if self.rollback_on_exit and self.warn_if_dirty():
+            self.sql_session.rollback()
+        return result
+
+    def warn_if_dirty(self) -> bool:
+        session = self.sql_session
+        pending = [
+            *session.new,
+            *(obj for obj in session.dirty if session.is_modified(obj)),
+            *session.deleted,
+        ]
+        if pending:
+            logger.warning(
+                "Menu %r exited with uncommitted changes, rolling back: %s",
+                self.name,
+                pending,
+            )
+        return bool(pending)
 
     def _execute(self, **_kwargs) -> MenuItemType | int | None:
         while True:
