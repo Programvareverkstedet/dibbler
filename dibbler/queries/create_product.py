@@ -3,8 +3,10 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, ProductBarcode, ProductLog
+from dibbler.models import Product, ProductBarcode, ProductLog, User
 from dibbler.models.enums import ProductLogEntryType
+
+from .adjust_stock import adjust_stock
 
 
 def create_product(
@@ -14,6 +16,7 @@ def create_product(
     price: int,
     stock: int = 0,
     hidden: bool = False,
+    user: User | None = None,
 ) -> Product:
     if not bar_code:
         raise ValueError("Barcode cannot be empty.")
@@ -36,10 +39,13 @@ def create_product(
     if price <= 0:
         raise ValueError("Price must be positive.")
 
+    if stock != 0 and user is None:
+        raise ValueError("A user is required to set a non-zero initial stock.")
+
     if sql_session.query(ProductBarcode).filter(ProductBarcode.code == bar_code).first():
         raise ValueError("Barcode already in use.")
 
-    product = Product(bar_code, name, price, stock, hidden)
+    product = Product(bar_code, name, price, 0, hidden)
     sql_session.add(product)
     sql_session.flush()
 
@@ -62,5 +68,9 @@ def create_product(
         ),
     )
     sql_session.flush()
+
+    if stock != 0:
+        assert user is not None
+        adjust_stock(sql_session, user, product, stock)
 
     return product

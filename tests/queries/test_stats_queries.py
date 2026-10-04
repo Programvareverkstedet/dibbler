@@ -94,6 +94,7 @@ class CreateProduct(NamedTuple):
     price: int
     stock: int = 0
     hidden: bool = False
+    user: str | None = None
 
 
 class Buy(NamedTuple):
@@ -161,10 +162,10 @@ TIMELINE: list[tuple[int, Event]] = [
 
     # Never active, zero balance
     (500, CreateUser("mallory")),
-    (500, CreateProduct("1111111111", "Pepsi", 10, stock=20)),
-    (500, CreateProduct("2222222222", "Cola", 15, stock=5)),
+    (500, CreateProduct("1111111111", "Pepsi", 10, stock=20, user="alice")),
+    (500, CreateProduct("2222222222", "Cola", 15, stock=5, user="alice")),
     (500, CreateProduct("3333333333", "Solo", 12)),
-    (500, CreateProduct("4444444444", "Fanta", 8, stock=3, hidden=True)),
+    (500, CreateProduct("4444444444", "Fanta", 8, stock=3, hidden=True, user="alice")),
 
     (400, CreateProduct("5555555555", "Cola Zero", 15)),
     (400, AddStock(["bob"], {"Cola Zero": (4, 60)})),
@@ -207,8 +208,16 @@ def _apply(
     match event:
         case CreateUser(name, credit):
             users[name] = create_user(sql_session, name, credit=credit)
-        case CreateProduct(bar_code, name, price, stock, hidden):
-            products[name] = create_product(sql_session, bar_code, name, price, stock, hidden)
+        case CreateProduct(bar_code, name, price, stock, hidden, user):
+            products[name] = create_product(
+                sql_session,
+                bar_code,
+                name,
+                price,
+                stock,
+                hidden,
+                users[user] if user is not None else None,
+            )
         case Buy(buyers, bought):
             buy_products(
                 sql_session,

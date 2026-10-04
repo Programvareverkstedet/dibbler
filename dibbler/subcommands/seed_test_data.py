@@ -27,10 +27,12 @@ def clear_db(sql_session: Session) -> None:
 def main(sql_session: Session) -> None:
     clear_db(sql_session)
 
-    for product in MOCK_PRODUCTS:
-        create_product(sql_session, **product)  # ty: ignore[invalid-argument-type]
-
-    for user in MOCK_USERS:
+    users = [
         create_user(sql_session, **user)  # ty: ignore[invalid-argument-type]
+        for user in MOCK_USERS
+    ]
+
+    for product in MOCK_PRODUCTS:
+        create_product(sql_session, **product, user=users[0])  # ty: ignore[invalid-argument-type]
 
     sql_session.commit()
