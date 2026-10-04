@@ -392,10 +392,18 @@ class Menu:
                         add_nonexisting,
                         find_hidden_products,
                     )
-                # Her kan det legges inn en except ValueError,
-                # men da blir det fort mye plaging av brukeren
+                # Det blir fort mye plaging av brukeren hvis vi håndterer alle `ValueError`-er her
+                except ValueError as e:
+                    print(e)
                 except Exception as e:
                     print(e)
+                    logger.error(
+                        "Unexpected error while searching for %r: %s: %s",
+                        " ".join(search_lst[1:]),
+                        type(e).__name__,
+                        e,
+                        exc_info=e,
+                    )
         return result, num
 
     def search_for_thing(
@@ -454,9 +462,18 @@ class Menu:
                 try:
                     user = create_user(self.sql_session, string)
                     self.sql_session.commit()
-                except (SQLAlchemyError, ValueError) as e:
+                except ValueError as e:
                     self.sql_session.rollback()
                     print(f"Could not create user {string}: {e}")
+                    return None
+                except SQLAlchemyError as e:
+                    self.sql_session.rollback()
+                    print(f"Could not create user {string}: {e}")
+                    logger.error(
+                        "Could not create user %r",
+                        string,
+                        exc_info=e,
+                    )
                     return None
                 return user
 
@@ -482,9 +499,18 @@ class Menu:
                         try:
                             user = create_user(self.sql_session, username, card=string)
                             self.sql_session.commit()
-                        except (SQLAlchemyError, ValueError) as e:
+                        except ValueError as e:
                             self.sql_session.rollback()
                             print(f"Could not create user {username}: {e}")
+                            return None
+                        except SQLAlchemyError as e:
+                            self.sql_session.rollback()
+                            print(f"Could not create user {username}: {e}")
+                            logger.error(
+                                "Could not create user %r",
+                                username,
+                                exc_info=e,
+                            )
                             return None
                         return user
 
@@ -494,9 +520,18 @@ class Menu:
                         try:
                             edit_user(self.sql_session, user, card=string)
                             self.sql_session.commit()
-                        except (SQLAlchemyError, ValueError) as e:
+                        except ValueError as e:
                             self.sql_session.rollback()
                             print(f"Could not set card number of {user.name}: {e}")
+                            return None
+                        except SQLAlchemyError as e:
+                            self.sql_session.rollback()
+                            print(f"Could not set card number of {user.name}: {e}")
+                            logger.error(
+                                "Could not set card number of user %r",
+                                user.name,
+                                exc_info=e,
+                            )
                             return None
                         print(f"Card number of {user.name} set to {string} (was {old_card})")
                         return user
