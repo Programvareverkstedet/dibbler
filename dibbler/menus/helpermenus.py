@@ -453,6 +453,7 @@ class Menu:
                     return None
                 try:
                     user = create_user(self.sql_session, string)
+                    self.sql_session.commit()
                 except (SQLAlchemyError, ValueError) as e:
                     self.sql_session.rollback()
                     print(f"Could not create user {string}: {e}")
@@ -480,6 +481,7 @@ class Menu:
                         assert username is not None
                         try:
                             user = create_user(self.sql_session, username, card=string)
+                            self.sql_session.commit()
                         except (SQLAlchemyError, ValueError) as e:
                             self.sql_session.rollback()
                             print(f"Could not create user {username}: {e}")
@@ -491,6 +493,7 @@ class Menu:
                         old_card = user.card
                         try:
                             edit_user(self.sql_session, user, card=string)
+                            self.sql_session.commit()
                         except (SQLAlchemyError, ValueError) as e:
                             self.sql_session.rollback()
                             print(f"Could not set card number of {user.name}: {e}")
