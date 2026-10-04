@@ -68,6 +68,15 @@ _QUESTION_MARK_CODEC_ERROR_HANDLER_ID = "dibbler-question-mark"
 def _replace_with_question_mark(error: UnicodeError) -> tuple[str, int]:
     if not isinstance(error, UnicodeDecodeError):
         raise error
+
+    undecodable_byte = error.object[error.start : error.end]
+    as_latin1 = undecodable_byte.decode("iso8859-1")
+    logger.warning(
+        "Replaced undecodable stdin bytes with '?': %r%s",
+        undecodable_byte,
+        f" ({as_latin1})" if as_latin1.isprintable() else "",
+    )
+
     return "?", error.end
 
 
