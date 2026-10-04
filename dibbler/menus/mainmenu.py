@@ -4,9 +4,13 @@ import sys
 
 from sqlalchemy.orm import Session
 
+from dibbler.lib.syslog import get_syslog_logger
+
 from .buymenu import BuyMenu
 from .faq import FAQMenu
 from .helpermenus import Menu
+
+logger = get_syslog_logger()
 
 faq_commands = ["faq"]
 restart_commands = ["restart"]
@@ -19,6 +23,7 @@ def restart() -> None:
         os.execv(sys.argv[0], sys.argv)  # noqa: S606 we are restarting ourselves, it's fine
     except OSError as e:
         print(f"Restart failed: {e}")
+        logger.error("Restart failed: %s", e)
 
 
 class MainMenu(Menu):
