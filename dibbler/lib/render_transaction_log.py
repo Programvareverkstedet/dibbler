@@ -2,7 +2,7 @@ from collections.abc import Iterable, Iterator
 from datetime import date
 from textwrap import fill
 
-from dibbler.models import TransactionLog
+from dibbler.models import TransactionLog, TransactionLogUser
 from dibbler.models.enums import TransactionLogEntryType
 
 # NOTE: ikik, this code is not very beautiful, nor very readable.
@@ -173,13 +173,21 @@ def _render_children(entry: TransactionLog, width: int) -> list[str]:
         prefix = "description: "
         children.append(_wrap(prefix + entry.description, width, hanging=len(prefix)))
 
+    # A user can hold several shares of a joint transaction, collapse them into one line
+    shares_by_user: dict[int, list[TransactionLogUser]] = {}
     for user in sorted(entry.users, key=lambda u: (u.user.name, u.id)):
-        if user.amount is None:
-            children.append(_wrap(f"user {user.user.name}", width))
+        shares_by_user.setdefault(user.user_id, []).append(user)
+
+    for shares in shares_by_user.values():
+        name = shares[0].user.name
+        amounts = [share.amount for share in shares if share.amount is not None]
+        if not amounts:
+            children.append(_wrap(f"user {name}", width))
             continue
-        line = f"user {user.user.name}: credit_diff={-user.amount:+}"
-        if user.penalty not in (None, 1):
-            line += f", penalty={user.penalty}"
+        line = f"user {name}: credit_diff={-sum(amounts):+}"
+        penalties = sorted({share.penalty for share in shares} - {None, 1})
+        if penalties:
+            line += f", penalty={'/'.join(map(str, penalties))}"
         children.append(_wrap(line, width))
 
     for product in sorted(entry.products, key=lambda p: (p.product.name, p.id)):
