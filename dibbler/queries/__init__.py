@@ -14,13 +14,13 @@ __all__ = [
     "search_product",
     "search_user",
     "transaction_log",
-    "transaction_log_query",
+    "transaction_log_stream",
     "transfer",
     "user_info",
     "user_list_info",
-    "user_list_info_query",
+    "user_list_info_stream",
     "user_product_stats",
-    "user_product_stats_query",
+    "user_product_stats_stream",
 ]
 
 from .add_bar_code import add_bar_code
@@ -37,8 +37,11 @@ from .product_info import product_info
 from .remove_bar_code import remove_bar_code
 from .search_product import search_product
 from .search_user import search_user
-from .transaction_log import transaction_log, transaction_log_query
+from .transaction_log import transaction_log, transaction_log_stream
 from .transfer import transfer
 from .user_info import user_info
-from .user_list_info import user_list_info, user_list_info_query
-from .user_product_stats import user_product_stats, user_product_stats_query
+from .user_list_info import user_list_info, user_list_info_stream
+from .user_product_stats import (
+    user_product_stats,
+    user_product_stats_stream,
+)

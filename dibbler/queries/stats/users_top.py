@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from datetime import datetime
 from typing import NamedTuple
 
@@ -12,6 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks
 from dibbler.models import TransactionLog, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
@@ -23,7 +25,7 @@ class UserCredit(NamedTuple):
     credit: int
 
 
-def _list_users_top_query(
+def _users_top_query(
     entry_type: TransactionLogEntryType,
     rank_by: SQLColumnExpression[int | None],
     conditions: list[ColumnElement[bool]],
@@ -46,7 +48,7 @@ def _list_users_top_query(
     )
 
 
-def _list_users_top(
+def _users_top_list(
     sql_session: Session,
     query: Select[tuple[User, int]],
     limit: int | None,
@@ -57,11 +59,19 @@ def _list_users_top(
     return [UserCredit(*row) for row in sql_session.execute(query.limit(limit))]
 
 
-def list_users_top_spending_query(
+def _users_top_stream(
+    sql_session: Session,
+    query: Select[tuple[User, int]],
+    chunk_size: int,
+) -> Iterator[UserCredit]:
+    return (UserCredit(*row) for row in iter_rows_in_chunks(sql_session, query, chunk_size))
+
+
+def users_top_spending_query(
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> Select[tuple[User, int]]:
-    return _list_users_top_query(
+    return _users_top_query(
         entry_type=TransactionLogEntryType.BUY_PRODUCT,
         rank_by=TransactionLogUser.amount,
         conditions=[],
@@ -70,25 +80,41 @@ def list_users_top_spending_query(
     )
 
 
-def list_users_top_spending(
+def users_top_spending_list(
     sql_session: Session,
     limit: int | None = 20,
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> list[UserCredit]:
     """Top users by credit spent on purchases (including penalties)"""
-    return _list_users_top(
+    return _users_top_list(
         sql_session,
-        list_users_top_spending_query(after_time, before_time),
+        users_top_spending_query(after_time, before_time),
         limit,
     )
 
 
-def list_users_top_restocking_query(
+def users_top_spending_stream(
+    sql_session: Session,
+    after_time: datetime | None = None,
+    before_time: datetime | None = None,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[UserCredit]:
+    """
+    Streaming variant of `users_top_spending_list`, which fetches `chunk_size` users at a time.
+    """
+    return _users_top_stream(
+        sql_session,
+        users_top_spending_query(after_time, before_time),
+        chunk_size,
+    )
+
+
+def users_top_restocking_query(
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> Select[tuple[User, int]]:
-    return _list_users_top_query(
+    return _users_top_query(
         entry_type=TransactionLogEntryType.ADD_PRODUCT,
         rank_by=-TransactionLogUser.amount,
         conditions=[],
@@ -97,25 +123,42 @@ def list_users_top_restocking_query(
     )
 
 
-def list_users_top_restocking(
+def users_top_restocking_list(
     sql_session: Session,
     limit: int | None = 20,
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> list[UserCredit]:
     """Top users by credit received for adding stock."""
-    return _list_users_top(
+    return _users_top_list(
         sql_session,
-        list_users_top_restocking_query(after_time, before_time),
+        users_top_restocking_query(after_time, before_time),
         limit,
     )
 
 
-def list_users_top_depositing_query(
+def users_top_restocking_stream(
+    sql_session: Session,
+    after_time: datetime | None = None,
+    before_time: datetime | None = None,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[UserCredit]:
+    """
+    Streaming variant of `users_top_restocking_list`, which fetches `chunk_size` users at a time.
+    Unlike `users_top_restocking_list`, every matching user is included.
+    """
+    return _users_top_stream(
+        sql_session,
+        users_top_restocking_query(after_time, before_time),
+        chunk_size,
+    )
+
+
+def users_top_depositing_query(
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> Select[tuple[User, int]]:
-    return _list_users_top_query(
+    return _users_top_query(
         entry_type=TransactionLogEntryType.ADJUST_BALANCE,
         rank_by=-TransactionLogUser.amount,
         conditions=[TransactionLogUser.amount < 0],
@@ -124,25 +167,42 @@ def list_users_top_depositing_query(
     )
 
 
-def list_users_top_depositing(
+def users_top_depositing_list(
     sql_session: Session,
     limit: int | None = 20,
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> list[UserCredit]:
     """Top users by credit deposited through balance adjustments."""
-    return _list_users_top(
+    return _users_top_list(
         sql_session,
-        list_users_top_depositing_query(after_time, before_time),
+        users_top_depositing_query(after_time, before_time),
         limit,
     )
 
 
-def list_users_top_withdrawing_query(
+def users_top_depositing_stream(
+    sql_session: Session,
+    after_time: datetime | None = None,
+    before_time: datetime | None = None,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[UserCredit]:
+    """
+    Streaming variant of `users_top_depositing_list`, which fetches `chunk_size` users at a time.
+    Unlike `users_top_depositing_list`, every matching user is included.
+    """
+    return _users_top_stream(
+        sql_session,
+        users_top_depositing_query(after_time, before_time),
+        chunk_size,
+    )
+
+
+def users_top_withdrawing_query(
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> Select[tuple[User, int]]:
-    return _list_users_top_query(
+    return _users_top_query(
         entry_type=TransactionLogEntryType.ADJUST_BALANCE,
         rank_by=TransactionLogUser.amount,
         conditions=[TransactionLogUser.amount > 0],
@@ -151,15 +211,32 @@ def list_users_top_withdrawing_query(
     )
 
 
-def list_users_top_withdrawing(
+def users_top_withdrawing_list(
     sql_session: Session,
     limit: int | None = 20,
     after_time: datetime | None = None,
     before_time: datetime | None = None,
 ) -> list[UserCredit]:
     """Top users by credit withdrawn through balance adjustments."""
-    return _list_users_top(
+    return _users_top_list(
         sql_session,
-        list_users_top_withdrawing_query(after_time, before_time),
+        users_top_withdrawing_query(after_time, before_time),
         limit,
+    )
+
+
+def users_top_withdrawing_stream(
+    sql_session: Session,
+    after_time: datetime | None = None,
+    before_time: datetime | None = None,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[UserCredit]:
+    """
+    Streaming variant of `users_top_withdrawing_list`, which fetches `chunk_size` users at a time.
+    Unlike `users_top_withdrawing_list`, every matching user is included.
+    """
+    return _users_top_stream(
+        sql_session,
+        users_top_withdrawing_query(after_time, before_time),
+        chunk_size,
     )

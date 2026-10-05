@@ -1,9 +1,11 @@
+from collections.abc import Iterator
 from datetime import datetime
 from typing import NamedTuple
 
 from sqlalchemy import Integer, Select, case, func, select
 from sqlalchemy.orm import Session
 
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks
 from dibbler.models import TransactionLog, TransactionLogProduct, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
@@ -87,3 +89,12 @@ def user_list_info_query() -> Select[tuple[User, int, int, datetime | None]]:
 def user_list_info(sql_session: Session) -> list[UserListInfo]:
     """Retrieve all users with their products bought/added counts and last activity."""
     return [UserListInfo(*row) for row in sql_session.execute(user_list_info_query())]
+
+
+def user_list_info_stream(
+    sql_session: Session,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[UserListInfo]:
+    """Streaming variant of `user_list_info`, which fetches `chunk_size` users at a time."""
+    query = user_list_info_query()
+    return (UserListInfo(*row) for row in iter_rows_in_chunks(sql_session, query, chunk_size))

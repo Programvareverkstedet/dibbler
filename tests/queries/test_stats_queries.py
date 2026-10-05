@@ -1,14 +1,13 @@
 from collections import Counter
-from collections.abc import Callable, Sequence
-from dataclasses import fields, is_dataclass
+from collections.abc import Callable, Iterator, Sequence
 from datetime import datetime, timedelta
+from functools import partial
 from typing import NamedTuple, assert_never
 
 import pytest
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import iter_rows_in_chunks
 from dibbler.models import Product, ProductLog, TransactionLog, User, UserLog
 from dibbler.queries import (
     add_stock,
@@ -21,72 +20,64 @@ from dibbler.queries import (
     transfer,
 )
 from dibbler.queries.stats import (
-    list_daily_stats,
-    list_daily_stats_query,
-    list_products_nonzero_stock,
-    list_products_nonzero_stock_query,
-    list_products_top_selling,
-    list_products_top_selling_query,
-    list_users_top_depositing,
-    list_users_top_depositing_query,
-    list_users_top_restocking,
-    list_users_top_restocking_query,
-    list_users_top_spending,
-    list_users_top_spending_query,
-    list_users_top_withdrawing,
-    list_users_top_withdrawing_query,
+    daily_stats_list,
+    daily_stats_stream,
+    products_nonzero_stock_list,
+    products_nonzero_stock_stream,
+    products_top_selling_list,
+    products_top_selling_stream,
     summarize_product_stock,
     summarize_user_balance,
+    users_top_depositing_list,
+    users_top_depositing_stream,
+    users_top_restocking_list,
+    users_top_restocking_stream,
+    users_top_spending_list,
+    users_top_spending_stream,
+    users_top_withdrawing_list,
+    users_top_withdrawing_stream,
 )
 
 STATS_QUERIES: list[Callable[[Session], object]] = [
-    list_daily_stats,
-    list_products_nonzero_stock,
-    list_products_top_selling,
-    list_products_top_selling,
-    list_users_top_depositing,
-    list_users_top_restocking,
-    list_users_top_spending,
+    daily_stats_list,
+    products_nonzero_stock_list,
+    products_top_selling_list,
+    products_top_selling_list,
+    users_top_depositing_list,
+    users_top_restocking_list,
+    users_top_spending_list,
     summarize_product_stock,
     summarize_user_balance,
 ]
 
 STREAMABLE_QUERIES = [
     pytest.param(
-        list_products_nonzero_stock_query,
-        list_products_nonzero_stock,
-        id="list_products_nonzero_stock",
+        products_nonzero_stock_stream,
+        products_nonzero_stock_list,
+        id="products_nonzero_stock_list",
     ),
     pytest.param(
-        list_products_top_selling_query,
-        lambda sql_session: list_products_top_selling(sql_session, limit=None),
-        id="list_products_top_selling",
+        products_top_selling_stream,
+        partial(products_top_selling_list, limit=None),
+        id="products_top_selling_list",
     ),
     pytest.param(
-        lambda: list_daily_stats_query(after_time=None),
-        lambda sql_session: list_daily_stats(sql_session, after_time=None),
-        id="list_daily_stats(after_time=None)",
+        partial(daily_stats_stream, after_time=None),
+        partial(daily_stats_list, after_time=None),
+        id="daily_stats_list(after_time=None)",
     ),
     pytest.param(
-        lambda: list_products_top_selling_query(rank_by_credit=True),
-        lambda sql_session: list_products_top_selling(
-            sql_session,
-            limit=None,
-            rank_by_credit=True,
-        ),
-        id="list_products_top_selling(rank_by_credit)",
+        partial(products_top_selling_stream, rank_by_credit=True),
+        partial(products_top_selling_list, limit=None, rank_by_credit=True),
+        id="products_top_selling_list(rank_by_credit)",
     ),
     *(
-        pytest.param(
-            query,
-            lambda sql_session, list_function=list_function: list_function(sql_session, limit=None),
-            id=list_function.__name__,
-        )
-        for query, list_function in [
-            (list_users_top_depositing_query, list_users_top_depositing),
-            (list_users_top_restocking_query, list_users_top_restocking),
-            (list_users_top_spending_query, list_users_top_spending),
-            (list_users_top_withdrawing_query, list_users_top_withdrawing),
+        pytest.param(stream_function, partial(list_function, limit=None), id=list_function.__name__)
+        for stream_function, list_function in [
+            (users_top_depositing_stream, users_top_depositing_list),
+            (users_top_restocking_stream, users_top_restocking_list),
+            (users_top_spending_stream, users_top_spending_list),
+            (users_top_withdrawing_stream, users_top_withdrawing_list),
         ]
     ),
 ]
@@ -281,6 +272,7 @@ def _populate(sql_session: Session) -> dict[int, dict[str, int]]:
 
     return stock_history
 
+
 # NOTE: This reuses the same database session for all tests in this module.
 #       If you were to modify the database in a test, it would affect the rest.
 #       All of the tested queries are read-only, so this should be safe.
@@ -314,28 +306,11 @@ def test_stats_query_populated(
     query_function(populated_session)
 
 
-def _as_row(item: object) -> tuple[object, ...]:
-    """The row a list function's result item was built from."""
-    if isinstance(item, tuple):
-        return tuple(item)
-    if is_dataclass(item) and not isinstance(item, type):
-        return tuple(getattr(item, field.name) for field in fields(item))
-    return (item,)
-
-
-@pytest.mark.parametrize(("query_function", "list_function"), STREAMABLE_QUERIES)
+@pytest.mark.parametrize(("stream_function", "list_function"), STREAMABLE_QUERIES)
 def test_stats_query_streamed_matches_list(
     populated_session: Session,
-    query_function: Callable[
-        [],
-        Select[tuple[object, ...]],
-    ],
-    list_function: Callable[
-        [Session],
-        Sequence[object],
-    ],
+    stream_function: Callable[..., Iterator[object]],
+    list_function: Callable[[Session], Sequence[object]],
 ) -> None:
-    streamed = [
-        tuple(row) for row in iter_rows_in_chunks(populated_session, query_function(), chunk_size=2)
-    ]
-    assert streamed == [_as_row(item) for item in list_function(populated_session)]
+    streamed = list(stream_function(populated_session, chunk_size=2))
+    assert streamed == list_function(populated_session)

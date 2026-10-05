@@ -1,8 +1,10 @@
+from collections.abc import Iterator
 from datetime import datetime
 
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session, selectinload
 
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_in_chunks
 from dibbler.models import Product, TransactionLog, TransactionLogProduct, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
@@ -17,10 +19,6 @@ def transaction_log_query(
     limit: int | None = None,
     newest_first: bool = False,
 ) -> Select[tuple[TransactionLog]]:
-    """
-    Query variant of `transaction_log`, useful for use with the `iter_in_chunks` helper.
-    """
-
     if user is not None and product is not None:
         raise ValueError("Cannot filter by both user and product.")
 
@@ -101,3 +99,31 @@ def transaction_log(
         newest_first=newest_first,
     )
     return list(sql_session.scalars(query))
+
+
+def transaction_log_stream(
+    sql_session: Session,
+    user: User | None = None,
+    product: Product | None = None,
+    after_time: datetime | None = None,
+    before_time: datetime | None = None,
+    entry_type: list[TransactionLogEntryType] | None = None,
+    negate_entry_type_filter: bool = False,
+    limit: int | None = None,
+    newest_first: bool = False,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[TransactionLog]:
+    """
+    Streaming variant of `transaction_log`, which fetches `chunk_size` entries at a time.
+    """
+    query = transaction_log_query(
+        user=user,
+        product=product,
+        after_time=after_time,
+        before_time=before_time,
+        entry_type=entry_type,
+        negate_entry_type_filter=negate_entry_type_filter,
+        limit=limit,
+        newest_first=newest_first,
+    )
+    return iter_in_chunks(sql_session, query, chunk_size)

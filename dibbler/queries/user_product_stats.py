@@ -1,9 +1,11 @@
+from collections.abc import Iterator
 from datetime import datetime
 from typing import NamedTuple
 
 from sqlalchemy import Integer, Select, case, func, select
 from sqlalchemy.orm import Session
 
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks
 from dibbler.models import Product, TransactionLog, TransactionLogProduct, User
 from dibbler.models.enums import TransactionLogEntryType
 
@@ -20,10 +22,6 @@ def user_product_stats_query(
     before_time: datetime | None = None,
     limit: int | None = None,
 ) -> Select[tuple[Product, int, int]]:
-    """
-    Query variant of `user_product_stats`, useful for use with the `iter_rows_in_chunks` helper.
-    """
-
     if after_time is not None and before_time is not None and after_time > before_time:
         raise ValueError("after_time cannot be after before_time.")
 
@@ -104,3 +102,23 @@ def user_product_stats(
         limit=limit,
     )
     return [UserProductStats(*row) for row in sql_session.execute(query)]
+
+
+def user_product_stats_stream(
+    sql_session: Session,
+    user: User,
+    after_time: datetime | None = None,
+    before_time: datetime | None = None,
+    limit: int | None = None,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[UserProductStats]:
+    """
+    Streaming variant of `user_product_stats`, which fetches `chunk_size` products at a time.
+    """
+    query = user_product_stats_query(
+        user=user,
+        after_time=after_time,
+        before_time=before_time,
+        limit=limit,
+    )
+    return (UserProductStats(*row) for row in iter_rows_in_chunks(sql_session, query, chunk_size))

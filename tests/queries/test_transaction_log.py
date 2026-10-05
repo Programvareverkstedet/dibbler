@@ -5,10 +5,10 @@ from datetime import datetime, timedelta
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_in_chunks
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE
 from dibbler.models import Product, TransactionLog, TransactionLogProduct, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
-from dibbler.queries import transaction_log, transaction_log_query
+from dibbler.queries import transaction_log, transaction_log_stream
 from tests.helpers import assert_id_order_similar_to_time_order, assign_times
 
 
@@ -121,7 +121,7 @@ def test_streaming(sql_session: Session) -> None:
     limit = 20
     entries = _insert_in_order(sql_session, _generate_a_bunch_of_entries(sql_session, 25))
 
-    streamed = iter_in_chunks(sql_session, transaction_log_query(limit=limit), chunk_size=7)
+    streamed = transaction_log_stream(sql_session, limit=limit, chunk_size=7)
 
     newest_first = list(reversed(entries))[:limit]
     assert _ids(streamed) == _ids(reversed(newest_first))
@@ -133,7 +133,7 @@ def test_time_order(sql_session: Session) -> None:
         _generate_a_bunch_of_entries(sql_session, 2 * DEFAULT_STREAMING_ITER_CHUNK_SIZE + 1),
     )
 
-    streamed = iter_in_chunks(sql_session, transaction_log_query())
+    streamed = transaction_log_stream(sql_session)
 
     assert _ids(streamed) == _ids(entries)
 
@@ -351,7 +351,7 @@ def test_limit_across_streamed_chunks(sql_session: Session) -> None:
         _generate_a_bunch_of_entries(sql_session, 2 * chunk_size + extra),
     )
 
-    streamed = iter_in_chunks(sql_session, transaction_log_query(limit=limit))
+    streamed = transaction_log_stream(sql_session, limit=limit)
 
     newest_first = list(reversed(entries))[:limit]
     assert _ids(streamed) == _ids(reversed(newest_first))

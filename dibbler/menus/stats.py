@@ -1,20 +1,19 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 
-from sqlalchemy import Select
 from sqlalchemy.orm import Session
 
 from dibbler.lib.pager import streaming_pager
-from dibbler.lib.sql_helpers import iter_rows_in_chunks
 from dibbler.lib.tables import Table, TableColumn
 from dibbler.models import Product, User
 from dibbler.queries.stats import (
-    list_products_top_selling_query,
-    list_users_top_depositing_query,
-    list_users_top_restocking_query,
-    list_users_top_spending_query,
-    list_users_top_withdrawing_query,
+    UserCredit,
+    products_top_selling_stream,
     summarize_product_stock,
     summarize_user_balance,
+    users_top_depositing_stream,
+    users_top_restocking_stream,
+    users_top_spending_stream,
+    users_top_withdrawing_stream,
 )
 
 from .helpermenus import Menu
@@ -40,10 +39,8 @@ class ProductPopularityMenu(Menu):
             TableColumn("items sold", 10, align="right"),
             TableColumn("product", Product.name_length),
         )
-        rows = iter_rows_in_chunks(self.sql_session, list_products_top_selling_query())
-        streaming_pager(
-            table.render((sold_amount, product.name) for product, sold_amount, _ in rows),
-        )
+        sales = products_top_selling_stream(self.sql_session)
+        streaming_pager(table.render((s.sold_amount, s.product.name) for s in sales))
 
 
 class ProductRevenueMenu(Menu):
@@ -57,13 +54,9 @@ class ProductRevenueMenu(Menu):
             TableColumn("items sold", 10, align="right"),
             TableColumn("product", Product.name_length),
         )
-        query = list_products_top_selling_query(rank_by_credit=True)
-        rows = iter_rows_in_chunks(self.sql_session, query)
+        sales = products_top_selling_stream(self.sql_session, rank_by_credit=True)
         streaming_pager(
-            table.render(
-                (sold_credit, sold_amount, product.name)
-                for product, sold_amount, sold_credit in rows
-            ),
+            table.render((s.sold_credit, s.sold_amount, s.product.name) for s in sales),
         )
 
 
@@ -93,14 +86,14 @@ class _UserRankingMenu(Menu):
         self,
         name: str,
         sql_session: Session,
-        query: Callable[
-            [],
-            Select[tuple[User, int]],
+        stream_ranking: Callable[
+            [Session],
+            Iterator[UserCredit],
         ],
         credit_header: str,
     ) -> None:
         super().__init__(name, sql_session)
-        self.query = query
+        self.stream_ranking = stream_ranking
         self.credit_header = credit_header
 
     def _execute(self, **_kwargs) -> None:
@@ -109,13 +102,13 @@ class _UserRankingMenu(Menu):
             TableColumn(self.credit_header, 10, align="right"),
             TableColumn("user", User.name_length),
         )
-        rows = iter_rows_in_chunks(self.sql_session, self.query())
-        streaming_pager(table.render((credit, user.name) for user, credit in rows))
+        ranking = self.stream_ranking(self.sql_session)
+        streaming_pager(table.render((u.credit, u.user.name) for u in ranking))
 
 
 class UsersBySpendingMenu(_UserRankingMenu):
     def __init__(self, sql_session: Session) -> None:
-        super().__init__("Users by spending", sql_session, list_users_top_spending_query, "spent")
+        super().__init__("Users by spending", sql_session, users_top_spending_stream, "spent")
 
 
 class UsersByRestockingMenu(_UserRankingMenu):
@@ -123,7 +116,7 @@ class UsersByRestockingMenu(_UserRankingMenu):
         super().__init__(
             "Users by restocking",
             sql_session,
-            list_users_top_restocking_query,
+            users_top_restocking_stream,
             "received",
         )
 
@@ -133,7 +126,7 @@ class UsersByDepositsMenu(_UserRankingMenu):
         super().__init__(
             "Users by deposits",
             sql_session,
-            list_users_top_depositing_query,
+            users_top_depositing_stream,
             "deposited",
         )
 
@@ -143,6 +136,6 @@ class UsersByWithdrawalsMenu(_UserRankingMenu):
         super().__init__(
             "Users by withdrawals",
             sql_session,
-            list_users_top_withdrawing_query,
+            users_top_withdrawing_stream,
             "withdrawn",
         )

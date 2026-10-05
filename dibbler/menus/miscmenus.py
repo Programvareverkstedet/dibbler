@@ -2,23 +2,23 @@ from collections.abc import Iterator
 from datetime import datetime
 from itertools import chain
 
-from sqlalchemy import Select, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
-from dibbler.lib.sql_helpers import iter_in_chunks, iter_rows_in_chunks
+from dibbler.lib.sql_helpers import iter_in_chunks
 from dibbler.lib.syslog import get_syslog_logger
 from dibbler.lib.tables import MAX_SCREEN_SIZE, SEPARATOR, Table, TableColumn
 from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import (
     adjust_balance,
     product_info,
-    transaction_log_query,
+    transaction_log_stream,
     transfer,
     user_info,
-    user_list_info_query,
-    user_product_stats_query,
+    user_list_info_stream,
+    user_product_stats_stream,
 )
 
 from .helpermenus import Menu, Selector
@@ -32,8 +32,7 @@ def _format_last_activity(last_activity: datetime | None) -> str:
     return "never"
 
 
-def _page_transaction_log(sql_session: Session, query: Select[tuple[TransactionLog]]) -> None:
-    entries = iter_in_chunks(sql_session, query)
+def _page_transaction_log(entries: Iterator[TransactionLog]) -> None:
     first = next(entries, None)
     if first is None:
         print("No transactions yet")
@@ -118,14 +117,12 @@ class ShowUserMenu(Menu):
 
     def print_transactions(self, user: User) -> None:
         _page_transaction_log(
-            self.sql_session,
-            transaction_log_query(user=user, newest_first=True),
+            transaction_log_stream(self.sql_session, user=user, newest_first=True),
         )
 
     def print_product_stats(self, user: User) -> None:
-        query = user_product_stats_query(user=user)
-        rows = iter_rows_in_chunks(self.sql_session, query)
-        first = next(rows, None)
+        stats = user_product_stats_stream(self.sql_session, user=user)
+        first = next(stats, None)
         if first is None:
             print("No products bought or added yet")
             return
@@ -139,7 +136,7 @@ class ShowUserMenu(Menu):
         )
         streaming_pager(
             table.render(
-                ((product.name, bought, added) for product, bought, added in chain([first], rows)),
+                ((s.product.name, s.bought, s.added) for s in chain([first], stats)),
                 hline=False,
             ),
         )
@@ -164,17 +161,14 @@ class UserListMenu(Menu):
 
         def rows() -> Iterator[tuple[object, ...]]:
             nonlocal total_credit
-            for user, bought, added, last_activity in iter_rows_in_chunks(
-                self.sql_session,
-                user_list_info_query(),
-            ):
-                total_credit += user.credit
+            for info in user_list_info_stream(self.sql_session):
+                total_credit += info.user.credit
                 yield (
-                    user.name,
-                    user.credit,
-                    bought,
-                    added,
-                    _format_last_activity(last_activity),
+                    info.user.name,
+                    info.user.credit,
+                    info.products_bought,
+                    info.products_added,
+                    _format_last_activity(info.last_activity),
                 )
 
         streaming_pager(
@@ -296,8 +290,7 @@ class ProductSearchMenu(Menu):
         what = selector.execute()
         if what == "transactions":
             _page_transaction_log(
-                self.sql_session,
-                transaction_log_query(product=product, newest_first=True),
+                transaction_log_stream(self.sql_session, product=product, newest_first=True),
             )
         else:
             print("What what?")
@@ -309,7 +302,4 @@ class TransactionLogMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        _page_transaction_log(
-            self.sql_session,
-            transaction_log_query(newest_first=True),
-        )
+        _page_transaction_log(transaction_log_stream(self.sql_session, newest_first=True))

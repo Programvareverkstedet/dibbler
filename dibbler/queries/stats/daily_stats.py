@@ -1,3 +1,4 @@
+from collections.abc import Iterator
 from dataclasses import dataclass, fields
 from datetime import date, datetime, time, timedelta
 from typing import Any
@@ -17,6 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks
 from dibbler.models import (
     ProductLog,
     TransactionLog,
@@ -98,12 +100,11 @@ def _row(
     return columns
 
 
-def list_daily_stats_query(
+def daily_stats_query(
     after_time: datetime | None = UNSET,
     before_time: datetime | None = None,
     newest_first: bool = False,
 ) -> Select[tuple[date, int, int, int, int, int, int, int, int]]:
-    """Query variant of `list_daily_stats`, useful with the `iter_rows_in_chunks` helper."""
     if after_time is UNSET:
         after_time = datetime.combine(date.today() - timedelta(days=29), time.min)
 
@@ -228,7 +229,7 @@ def list_daily_stats_query(
     )
 
 
-def list_daily_stats(
+def daily_stats_list(
     sql_session: Session,
     after_time: datetime | None = UNSET,
     before_time: datetime | None = None,
@@ -241,5 +242,17 @@ def list_daily_stats(
     - `after_time` defaults to the start of the day 29 days ago, which covers the last 30 days
       including today. You can pass `None` to include all history.
     """
-    query = list_daily_stats_query(after_time, before_time, newest_first)
+    query = daily_stats_query(after_time, before_time, newest_first)
     return [DailyStats(*row) for row in sql_session.execute(query)]
+
+
+def daily_stats_stream(
+    sql_session: Session,
+    after_time: datetime | None = UNSET,
+    before_time: datetime | None = None,
+    newest_first: bool = False,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[DailyStats]:
+    """Streaming variant of `daily_stats_list`, which fetches `chunk_size` days at a time."""
+    query = daily_stats_query(after_time, before_time, newest_first)
+    return (DailyStats(*row) for row in iter_rows_in_chunks(sql_session, query, chunk_size))

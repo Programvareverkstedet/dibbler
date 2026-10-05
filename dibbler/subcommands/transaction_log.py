@@ -8,9 +8,8 @@ from sqlalchemy.orm import InstrumentedAttribute, Session
 
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
-from dibbler.lib.sql_helpers import iter_in_chunks
 from dibbler.models import Product, User
-from dibbler.queries import transaction_log_query
+from dibbler.queries import transaction_log_stream
 
 UserOrProduct = TypeVar("UserOrProduct", User, Product)
 
@@ -46,7 +45,8 @@ def main(
     limit: int | None = None,
     reverse: bool = False,
 ) -> None:
-    query = transaction_log_query(
+    entries = transaction_log_stream(
+        sql_session,
         user=_find(sql_session, User, User.name, user) if user is not None else None,
         product=(
             _find(sql_session, Product, Product.name, product) if product is not None else None
@@ -56,7 +56,6 @@ def main(
         limit=limit,
         newest_first=not reverse,
     )
-    entries = iter_in_chunks(sql_session, query)
     first = next(entries, None)
     if first is None:
         print("No transactions yet")

@@ -3,7 +3,6 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import iter_rows_in_chunks
 from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import (
     add_stock,
@@ -13,7 +12,7 @@ from dibbler.queries import (
     transfer,
     user_info,
     user_list_info,
-    user_list_info_query,
+    user_list_info_stream,
 )
 from dibbler.queries.user_info import UserInfo
 from dibbler.queries.user_list_info import UserListInfo
@@ -135,8 +134,7 @@ def test_streaming(sql_session: Session) -> None:
     for i, user in enumerate(users):
         buy_products(sql_session, [(user, 1)], [(pepsi, i + 1)])
 
-    query = user_list_info_query()
-    streamed = [tuple(row) for row in iter_rows_in_chunks(sql_session, query, chunk_size=7)]
+    streamed = list(user_list_info_stream(sql_session, chunk_size=7))
 
     assert streamed == user_list_info(sql_session)
     assert [row[:3] for row in streamed] == [(user, i + 1, 0) for i, user in enumerate(users)]

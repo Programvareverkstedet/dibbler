@@ -4,14 +4,13 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import iter_rows_in_chunks
 from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import (
     add_stock,
     buy_products,
     merge_products,
     user_product_stats,
-    user_product_stats_query,
+    user_product_stats_stream,
 )
 from dibbler.queries.user_product_stats import UserProductStats
 
@@ -204,8 +203,7 @@ def test_streaming(sql_session: Session) -> None:
     products = [_make_product(sql_session, f"{i:010d}", f"product{i:02d}") for i in range(25)]
     buy_products(sql_session, [(alice, 1)], [(p, i + 1) for i, p in enumerate(products)])
 
-    query = user_product_stats_query(user=alice, limit=20)
-    streamed = [tuple(row) for row in iter_rows_in_chunks(sql_session, query, chunk_size=7)]
+    streamed = list(user_product_stats_stream(sql_session, alice, limit=20, chunk_size=7))
 
     assert streamed == user_product_stats(sql_session, alice, limit=20)
     assert streamed == [(p, i + 1, 0) for i, p in reversed(list(enumerate(products)))][:20]
