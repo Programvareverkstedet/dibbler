@@ -9,6 +9,7 @@ from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
 from dibbler.lib.sql_helpers import iter_in_chunks, iter_rows_in_chunks
 from dibbler.lib.syslog import get_syslog_logger
+from dibbler.lib.tables import MAX_SCREEN_SIZE, SEPARATOR, Table, TableColumn
 from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import (
     adjust_balance,
@@ -23,8 +24,6 @@ from dibbler.queries import (
 from .helpermenus import Menu, Selector
 
 logger = get_syslog_logger()
-
-MAX_SCREEN_SIZE = 80
 
 
 def _format_last_activity(last_activity: datetime | None) -> str:
@@ -132,21 +131,18 @@ class ShowUserMenu(Menu):
             return
 
         count_width = len("bought")
-        name_width = MAX_SCREEN_SIZE - 2 * (count_width + 1)
-
-        def line(
-            name: str,
-            bought: int | str,
-            added: int | str,
-        ) -> str:
-            return f"{name[:name_width]:<{name_width}} {bought:>{count_width}} {added:>{count_width}}\n"
-
-        def lines() -> Iterator[str]:
-            yield line("product", "bought", "added")
-            for product, bought, added in chain([first], rows):
-                yield line(product.name, bought, added)
-
-        streaming_pager(lines())
+        name_width = MAX_SCREEN_SIZE - 2 * (count_width + len(SEPARATOR))
+        table = Table(
+            TableColumn("product", name_width, truncate=True),
+            TableColumn("bought", count_width, align="right"),
+            TableColumn("added", count_width, align="right"),
+        )
+        streaming_pager(
+            table.render(
+                ((product.name, bought, added) for product, bought, added in chain([first], rows)),
+                hline=False,
+            ),
+        )
 
 
 class UserListMenu(Menu):
@@ -156,27 +152,37 @@ class UserListMenu(Menu):
     def _execute(self, **_kwargs) -> None:
         self.print_header()
 
-        def lines() -> Iterator[str]:
-            line_format = "%-12s | %6s | %6s | %6s | %-19s\n"
-            header = line_format % ("username", "credit", "bought", "added", "last activity")
-            hline = "-" * (len(header) - 1) + "\n"
-            yield header
-            yield hline
-            total_credit = 0
-            rows = iter_rows_in_chunks(self.sql_session, user_list_info_query())
-            for user, bought, added, last_activity in rows:
+        table = Table(
+            TableColumn("username", 12),
+            TableColumn("credit", 6, align="right"),
+            TableColumn("bought", 6, align="right"),
+            TableColumn("added", 6, align="right"),
+            TableColumn("last activity", 19),
+        )
+
+        total_credit = 0
+
+        def rows() -> Iterator[tuple[object, ...]]:
+            nonlocal total_credit
+            for user, bought, added, last_activity in iter_rows_in_chunks(
+                self.sql_session,
+                user_list_info_query(),
+            ):
                 total_credit += user.credit
-                yield line_format % (
+                yield (
                     user.name,
                     user.credit,
                     bought,
                     added,
                     _format_last_activity(last_activity),
                 )
-            yield hline
-            yield (line_format % ("total credit", total_credit, "", "", "")).rstrip() + "\n"
 
-        streaming_pager(lines())
+        streaming_pager(
+            table.render(
+                rows(),
+                footer=lambda: ("total credit", total_credit, "", "", ""),
+            ),
+        )
 
 
 class AdjustCreditMenu(Menu):
@@ -223,13 +229,17 @@ class ProductListMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        name_width = 40
-        line_format = f"%-20s | %5s | %-{name_width}s | %5s \n"
+        table = Table(
+            TableColumn("bar code", 20),
+            TableColumn("price", 5, align="right"),
+            TableColumn("name", 40, truncate=True),
+            TableColumn("stock", 5, align="right"),
+        )
 
-        def lines() -> Iterator[str]:
-            yield line_format % ("bar code", "price", "name", "stock")
-            yield MAX_SCREEN_SIZE * "-" + "\n"
-            total_value = 0
+        total_value = 0
+
+        def rows() -> Iterator[tuple[object, ...]]:
+            nonlocal total_value
             product_list = (
                 select(Product)
                 .where(Product.hidden.is_(False))
@@ -240,21 +250,14 @@ class ProductListMenu(Menu):
                 codes = sorted(bc.code for bc in p.barcodes)
                 extra = len(codes) - 1
                 barcode_summary = codes[0] if extra == 0 else f"{codes[0]} (+{extra})"
-                yield line_format % (
-                    barcode_summary,
-                    p.price,
-                    p.name[:name_width],
-                    p.stock,
-                )
-            yield MAX_SCREEN_SIZE * "-" + "\n"
-            yield line_format % (
-                "Total value",
-                total_value,
-                "",
-                "",
-            )
+                yield (barcode_summary, p.price, p.name, p.stock)
 
-        streaming_pager(lines())
+        streaming_pager(
+            table.render(
+                rows(),
+                footer=lambda: ("Total value", total_value, "", ""),
+            ),
+        )
 
 
 class ProductSearchMenu(Menu):
