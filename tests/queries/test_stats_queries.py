@@ -1,5 +1,6 @@
 from collections import Counter
 from collections.abc import Callable, Sequence
+from dataclasses import fields, is_dataclass
 from datetime import datetime, timedelta
 from typing import NamedTuple, assert_never
 
@@ -20,6 +21,8 @@ from dibbler.queries import (
     transfer,
 )
 from dibbler.queries.stats import (
+    list_daily_stats,
+    list_daily_stats_query,
     list_products_nonzero_stock,
     list_products_nonzero_stock_query,
     list_products_top_selling,
@@ -37,6 +40,7 @@ from dibbler.queries.stats import (
 )
 
 STATS_QUERIES: list[Callable[[Session], object]] = [
+    list_daily_stats,
     list_products_nonzero_stock,
     list_products_top_selling,
     list_products_top_selling,
@@ -57,6 +61,11 @@ STREAMABLE_QUERIES = [
         list_products_top_selling_query,
         lambda sql_session: list_products_top_selling(sql_session, limit=None),
         id="list_products_top_selling",
+    ),
+    pytest.param(
+        lambda: list_daily_stats_query(after_time=None),
+        lambda sql_session: list_daily_stats(sql_session, after_time=None),
+        id="list_daily_stats(after_time=None)",
     ),
     pytest.param(
         lambda: list_products_top_selling_query(rank_by_credit=True),
@@ -298,6 +307,15 @@ def test_stats_query_populated(
     query_function(sql_session)
 
 
+def _as_row(item: object) -> tuple[object, ...]:
+    """The row a list function's result item was built from."""
+    if isinstance(item, tuple):
+        return tuple(item)
+    if is_dataclass(item) and not isinstance(item, type):
+        return tuple(getattr(item, field.name) for field in fields(item))
+    return (item,)
+
+
 @pytest.mark.parametrize(("query_function", "list_function"), STREAMABLE_QUERIES)
 def test_stats_query_streamed_matches_list(
     sql_session: Session,
@@ -314,6 +332,4 @@ def test_stats_query_streamed_matches_list(
     streamed = [
         tuple(row) for row in iter_rows_in_chunks(sql_session, query_function(), chunk_size=2)
     ]
-    assert streamed == [
-        tuple(row) if isinstance(row, tuple) else (row,) for row in list_function(sql_session)
-    ]
+    assert streamed == [_as_row(item) for item in list_function(sql_session)]

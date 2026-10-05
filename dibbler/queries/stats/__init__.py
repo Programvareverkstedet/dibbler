@@ -1,4 +1,5 @@
 __all__ = [
+    "DailyStats",
     "ProductSales",
     "ProductStockSummary",
     "UserBalanceSummary",
@@ -17,6 +18,7 @@ __all__ = [
     "list_users_top_withdrawing_query",
 ]
 
+from .list_daily_stats import DailyStats, list_daily_stats, list_daily_stats_query
 from .list_products_nonzero_stock import (
     list_products_nonzero_stock,
     list_products_nonzero_stock_query,
