@@ -281,6 +281,14 @@ def _populate(sql_session: Session) -> dict[int, dict[str, int]]:
 
     return stock_history
 
+# NOTE: This reuses the same database session for all tests in this module.
+#       If you were to modify the database in a test, it would affect the rest.
+#       All of the tested queries are read-only, so this should be safe.
+@pytest.fixture(scope="module")
+def populated_session(module_sql_session: Session) -> Session:
+    _populate(module_sql_session)
+    return module_sql_session
+
 
 @pytest.mark.parametrize(
     "query_function",
@@ -300,11 +308,10 @@ def test_stats_query_empty(
     ids=lambda query: query.__name__,
 )
 def test_stats_query_populated(
-    sql_session: Session,
+    populated_session: Session,
     query_function: Callable[[Session], object],
 ) -> None:
-    _populate(sql_session)
-    query_function(sql_session)
+    query_function(populated_session)
 
 
 def _as_row(item: object) -> tuple[object, ...]:
@@ -318,7 +325,7 @@ def _as_row(item: object) -> tuple[object, ...]:
 
 @pytest.mark.parametrize(("query_function", "list_function"), STREAMABLE_QUERIES)
 def test_stats_query_streamed_matches_list(
-    sql_session: Session,
+    populated_session: Session,
     query_function: Callable[
         [],
         Select[tuple[object, ...]],
@@ -328,8 +335,7 @@ def test_stats_query_streamed_matches_list(
         Sequence[object],
     ],
 ) -> None:
-    _populate(sql_session)
     streamed = [
-        tuple(row) for row in iter_rows_in_chunks(sql_session, query_function(), chunk_size=2)
+        tuple(row) for row in iter_rows_in_chunks(populated_session, query_function(), chunk_size=2)
     ]
-    assert streamed == [_as_row(item) for item in list_function(sql_session)]
+    assert streamed == [_as_row(item) for item in list_function(populated_session)]

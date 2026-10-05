@@ -200,7 +200,23 @@ def _postgres_session_engine(request: pytest.FixtureRequest) -> Iterator[Engine]
 @pytest.fixture(scope="function")
 def sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
     """Create a new SQLAlchemy session for testing."""
+    with _create_sql_session(request) as sql_session:
+        yield sql_session
 
+
+@pytest.fixture(scope="module")
+def module_sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
+    """
+    Like `sql_session`, but shared by all tests in a module.
+
+    Useful for module-scoped seeding fixtures.
+    """
+    with _create_sql_session(request) as sql_session:
+        yield sql_session
+
+
+@contextmanager
+def _create_sql_session(request: pytest.FixtureRequest) -> Iterator[Session]:
     if request.config.getoption("--db-driver") == "postgresql":
         engine = request.getfixturevalue("_postgres_session_engine")
         with engine.connect() as connection:
