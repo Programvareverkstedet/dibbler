@@ -11,6 +11,7 @@ from dibbler.queries import (
     edit_product,
     edit_user,
     merge_products,
+    product_list_info,
     remove_bar_code,
 )
 
@@ -455,7 +456,14 @@ class CleanupStockMenu(Menu):
         self.print_header()
         user = self.input_user("User")
 
-        products = self.sql_session.query(Product).filter(Product.stock != 0).all()
+        products = [
+            info.product
+            for info in product_list_info(
+                self.sql_session,
+                include_hidden=True,
+                include_zero_stock=False,
+            )
+        ]
 
         print("Every product in stock will be printed.")
         print("Entering no value will keep current stock or set it to 0 if it is negative.")
