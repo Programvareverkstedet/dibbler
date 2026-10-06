@@ -2,18 +2,17 @@ from collections.abc import Iterator
 from datetime import datetime
 from itertools import chain
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
-from dibbler.lib.sql_helpers import iter_in_chunks
 from dibbler.lib.syslog import get_syslog_logger
 from dibbler.lib.tables import MAX_SCREEN_SIZE, SEPARATOR, Table, TableColumn
-from dibbler.models import Product, TransactionLog, User
+from dibbler.models import TransactionLog, User
 from dibbler.queries import (
     adjust_balance,
     product_info,
+    product_list_info_stream,
     transaction_log_stream,
     transfer,
     user_info,
@@ -234,12 +233,8 @@ class ProductListMenu(Menu):
 
         def rows() -> Iterator[tuple[object, ...]]:
             nonlocal total_value
-            product_list = (
-                select(Product)
-                .where(Product.hidden.is_(False))
-                .order_by(Product.stock.desc(), Product.id)
-            )
-            for p in iter_in_chunks(self.sql_session, product_list):
+            for info in product_list_info_stream(self.sql_session):
+                p = info.product
                 total_value += p.price * p.stock
                 codes = sorted(bc.code for bc in p.barcodes)
                 extra = len(codes) - 1
