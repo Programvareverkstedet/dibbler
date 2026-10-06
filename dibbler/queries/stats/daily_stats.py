@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import (
     ColumnElement,
+    CompoundSelect,
     Date,
     Integer,
     Select,
@@ -18,7 +19,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE
 from dibbler.models import (
     ProductLog,
     TransactionLog,
@@ -100,14 +101,10 @@ def _row(
     return columns
 
 
-def daily_stats_query(
-    after_time: datetime | None = UNSET,
-    before_time: datetime | None = None,
-    newest_first: bool = False,
-) -> Select[tuple[date, int, int, int, int, int, int, int, int]]:
-    if after_time is UNSET:
-        after_time = datetime.combine(date.today() - timedelta(days=29), time.min)
-
+def _activity(
+    after_time: datetime | None,
+    before_time: datetime | None,
+) -> CompoundSelect[tuple[date, int, int, int, int, int, int, int, int]]:
     product_rows = (
         select(
             *_row(
@@ -190,13 +187,34 @@ def daily_stats_query(
         *time_window_conditions(UserLog.time, after_time, before_time),
     )
 
-    activity = union_all(
+    return union_all(
         product_rows,
         user_rows,
         transaction_rows,
         new_product_rows,
         new_user_rows,
-    ).cte("activity")
+    )
+
+
+def _last_day(before_time: datetime | None) -> date:
+    """The last day with any time before `before_time`, or today if `before_time` is unset."""
+    return (before_time - timedelta(seconds=1)).date() if before_time is not None else date.today()
+
+
+def _default_after_time(before_time: datetime | None) -> datetime:
+    """The start of the 30 days up to and including `_last_day(before_time)`."""
+    return datetime.combine(_last_day(before_time) - timedelta(days=29), time.min)
+
+
+def daily_stats_query(
+    after_time: datetime | None = UNSET,
+    before_time: datetime | None = None,
+    newest_first: bool = False,
+) -> Select[tuple[date, int, int, int, int, int, int, int, int]]:
+    if after_time is UNSET:
+        after_time = _default_after_time(before_time)
+
+    activity = _activity(after_time, before_time).cte("activity")
 
     # NOTE: in order to include days with no activity, we need to generate a list of all
     #       days in the requested time window. In SQL, we can do this with a recursive CTE.
@@ -205,9 +223,7 @@ def daily_stats_query(
         if after_time is not None
         else select(func.min(activity.c.day)).scalar_subquery()
     )
-    last_day = (
-        (before_time - timedelta(seconds=1)).date() if before_time is not None else date.today()
-    )
+    last_day = _last_day(before_time)
 
     days = select(first_day.label("day")).where(first_day <= last_day).cte("days", recursive=True)
     days = days.union_all(
@@ -239,11 +255,76 @@ def daily_stats_list(
     Activity grouped by day.
 
     - `after_time` is inclusive and `before_time` is exclusive.
-    - `after_time` defaults to the start of the day 29 days ago, which covers the last 30 days
-      including today. You can pass `None` to include all history.
+    - `after_time` defaults to 30 days before `before_time`, so that the window covers the 30
+      days up to `before_time`, or the last 30 days including today if `before_time` is unset.
+      You can pass `None` to include all history.
     """
     query = daily_stats_query(after_time, before_time, newest_first)
     return [DailyStats(*row) for row in sql_session.execute(query)]
+
+
+def _day_windows(
+    after_time: datetime,
+    before_time: datetime,
+    days: int,
+    reverse: bool = False,
+) -> Iterator[tuple[datetime, datetime]]:
+    """
+    Cut up the time interval into consecutive windows in intervals of `days` days.
+    The intervals are cut at midnight.
+
+    Day windows are ordered from oldest to newest by default.
+    """
+    step = timedelta(days=days)
+    if reverse:
+        end = before_time
+        start = datetime.combine(_last_day(end), time.min) - step + timedelta(days=1)
+        while start > after_time:
+            yield start, end
+            end = start
+            start -= step
+        yield after_time, end
+    else:
+        start = after_time
+        end = datetime.combine(after_time.date(), time.min) + step
+        while end < before_time:
+            yield start, end
+            start = end
+            end += step
+        yield start, before_time
+
+
+def _daily_stats_stream(
+    sql_session: Session,
+    after_time: datetime | None,
+    before_time: datetime | None,
+    newest_first: bool,
+    chunk_size: int,
+) -> Iterator[DailyStats]:
+    if after_time is None:
+        activity = _activity(None, before_time).subquery()
+        first_day = sql_session.scalar(select(func.min(activity.c.day)))
+        if first_day is None:
+            return
+        after_time = datetime.combine(first_day, time.min)
+
+    if before_time is None:
+        # NOTE: setting before_time to the future is essentially the same as None
+        before_time = datetime.combine(date.today() + timedelta(days=1), time.min)
+
+    # NOTE: This could happend if someone passes an after_time in the future.
+    if after_time > before_time:
+        return
+
+    for window_after_time, window_before_time in _day_windows(
+        after_time,
+        before_time,
+        chunk_size,
+        reverse=newest_first,
+    ):
+        query = daily_stats_query(window_after_time, window_before_time, newest_first)
+        for row in sql_session.execute(query):
+            yield DailyStats(*row)
 
 
 def daily_stats_stream(
@@ -253,6 +334,21 @@ def daily_stats_stream(
     newest_first: bool = False,
     chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
 ) -> Iterator[DailyStats]:
-    """Streaming variant of `daily_stats_list`, which fetches `chunk_size` days at a time."""
-    query = daily_stats_query(after_time, before_time, newest_first)
-    return (DailyStats(*row) for row in iter_rows_in_chunks(sql_session, query, chunk_size))
+    """
+    Streaming variant of `daily_stats_list`, which fetches `chunk_size` days at a time.
+
+    Each chunk is a separate query limited to its own days, so that it only has to
+    go through the activity of those days.
+    """
+    if chunk_size <= 0:
+        raise ValueError("Chunk size must be positive.")
+
+    if after_time is UNSET:
+        after_time = _default_after_time(before_time)
+
+    if after_time is not None and before_time is not None and after_time > before_time:
+        raise ValueError("after_time cannot be after before_time.")
+
+    # TODO: assert that after_time is not set in the future?
+
+    return _daily_stats_stream(sql_session, after_time, before_time, newest_first, chunk_size)
