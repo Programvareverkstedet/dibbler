@@ -7,8 +7,8 @@ _LIKE_ESCAPE_CHAR = "\\"
 
 
 def search_product(
-    string: str,
     sql_session: Session,
+    string: str,
     find_hidden_products: bool = True,
 ) -> Product | list[Product] | None:
     assert sql_session is not None

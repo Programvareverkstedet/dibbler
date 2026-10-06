@@ -52,7 +52,7 @@ def test_search_product(
 ) -> None:
     products = _make_products(sql_session)
 
-    result = search_product(query, sql_session, find_hidden_products=find_hidden_products)
+    result = search_product(sql_session, query, find_hidden_products=find_hidden_products)
 
     if isinstance(expected, str):
         assert result is products[expected]
@@ -63,4 +63,4 @@ def test_search_product(
 
 def test_search_product_rejects_empty_string(sql_session: Session) -> None:
     with pytest.raises(ValueError, match="cannot be empty"):
-        search_product("", sql_session)
+        search_product(sql_session, "")

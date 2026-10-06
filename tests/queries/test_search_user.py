@@ -41,7 +41,7 @@ def _make_users(sql_session: Session) -> dict[str, User]:
 def test_search_user(sql_session: Session, query: str, expected: str | set[str]) -> None:
     users = _make_users(sql_session)
 
-    result = search_user(query, sql_session)
+    result = search_user(sql_session, query)
 
     if isinstance(expected, str):
         assert result is users[expected]
@@ -52,4 +52,4 @@ def test_search_user(sql_session: Session, query: str, expected: str | set[str])
 
 def test_search_user_rejects_empty_string(sql_session: Session) -> None:
     with pytest.raises(ValueError, match="cannot be empty"):
-        search_user("", sql_session)
+        search_user(sql_session, "")

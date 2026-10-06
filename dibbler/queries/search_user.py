@@ -7,8 +7,8 @@ _LIKE_ESCAPE_CHAR = "\\"
 
 
 def search_user(
-    string: str,
     sql_session: Session,
+    string: str,
     # NOTE: search_products has 3 parameters, but this one only have 2.
     #       We need an extra parameter for polymorphic purposes.
     ignore_this_flag: None = None,

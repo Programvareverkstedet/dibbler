@@ -420,7 +420,7 @@ class Menu:
         results = {}
         result_values = {}
         for thing in permitted_things:
-            results[thing] = search_fun[thing](search_str, self.sql_session, find_hidden_products)
+            results[thing] = search_fun[thing](self.sql_session, search_str, find_hidden_products)
             result_values[thing] = self.search_result_value(results[thing])
         selected_thing = argmax(result_values)
         if not results[selected_thing]:
@@ -551,12 +551,12 @@ class Menu:
 
     def search_ui(
         self,
-        search_fun: Callable[[str, Session], list[Any] | Any],
+        search_fun: Callable[[Session, str], list[Any] | Any],
         search_str: str,
         thing: str,
     ) -> Any:
         try:
-            result = search_fun(search_str, self.sql_session)
+            result = search_fun(self.sql_session, search_str)
         except ValueError as e:
             print(f"Could not search for {thing}: {e}")
             return None
