@@ -125,7 +125,7 @@ def test_user_listed_twice_in_trx(sql_session: Session) -> None:
     _set_last_entry_time(sql_session, datetime(2024, 1, 1))
 
     assert user_list_info(sql_session) == [UserListInfo(alice, 0, 3, datetime(2024, 1, 1))]
-    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 3, 0, 0)
+    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 3, 0, 0, 0)
 
 
 def test_streaming(sql_session: Session) -> None:

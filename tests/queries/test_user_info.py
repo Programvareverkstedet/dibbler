@@ -48,7 +48,7 @@ def _add(sql_session: Session, users: list[User], product: Product, amount: int)
 def test_no_activity(sql_session: Session) -> None:
     alice = _make_user(sql_session, "alice")
 
-    assert user_info(sql_session, alice) == UserInfo(None, 0, 0, 0, 0)
+    assert user_info(sql_session, alice) == UserInfo(None, 0, 0, 0, 0, 0)
 
 
 def test_last_activity(sql_session: Session) -> None:
@@ -130,7 +130,7 @@ def test_activity_without_products(sql_session: Session) -> None:
     adjust_balance(sql_session, alice, 10)
     _set_last_entry_time(sql_session, datetime(2024, 1, 1))
 
-    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 0, 1, -10)
+    assert user_info(sql_session, alice) == UserInfo(datetime(2024, 1, 1), 0, 0, 0, 1, -10)
 
 
 def test_time_filter(sql_session: Session) -> None:
@@ -148,26 +148,26 @@ def test_time_filter(sql_session: Session) -> None:
         sql_session,
         alice,
         after_time=datetime(2024, 1, 2),
-    ) == UserInfo(datetime(2024, 1, 3), 2, 4, 0, 0)
+    ) == UserInfo(datetime(2024, 1, 3), 2, 4, 0, 0, 0)
 
     assert user_info(
         sql_session,
         alice,
         before_time=datetime(2024, 1, 2),
-    ) == UserInfo(datetime(2024, 1, 1), 1, 0, 0, 0)
+    ) == UserInfo(datetime(2024, 1, 1), 1, 0, 0, 0, 0)
 
     assert user_info(
         sql_session,
         alice,
         after_time=datetime(2024, 1, 2),
         before_time=datetime(2024, 1, 3),
-    ) == UserInfo(datetime(2024, 1, 2), 2, 0, 0, 0)
+    ) == UserInfo(datetime(2024, 1, 2), 2, 0, 0, 0, 0)
 
     assert user_info(
         sql_session,
         alice,
         after_time=datetime(2024, 1, 4),
-    ) == UserInfo(None, 0, 0, 0, 0)
+    ) == UserInfo(None, 0, 0, 0, 0, 0)
 
 
 def test_invalid_time_range(sql_session: Session) -> None:
@@ -198,6 +198,7 @@ def test_adjustments(sql_session: Session) -> None:
 
     info = user_info(sql_session, alice)
 
+    assert info.stock_adjustments == 2
     assert (info.balance_adjustments, info.balance_adjustment_sum) == (2, -70)
     assert info.balance_adjustment_sum == alice.credit - 1000 - 10
 
@@ -219,4 +220,4 @@ def test_adjustments_time_filter(sql_session: Session) -> None:
         sql_session,
         alice,
         after_time=datetime(2024, 1, 2),
-    ) == UserInfo(datetime(2024, 1, 2), 0, 0, 1, 30)
+    ) == UserInfo(datetime(2024, 1, 2), 0, 0, 1, 1, 30)

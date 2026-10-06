@@ -94,6 +94,7 @@ class ShowUserMenu(Menu):
         print(f"Last activity: {_format_last_activity(info.last_activity)}")
         print(f"Products bought: {info.products_bought}")
         print(f"Products added: {info.products_added}")
+        print(f"Stock adjustments: {info.stock_adjustments}")
         print(
             f"Balance adjustments: {info.balance_adjustments} "
             f"(net {info.balance_adjustment_sum:+} kr)",

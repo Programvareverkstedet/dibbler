@@ -21,6 +21,7 @@ class UserInfo(NamedTuple):
     products_added: int
     """Total amount of items the user has added ever."""
 
+    stock_adjustments: int
     """Number of manual stock adjustments done by the user."""
 
     balance_adjustments: int
@@ -82,6 +83,7 @@ def user_info(
         last_activity,
         func.coalesce(func.sum(stats.c.bought), 0),
         func.coalesce(func.sum(stats.c.added), 0),
+        count_entries(TransactionLogEntryType.ADJUST_STOCK),
         count_entries(TransactionLogEntryType.ADJUST_BALANCE),
         balance_adjustment_sum,
     ).select_from(stats)
