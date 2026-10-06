@@ -1,9 +1,9 @@
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, Mapping, Sequence
 from enum import Enum
 from typing import Any, TypeVar
 
-from sqlalchemy import CheckConstraint, ColumnElement, Row, Select, and_, column, or_
-from sqlalchemy.orm import Session
+from sqlalchemy import CheckConstraint, ColumnElement, Row, Select, and_, column, or_, tuple_
+from sqlalchemy.orm import InstrumentedAttribute, Session
 
 T = TypeVar("T")
 TupleT = TypeVar("TupleT", bound=tuple[Any, ...])
@@ -80,3 +80,44 @@ def iter_in_chunks(
     `iter_rows_in_chunks`, but yields the first column only.
     """
     return (row[0] for row in iter_rows_in_chunks(sql_session, query, chunk_size))
+
+
+def iter_in_keyset_chunks(
+    sql_session: Session,
+    query: Select[tuple[T]],
+    keys: Sequence[InstrumentedAttribute[Any]],
+    descending: bool = False,
+    chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+) -> Iterator[T]:
+    """
+    `iter_in_chunks`, but each chunk continues after the last item of the previous chunk
+    instead of skipping past an offset.
+
+    This is generally more efficient than using an offset,
+    see https://use-the-index-luke.com/no-offset
+
+    - The select must yield ORM entities with `keys` as attributes
+    - The select will be ordered by `keys`, overriding any order already set on it
+    - The order must be total
+    """
+
+    query = (
+        query.order_by(None)
+        .order_by(*[key.desc() if descending else key.asc() for key in keys])
+        .offset(None)
+        .limit(chunk_size)
+    )
+
+    position = tuple_(*keys)
+    last: tuple[Any, ...] | None = None
+    while True:
+        chunk_query = query
+        if last is not None:
+            chunk_query = query.where(
+                position < tuple_(*last) if descending else position > tuple_(*last),
+            )
+        chunk = list(sql_session.scalars(chunk_query))
+        yield from chunk
+        if len(chunk) < chunk_size:
+            return
+        last = tuple(getattr(chunk[-1], key.key) for key in keys)

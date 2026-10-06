@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session, selectinload
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_in_chunks
+from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_in_keyset_chunks
 from dibbler.models import Product, TransactionLog, TransactionLogProduct, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
@@ -126,4 +126,10 @@ def transaction_log_stream(
         limit=limit,
         newest_first=newest_first,
     )
-    return iter_in_chunks(sql_session, query, chunk_size)
+    return iter_in_keyset_chunks(
+        sql_session,
+        query,
+        keys=(TransactionLog.time, TransactionLog.id),
+        descending=newest_first,
+        chunk_size=chunk_size,
+    )
