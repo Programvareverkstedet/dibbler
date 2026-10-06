@@ -56,7 +56,7 @@ select = [
     "COM", # flake8-commas
     "ANN",
     # "E", # pycodestyle
-    # "F", # Pyflakes
+    "F", # Pyflakes
     "FA", # flake8-future-annotations
     "I", # isort
     "S", # flake8-bandit

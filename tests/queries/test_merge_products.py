@@ -1,13 +1,10 @@
-from datetime import datetime
 from typing import Any
 
 import pytest
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from dibbler.models import (
     Product,
-    ProductBarcode,
     ProductLog,
     ProductMergedBarcode,
     ProductMergedTransaction,

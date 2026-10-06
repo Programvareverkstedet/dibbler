@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 from typing import NoReturn
 
-from sqlalchemy import Engine, create_engine, inspect, select
+from sqlalchemy import Engine, inspect, select
 from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.orm import RelationshipProperty
 from sqlalchemy.orm.clsregistry import _ModuleMarker

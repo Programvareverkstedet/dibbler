@@ -1,4 +1,3 @@
-from collections import Counter
 from collections.abc import Callable, Iterator, Sequence
 from datetime import datetime, timedelta
 from functools import partial

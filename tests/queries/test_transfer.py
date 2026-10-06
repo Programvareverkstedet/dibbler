@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Transaction, TransactionLog, User
+from dibbler.models import TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import transfer
 
