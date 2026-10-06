@@ -30,6 +30,7 @@ def products_top_selling_query(
     after_time: datetime | None = None,
     before_time: datetime | None = None,
     rank_by_credit: bool = False,
+    include_hidden: bool = False,
 ) -> Select[tuple[Product, int, int]]:
     sold_amount = func.sum(-TransactionLogProduct.amount, type_=Integer)
     sold_credit = func.sum(
@@ -37,7 +38,7 @@ def products_top_selling_query(
         type_=Integer,
     )
 
-    return (
+    query = (
         select(Product, sold_amount, sold_credit)
         .join(TransactionLogProduct, TransactionLogProduct.product_id == Product.id)
         .join(TransactionLogProduct.transaction)
@@ -49,6 +50,11 @@ def products_top_selling_query(
         .order_by((sold_credit if rank_by_credit else sold_amount).desc(), Product.id)
     )
 
+    if not include_hidden:
+        query = query.where(Product.hidden.is_(False))
+
+    return query
+
 
 def products_top_selling_list(
     sql_session: Session,
@@ -56,13 +62,14 @@ def products_top_selling_list(
     after_time: datetime | None = None,
     before_time: datetime | None = None,
     rank_by_credit: bool = False,
+    include_hidden: bool = False,
 ) -> list[ProductSales]:
-    """Top products ranked by number of units sold."""
+    """Top products ranked by number of units sold, optionally including hidden ones."""
 
     if limit is not None and limit <= 0:
         raise ValueError("Limit must be positive.")
 
-    query = products_top_selling_query(after_time, before_time, rank_by_credit)
+    query = products_top_selling_query(after_time, before_time, rank_by_credit, include_hidden)
     return [ProductSales(*row) for row in sql_session.execute(query.limit(limit))]
 
 
@@ -71,11 +78,12 @@ def products_top_selling_stream(
     after_time: datetime | None = None,
     before_time: datetime | None = None,
     rank_by_credit: bool = False,
+    include_hidden: bool = False,
     chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
 ) -> Iterator[ProductSales]:
     """
     Streaming variant of `products_top_selling_list`, which fetches `chunk_size` products
     at a time.
     """
-    query = products_top_selling_query(after_time, before_time, rank_by_credit)
+    query = products_top_selling_query(after_time, before_time, rank_by_credit, include_hidden)
     return (ProductSales(*row) for row in iter_rows_in_chunks(sql_session, query, chunk_size))

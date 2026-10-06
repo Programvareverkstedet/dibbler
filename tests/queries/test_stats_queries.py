@@ -76,6 +76,11 @@ STREAMABLE_QUERIES = [
         partial(products_top_selling_list, limit=None, rank_by_credit=True),
         id="products_top_selling_list(rank_by_credit)",
     ),
+    pytest.param(
+        partial(products_top_selling_stream, include_hidden=True),
+        partial(products_top_selling_list, limit=None, include_hidden=True),
+        id="products_top_selling_list(include_hidden)",
+    ),
     *(
         pytest.param(stream_function, partial(list_function, limit=None), id=list_function.__name__)
         for stream_function, list_function in [
