@@ -1,4 +1,5 @@
 from collections.abc import Callable, Iterator
+from itertools import chain
 
 from sqlalchemy.orm import Session
 
@@ -7,6 +8,7 @@ from dibbler.lib.tables import Table, TableColumn
 from dibbler.models import Product, User
 from dibbler.queries.stats import (
     UserCredit,
+    daily_stats_stream,
     products_top_selling_stream,
     summarize_product_stock,
     summarize_user_balance,
@@ -20,6 +22,7 @@ from .helpermenus import Menu
 
 __all__ = [
     "BalanceMenu",
+    "DailyStatsMenu",
     "ProductPopularityMenu",
     "ProductRevenueMenu",
     "UsersByDepositsMenu",
@@ -79,6 +82,60 @@ class BalanceMenu(Menu):
         text += table.row("Total balance", stock.in_stock_value - balance.total)
         print(text)
         self.pause()
+
+
+class DailyStatsMenu(Menu):
+    def __init__(self, sql_session: Session) -> None:
+        super().__init__("Daily statistics (last 30 days)", sql_session)
+
+    def _execute(self, **_kwargs) -> None:
+        self.print_header()
+        table = Table(
+            TableColumn("day", 10),
+            TableColumn("sold", 5, align="right"),
+            TableColumn("added", 5, align="right"),
+            TableColumn("spent", 6, align="right"),
+            TableColumn("paid", 6, align="right"),
+            TableColumn("trx", 4, align="right"),
+            TableColumn("penal", 5, align="right"),
+            TableColumn("+prod", 5, align="right"),
+            TableColumn("+users", 6, align="right"),
+        )
+        legend = [
+            "sold:   amount of products bought\n",
+            "added:  amount of products added to stock\n",
+            "spent:  credit spent on purchases, including penalties\n",
+            "paid:   credit paid out to users for adding stock\n",
+            "trx:    transactions of any kind\n",
+            "penal:  purchases where at least one buyer had a penalty\n",
+            "+prod:  new products\n",
+            "+users: new users\n",
+            "\n",
+        ]
+        totals = [0] * (len(table.columns) - 1)
+
+        def rows() -> Iterator[tuple[object, ...]]:
+            nonlocal totals
+            for day in daily_stats_stream(self.sql_session, newest_first=True):
+                values = (
+                    -day.sold_amount,
+                    day.added_amount,
+                    -day.sold_credit,
+                    day.added_credit,
+                    day.transaction_count,
+                    day.penalized_purchase_count,
+                    day.new_product_count,
+                    day.new_user_count,
+                )
+                totals = [total + value for total, value in zip(totals, values, strict=True)]
+                yield (f"{day.day:%Y-%m-%d}", *values)
+
+        streaming_pager(
+            chain(
+                legend,
+                table.render(rows(), footer=lambda: ("total", *totals)),
+            ),
+        )
 
 
 class _UserRankingMenu(Menu):

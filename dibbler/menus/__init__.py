@@ -7,6 +7,7 @@ __all__ = [
     "BalanceMenu",
     "BuyMenu",
     "CleanupStockMenu",
+    "DailyStatsMenu",
     "EditProductMenu",
     "EditUserMenu",
     "FAQMenu",
@@ -54,6 +55,7 @@ from .miscmenus import (
 from .printermenu import PrintLabelMenu
 from .stats import (
     BalanceMenu,
+    DailyStatsMenu,
     ProductPopularityMenu,
     ProductRevenueMenu,
     UsersByDepositsMenu,
