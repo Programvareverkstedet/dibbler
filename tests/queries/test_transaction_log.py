@@ -1,11 +1,10 @@
 import random
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from datetime import datetime, timedelta
 
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE
 from dibbler.models import Product, TransactionLog, TransactionLogProduct, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import transaction_log, transaction_log_stream
@@ -113,75 +112,75 @@ def _ids(entries: Iterable[TransactionLog]) -> list[int]:
 # ----------------------------------------------------
 
 
-def test_empty_log(sql_session: Session) -> None:
-    assert transaction_log(sql_session) == []
+def _stream(sql_session: Session, **kwargs: object) -> list[TransactionLog]:
+    return list(transaction_log_stream(sql_session, chunk_size=3, **kwargs))
 
 
-def test_streaming(sql_session: Session) -> None:
-    limit = 20
-    entries = _insert_in_order(sql_session, _generate_a_bunch_of_entries(sql_session, 25))
-
-    streamed = transaction_log_stream(sql_session, limit=limit, chunk_size=7)
-
-    newest_first = list(reversed(entries))[:limit]
-    assert _ids(streamed) == _ids(reversed(newest_first))
+FETCH_FNS = [
+    pytest.param(transaction_log, id="list"),
+    pytest.param(_stream, id="stream"),
+]
 
 
-def test_time_order(sql_session: Session) -> None:
-    entries = _insert_shuffled(
-        sql_session,
-        _generate_a_bunch_of_entries(sql_session, 2 * DEFAULT_STREAMING_ITER_CHUNK_SIZE + 1),
-    )
-
-    streamed = transaction_log_stream(sql_session)
-
-    assert _ids(streamed) == _ids(entries)
+@pytest.mark.parametrize("fetch_fn", FETCH_FNS)
+def test_empty_log(sql_session: Session, fetch_fn: Callable[..., list[TransactionLog]]) -> None:
+    assert fetch_fn(sql_session) == []
 
 
-def test_equal_time_id_order(sql_session: Session) -> None:
-    entries = _generate_a_bunch_of_entries(sql_session, 5)
-    for entry in entries:
-        entry.time = datetime(2024, 1, 1)
-    _insert_trx_entries(sql_session, entries)
-
-    assert _ids(transaction_log(sql_session)) == sorted(_ids(entries))
-
-
-def test_insertion_order_ignored(sql_session: Session) -> None:
+@pytest.mark.parametrize("newest_first", [False, True])
+@pytest.mark.parametrize("fetch_fn", FETCH_FNS)
+def test_time_order(
+    sql_session: Session,
+    fetch_fn: Callable[..., list[TransactionLog]],
+    newest_first: bool,
+) -> None:
     entries = _insert_shuffled(sql_session, _generate_a_bunch_of_entries(sql_session, 25))
+    assert _ids(entries) != sorted(_ids(entries)), "ids should not follow the time order"
 
-    assert _ids(transaction_log(sql_session)) == _ids(entries)
-    assert _ids(entries) != sorted(_ids(entries))
+    result = fetch_fn(sql_session, newest_first=newest_first)
 
-
-def test_newest_first(sql_session: Session) -> None:
-    entries = _insert_shuffled(sql_session, _generate_a_bunch_of_entries(sql_session, 10))
-
-    result = transaction_log(sql_session, newest_first=True)
-
-    assert _ids(result) == _ids(reversed(entries))
+    assert _ids(result) == _ids(reversed(entries) if newest_first else entries)
 
 
-def test_newest_first_equal_time_reverse_id_order(sql_session: Session) -> None:
-    entries = _generate_a_bunch_of_entries(sql_session, 5)
+@pytest.mark.parametrize("newest_first", [False, True])
+@pytest.mark.parametrize("fetch_fn", FETCH_FNS)
+def test_equal_time_id_order(
+    sql_session: Session,
+    fetch_fn: Callable[..., list[TransactionLog]],
+    newest_first: bool,
+) -> None:
+    entries = _generate_a_bunch_of_entries(sql_session, 10)
     for entry in entries:
         entry.time = datetime(2024, 1, 1)
     _insert_trx_entries(sql_session, entries)
 
-    result = transaction_log(sql_session, newest_first=True)
+    result = fetch_fn(sql_session, newest_first=newest_first)
 
-    assert _ids(result) == sorted(_ids(entries), reverse=True)
-
-
-def test_newest_first_with_limit(sql_session: Session) -> None:
-    entries = _insert_shuffled(sql_session, _generate_a_bunch_of_entries(sql_session, 10), seed=7)
-
-    result = transaction_log(sql_session, limit=3, newest_first=True)
-
-    assert _ids(result) == _ids(reversed(entries[-3:]))
+    assert _ids(result) == sorted(_ids(entries), reverse=newest_first)
 
 
-def test_children_loaded(sql_session: Session) -> None:
+def test_streaming_unaffected_by_new_entries(sql_session: Session) -> None:
+    user = _make_user(sql_session, "user")
+    entries = _insert_in_order(sql_session, [_adjust_balance(user) for _ in range(10)])
+
+    stream = transaction_log_stream(sql_session, newest_first=True, chunk_size=3)
+    streamed = [next(stream) for _ in range(3)]
+
+    # NOTE: this would've pushed an already streamed entry into the next chunk
+    #       if we were chunking with OFFSET and LIMIT instead of keysets.
+    newer = _adjust_balance(user)
+    newer.time = entries[-1].time + timedelta(minutes=1)
+    _insert_trx_entries(sql_session, [newer])
+    streamed += stream
+
+    assert _ids(streamed) == _ids(reversed(entries))
+
+
+@pytest.mark.parametrize("fetch_fn", FETCH_FNS)
+def test_children_loaded(
+    sql_session: Session,
+    fetch_fn: Callable[..., list[TransactionLog]],
+) -> None:
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
     chips = _make_product(sql_session, "chips")
@@ -192,7 +191,7 @@ def test_children_loaded(sql_session: Session) -> None:
         ],
     )
 
-    (entry,) = transaction_log(sql_session)
+    (entry,) = fetch_fn(sql_session)
 
     assert {u.user.name for u in entry.users} == {"alice", "bob"}
     assert {p.product.name for p in entry.products} == {"chips"}
@@ -330,31 +329,21 @@ def test_time_range_is_inclusive_exclusive(sql_session: Session) -> None:
     assert _ids(result) == _ids(entries[1:4])
 
 
-def test_limit(sql_session: Session) -> None:
+@pytest.mark.parametrize("limit", [5, 30])
+@pytest.mark.parametrize("newest_first", [False, True])
+@pytest.mark.parametrize("fetch_fn", FETCH_FNS)
+def test_limit(
+    sql_session: Session,
+    fetch_fn: Callable[..., list[TransactionLog]],
+    newest_first: bool,
+    limit: int,
+) -> None:
     entries = _insert_shuffled(sql_session, _generate_a_bunch_of_entries(sql_session, 20))
 
-    assert _ids(transaction_log(sql_session, limit=5)) == _ids(entries[15:])
+    result = fetch_fn(sql_session, limit=limit, newest_first=newest_first)
 
-
-def test_limit_larger_than_log(sql_session: Session) -> None:
-    entries = _insert_in_order(sql_session, _generate_a_bunch_of_entries(sql_session, 3))
-
-    assert _ids(transaction_log(sql_session, limit=100)) == _ids(entries)
-
-
-def test_limit_across_streamed_chunks(sql_session: Session) -> None:
-    chunk_size = DEFAULT_STREAMING_ITER_CHUNK_SIZE
-    extra = chunk_size // 2
-    limit = chunk_size + extra
-    entries = _insert_in_order(
-        sql_session,
-        _generate_a_bunch_of_entries(sql_session, 2 * chunk_size + extra),
-    )
-
-    streamed = transaction_log_stream(sql_session, limit=limit)
-
-    newest_first = list(reversed(entries))[:limit]
-    assert _ids(streamed) == _ids(reversed(newest_first))
+    most_recent = entries[-limit:]
+    assert _ids(result) == _ids(reversed(most_recent) if newest_first else most_recent)
 
 
 def test_limit_after_filters(sql_session: Session) -> None:
