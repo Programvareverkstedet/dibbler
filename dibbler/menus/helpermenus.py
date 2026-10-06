@@ -462,17 +462,12 @@ class Menu:
                 try:
                     user = create_user(self.sql_session, string)
                     self.sql_session.commit()
-                except ValueError as e:
-                    self.sql_session.rollback()
-                    print(f"Could not create user {string}: {e}")
-                    return None
-                except SQLAlchemyError as e:
-                    self.sql_session.rollback()
-                    print(f"Could not create user {string}: {e}")
-                    logger.error(
+                except (ValueError, SQLAlchemyError) as e:
+                    self.rollback_and_report(
+                        e,
+                        f"Could not create user {string}",
                         "Could not create user %r",
                         string,
-                        exc_info=e,
                     )
                     return None
                 return user
@@ -499,17 +494,12 @@ class Menu:
                         try:
                             user = create_user(self.sql_session, username, card=string)
                             self.sql_session.commit()
-                        except ValueError as e:
-                            self.sql_session.rollback()
-                            print(f"Could not create user {username}: {e}")
-                            return None
-                        except SQLAlchemyError as e:
-                            self.sql_session.rollback()
-                            print(f"Could not create user {username}: {e}")
-                            logger.error(
+                        except (ValueError, SQLAlchemyError) as e:
+                            self.rollback_and_report(
+                                e,
+                                f"Could not create user {username}",
                                 "Could not create user %r",
                                 username,
-                                exc_info=e,
                             )
                             return None
                         return user
@@ -520,17 +510,12 @@ class Menu:
                         try:
                             edit_user(self.sql_session, user, card=string)
                             self.sql_session.commit()
-                        except ValueError as e:
-                            self.sql_session.rollback()
-                            print(f"Could not set card number of {user.name}: {e}")
-                            return None
-                        except SQLAlchemyError as e:
-                            self.sql_session.rollback()
-                            print(f"Could not set card number of {user.name}: {e}")
-                            logger.error(
+                        except (ValueError, SQLAlchemyError) as e:
+                            self.rollback_and_report(
+                                e,
+                                f"Could not set card number of {user.name}",
                                 "Could not set card number of user %r",
                                 user.name,
-                                exc_info=e,
                             )
                             return None
                         print(f"Card number of {user.name} set to {string} (was {old_card})")
@@ -668,6 +653,20 @@ class Menu:
         if self.rollback_on_exit and self.warn_if_dirty():
             self.sql_session.rollback()
         return result
+
+    def rollback_and_report(
+        self,
+        error: Exception,
+        message: str,
+        log_message: str,
+        *log_args: object,
+    ) -> None:
+        """Roll back a failed change, and tell the user why it failed."""
+        self.sql_session.rollback()
+        print(f"{message}: {error}")
+        if not isinstance(error, ValueError):
+            # Unhandled invariants should be properly logged so we can fix them.
+            logger.error(log_message, *log_args, exc_info=error)
 
     def warn_if_dirty(self) -> bool:
         session = self.sql_session

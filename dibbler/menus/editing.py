@@ -2,7 +2,6 @@ import sqlalchemy
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Product, User
 from dibbler.queries import (
     add_bar_code,
@@ -16,8 +15,6 @@ from dibbler.queries import (
 )
 
 from .helpermenus import Menu, Selector
-
-logger = get_syslog_logger()
 
 __all__ = [
     "AddUserMenu",
@@ -63,16 +60,12 @@ class AddUserMenu(Menu):
             create_user(self.sql_session, username, cardnum, rfid)
             self.sql_session.commit()
             print(f"User {username} stored")
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not store user {username}: {e}")
-        except SQLAlchemyError as e:
-            self.sql_session.rollback()
-            print(f"Could not store user {username}: {e}")
-            logger.error(
+        except (ValueError, SQLAlchemyError) as e:
+            self.rollback_and_report(
+                e,
+                f"Could not store user {username}",
                 "Could not create user %r",
                 username,
-                exc_info=e,
             )
         self.pause()
 
@@ -127,16 +120,12 @@ default to keep the current one), then a new card number, then rfid
             edit_user(self.sql_session, user, name=name, card=card, rfid=rfid)
             self.sql_session.commit()
             print(f"User {user.name} stored")
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not store user {user.name}: {e}")
-        except SQLAlchemyError as e:
-            self.sql_session.rollback()
-            print(f"Could not store user {user.name}: {e}")
-            logger.error(
+        except (ValueError, SQLAlchemyError) as e:
+            self.rollback_and_report(
+                e,
+                f"Could not store user {user.name}",
                 "Could not store user %r",
                 user.name,
-                exc_info=e,
             )
         self.pause()
 
@@ -158,16 +147,12 @@ class AddProductMenu(Menu):
             create_product(self.sql_session, bar_code, name, price)
             self.sql_session.commit()
             print(f"Product {name} stored")
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not store product {name}: {e}")
-        except SQLAlchemyError as e:
-            self.sql_session.rollback()
-            print(f"Could not store product {name}: {e}")
-            logger.error(
+        except (ValueError, SQLAlchemyError) as e:
+            self.rollback_and_report(
+                e,
+                f"Could not store product {name}",
                 "Could not create product %r",
                 name,
-                exc_info=e,
             )
         self.pause()
 
@@ -253,12 +238,11 @@ class EditProductMenu(Menu):
                         self.sql_session.commit()
                         print(f"Product {product.name} stored")
                     except SQLAlchemyError as e:
-                        self.sql_session.rollback()
-                        print(f"Could not store product {product.name}: {e}")
-                        logger.error(
+                        self.rollback_and_report(
+                            e,
+                            f"Could not store product {product.name}",
                             "Could not store product %r",
                             product.name,
-                            exc_info=e,
                         )
                     self.pause()
                     return
@@ -417,17 +401,13 @@ then choose which properties to keep from each product, or edit.
             )
             self.sql_session.commit()
             print(f"Product {source.name} merged into {target.name}")
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not merge products: {e}")
-        except SQLAlchemyError as e:
-            self.sql_session.rollback()
-            print(f"Could not merge products: {e}")
-            logger.error(
+        except (ValueError, SQLAlchemyError) as e:
+            self.rollback_and_report(
+                e,
+                "Could not merge products",
                 "Could not merge product %r into %r",
                 source.name,
                 target.name,
-                exc_info=e,
             )
         self.pause()
 
@@ -455,18 +435,12 @@ class AdjustStockMenu(Menu):
             self.sql_session.commit()
             print("Stock is now stored")
             self.pause()
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not store stock: {e}")
-            self.pause()
-            return
-        except SQLAlchemyError as e:
-            self.sql_session.rollback()
-            print(f"Could not store stock: {e}")
-            logger.error(
+        except (ValueError, SQLAlchemyError) as e:
+            self.rollback_and_report(
+                e,
+                "Could not store stock",
                 "Could not adjust stock of product %r",
                 product.name,
-                exc_info=e,
             )
             self.pause()
             return
@@ -508,12 +482,11 @@ class CleanupStockMenu(Menu):
             print("New stocks are now stored.")
             self.pause()
         except SQLAlchemyError as e:
-            self.sql_session.rollback()
-            print(f"Could not store stock: {e}")
-            logger.error(
+            self.rollback_and_report(
+                e,
+                "Could not store stock",
                 "Could not store stock cleanup for products %r",
                 [product.name for product, _ in changed_products],
-                exc_info=e,
             )
             self.pause()
             return

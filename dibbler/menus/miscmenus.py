@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
-from dibbler.lib.syslog import get_syslog_logger
 from dibbler.lib.tables import MAX_SCREEN_SIZE, SEPARATOR, Table, TableColumn
 from dibbler.models import TransactionLog, User
 from dibbler.queries import (
@@ -21,8 +20,6 @@ from dibbler.queries import (
 )
 
 from .helpermenus import Menu, Selector
-
-logger = get_syslog_logger()
 
 
 def _format_last_activity(last_activity: datetime | None) -> str:
@@ -63,20 +60,16 @@ class TransferMenu(Menu):
             print(f"User {user1}'s credit is now {user1.credit:d} kr")
             print(f"User {user2}'s credit is now {user2.credit:d} kr")
             print(f"Comment: {comment}")
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not perform transfer: {e}")
         except Exception as e:
-            logger.error(
+            self.rollback_and_report(
+                e,
+                "Could not perform transfer",
                 "Could not transfer %d kr from %r to %r",
                 amount,
                 user1.name,
                 user2.name,
-                exc_info=e,
             )
-            self.sql_session.rollback()
-            print(f"Could not perform transfer: {e}")
-            # self.pause()
+            self.pause()
 
 
 class ShowUserMenu(Menu):
@@ -202,19 +195,15 @@ class AdjustCreditMenu(Menu):
             adjust_balance(self.sql_session, user, -amount, description=description)
             self.sql_session.commit()
             print(f"User {user.name}'s credit is now {user.credit:d} kr")
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not store transaction: {e}")
         except Exception as e:
-            logger.error(
+            self.rollback_and_report(
+                e,
+                "Could not store transaction",
                 "Could not adjust credit of %r by %d kr",
                 user.name,
                 amount,
-                exc_info=e,
             )
-            self.sql_session.rollback()
-            print(f"Could not store transaction: {e}")
-            # self.pause()
+            self.pause()
 
 
 class ProductListMenu(Menu):

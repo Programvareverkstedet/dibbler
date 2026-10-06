@@ -1,12 +1,9 @@
 from sqlalchemy.orm import Session
 
-from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Product, User
 from dibbler.queries import add_stock
 
 from .helpermenus import Menu
-
-logger = get_syslog_logger()
 
 
 class AddStockMenu(Menu):
@@ -163,15 +160,11 @@ much money you're due in credits for the purchase when prompted.\n"""
             # self.print_info()
             for user in self.users:
                 print(f"User {user.name}'s credit is now {user.credit:d}")
-        except ValueError as e:
-            self.sql_session.rollback()
-            print(f"Could not perform transaction: {e}")
         except Exception as e:
-            logger.error(
+            self.rollback_and_report(
+                e,
+                "Could not perform transaction",
                 "Could not add stock of %r by %r",
                 {product.name: amount for product, (amount, _) in self.products.items()},
                 [user.name for user in self.users],
-                exc_info=e,
             )
-            self.sql_session.rollback()
-            print(f"Could not perform transaction: {e}")
