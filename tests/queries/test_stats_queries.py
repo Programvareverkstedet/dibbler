@@ -57,6 +57,11 @@ STREAMABLE_QUERIES = [
         id="products_nonzero_stock_list",
     ),
     pytest.param(
+        partial(products_nonzero_stock_stream, include_hidden=True),
+        partial(products_nonzero_stock_list, include_hidden=True),
+        id="products_nonzero_stock_list(include_hidden)",
+    ),
+    pytest.param(
         products_top_selling_stream,
         partial(products_top_selling_list, limit=None),
         id="products_top_selling_list",
