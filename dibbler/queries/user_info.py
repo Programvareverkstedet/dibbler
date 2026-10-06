@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from dibbler.models import TransactionLog, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
+from ._helpers import time_window_conditions
 from .user_product_stats import user_product_stats_query
 
 
@@ -41,14 +42,7 @@ def user_info(
     Note that `after_time` is inclusive and `before_time` is exclusive.
     """
 
-    if after_time is not None and before_time is not None and after_time > before_time:
-        raise ValueError("after_time cannot be after before_time.")
-
-    optional_conditions = [
-        after_time is not None and TransactionLog.time >= after_time,
-        before_time is not None and TransactionLog.time < before_time,
-    ]
-    conditions = [condition for condition in optional_conditions if not isinstance(condition, bool)]
+    conditions = time_window_conditions(TransactionLog.time, after_time, before_time)
 
     last_activity = (
         select(func.max(TransactionLog.time))

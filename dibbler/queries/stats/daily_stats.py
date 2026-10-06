@@ -19,7 +19,6 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE
 from dibbler.models import (
     ProductLog,
     TransactionLog,
@@ -29,7 +28,7 @@ from dibbler.models import (
 )
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType, UserLogEntryType
 
-from ._helpers import add_days, time_window_conditions
+from .._helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, add_days, time_window_conditions
 
 UNSET: Any = object()
 

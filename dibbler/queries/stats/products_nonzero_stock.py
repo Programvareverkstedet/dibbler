@@ -3,8 +3,9 @@ from collections.abc import Iterator
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_in_chunks
 from dibbler.models import Product
+
+from .._helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_in_chunks
 
 
 def products_nonzero_stock_query() -> Select[tuple[Product]]:

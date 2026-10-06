@@ -1,52 +1,28 @@
-from collections.abc import Iterator, Mapping, Sequence
-from enum import Enum
+from collections.abc import Iterator, Sequence
+from datetime import date, datetime
 from typing import Any, TypeVar
 
-from sqlalchemy import CheckConstraint, ColumnElement, Row, Select, and_, column, or_, tuple_
+from sqlalchemy import (
+    ColumnElement,
+    Date,
+    Integer,
+    Row,
+    Select,
+    SQLColumnExpression,
+    case,
+    func,
+    literal,
+    tuple_,
+)
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import InstrumentedAttribute, Session
+from sqlalchemy.sql.compiler import SQLCompiler
+from sqlalchemy.sql.functions import FunctionElement
 
 T = TypeVar("T")
 TupleT = TypeVar("TupleT", bound=tuple[Any, ...])
 
 DEFAULT_STREAMING_ITER_CHUNK_SIZE = 64
-
-
-def type_field_constraints(
-    expected_fields: Mapping[Enum, Mapping[str, bool | None]],
-    *,
-    type_column: str = "type",
-    name_prefix: str = "ck",
-    treat_empty_as_forbidden: bool = False,
-) -> list[CheckConstraint]:
-    """
-    Helper to create sql check constraints from a mapping of log item type to required/optional/forbidden fields.
-    """
-
-    def is_forbidden(field: str) -> ColumnElement[bool]:
-        if treat_empty_as_forbidden:
-            return or_(column(field).is_(None), column(field) == "")
-        return column(field).is_(None)
-
-    constraints = []
-    for entry_type, fields in expected_fields.items():
-        required = {field for field, state in fields.items() if state is True}
-        forbidden = {field for field, state in fields.items() if state is False}
-        if not required and not forbidden:
-            continue
-        constraints.append(
-            CheckConstraint(
-                or_(
-                    column(type_column) != entry_type.value,
-                    and_(
-                        *(column(field).is_not(None) for field in required),
-                        *(is_forbidden(field) for field in forbidden),
-                    ),
-                ),
-                name=f"{name_prefix}_{entry_type.value}_fields",
-            ),
-        )
-
-    return constraints
 
 
 def iter_rows_in_chunks(
@@ -121,3 +97,72 @@ def iter_in_keyset_chunks(
         if len(chunk) < chunk_size:
             return
         last = tuple(getattr(chunk[-1], key.key) for key in keys)
+
+
+def time_window_conditions(
+    column: SQLColumnExpression[datetime],
+    after_time: datetime | None,
+    before_time: datetime | None,
+) -> list[ColumnElement[bool]]:
+    """
+    Conditions limiting `column` to the given time window.
+
+    `after_time` is inclusive and `before_time` is exclusive.
+    """
+
+    if after_time is not None and before_time is not None and after_time > before_time:
+        raise ValueError("after_time cannot be after before_time.")
+
+    conditions = []
+    if after_time is not None:
+        conditions.append(column >= after_time)
+    if before_time is not None:
+        conditions.append(column < before_time)
+    return conditions
+
+
+def count_where(condition: ColumnElement[bool]) -> ColumnElement[int]:
+    """Number of rows matching `condition`."""
+    return func.count(case((condition, 1)))
+
+
+def sum_where(
+    condition: ColumnElement[bool],
+    value: SQLColumnExpression[int],
+) -> ColumnElement[int]:
+    """Sum of `value` over rows matching `condition`, or 0 if there are none."""
+    return func.coalesce(func.sum(case((condition, value))), 0, type_=Integer)
+
+
+class add_days(FunctionElement[date]):  # noqa: N801
+    """
+    `day` plus `days` days.
+
+    This is a custom SQL function which differs by dialect.
+    """
+
+    type = Date()
+    inherit_cache = True
+
+    def __init__(self, day: SQLColumnExpression[date], days: int) -> None:
+        super().__init__(day, literal(days, Integer))
+
+
+@compiles(add_days)
+def _compile_add_days(
+    element: add_days,
+    compiler: SQLCompiler,
+    **kw: Any,  # noqa: ANN401
+) -> str:
+    day, days = element.clauses
+    return f"({compiler.process(day, **kw)} + {compiler.process(days, **kw)})"
+
+
+@compiles(add_days, "sqlite")
+def _compile_add_days_sqlite(
+    element: add_days,
+    compiler: SQLCompiler,
+    **kw: Any,  # noqa: ANN401
+) -> str:
+    day, days = element.clauses
+    return f"date({compiler.process(day, **kw)}, {compiler.process(days, **kw)} || ' days')"

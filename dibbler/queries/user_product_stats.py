@@ -5,9 +5,10 @@ from typing import NamedTuple
 from sqlalchemy import Integer, Select, case, func, select
 from sqlalchemy.orm import Session
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks
 from dibbler.models import Product, TransactionLog, TransactionLogProduct, User
 from dibbler.models.enums import TransactionLogEntryType
+
+from ._helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks, time_window_conditions
 
 
 class UserProductStats(NamedTuple):
@@ -22,8 +23,7 @@ def user_product_stats_query(
     before_time: datetime | None = None,
     limit: int | None = None,
 ) -> Select[tuple[Product, int, int]]:
-    if after_time is not None and before_time is not None and after_time > before_time:
-        raise ValueError("after_time cannot be after before_time.")
+    conditions = time_window_conditions(TransactionLog.time, after_time, before_time)
 
     if limit is not None and limit <= 0:
         raise ValueError("Limit must be positive.")
@@ -48,12 +48,6 @@ def user_product_stats_query(
         ),
         type_=Integer,
     )
-
-    optional_conditions = [
-        after_time is not None and TransactionLog.time >= after_time,
-        before_time is not None and TransactionLog.time < before_time,
-    ]
-    conditions = [condition for condition in optional_conditions if not isinstance(condition, bool)]
 
     stats = (
         select(Product.id.label("product_id"), bought.label("bought"), added.label("added"))

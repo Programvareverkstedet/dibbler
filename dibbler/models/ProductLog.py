@@ -19,8 +19,7 @@ from sqlalchemy.orm import (
     relationship,
 )
 
-from dibbler.lib.sql_helpers import type_field_constraints
-
+from ._helpers import type_field_constraints
 from .Base import Base
 from .enums import ProductLogEntryType, ProductLogEntryTypeSQL
 from .mixins import UidMixin

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product
 
-from ._helpers import count_where, sum_where
+from .._helpers import count_where, sum_where
 
 
 class ProductStockSummary(NamedTuple):

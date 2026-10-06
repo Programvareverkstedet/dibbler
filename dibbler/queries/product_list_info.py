@@ -2,12 +2,13 @@ from collections.abc import Iterator
 from datetime import datetime
 from typing import NamedTuple
 
-from sqlalchemy import Integer, Select, case, func, select
+from sqlalchemy import Select, func, select
 from sqlalchemy.orm import Session, selectinload
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks
 from dibbler.models import Product, TransactionLog, TransactionLogProduct
 from dibbler.models.enums import TransactionLogEntryType
+
+from ._helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_rows_in_chunks, sum_where
 
 
 class ProductListInfo(NamedTuple):
@@ -18,32 +19,17 @@ class ProductListInfo(NamedTuple):
 
 
 def product_list_info_query() -> Select[tuple[Product, int, int, datetime | None]]:
-    bought = func.sum(
-        case(
-            (
-                TransactionLog.type == TransactionLogEntryType.BUY_PRODUCT,
-                -TransactionLogProduct.amount,
-            ),
-            else_=0,
-        ),
-        type_=Integer,
-    )
-    added = func.sum(
-        case(
-            (
-                TransactionLog.type == TransactionLogEntryType.ADD_PRODUCT,
-                TransactionLogProduct.amount,
-            ),
-            else_=0,
-        ),
-        type_=Integer,
-    )
-
     totals = (
         select(
             TransactionLogProduct.product_id,
-            bought.label("bought"),
-            added.label("added"),
+            sum_where(
+                TransactionLog.type == TransactionLogEntryType.BUY_PRODUCT,
+                -TransactionLogProduct.amount,
+            ).label("bought"),
+            sum_where(
+                TransactionLog.type == TransactionLogEntryType.ADD_PRODUCT,
+                TransactionLogProduct.amount,
+            ).label("added"),
             func.max(TransactionLog.time).label("last_activity"),
         )
         .join(TransactionLogProduct.transaction)

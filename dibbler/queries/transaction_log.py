@@ -4,9 +4,14 @@ from datetime import datetime
 from sqlalchemy import Select, select
 from sqlalchemy.orm import Session, selectinload
 
-from dibbler.lib.sql_helpers import DEFAULT_STREAMING_ITER_CHUNK_SIZE, iter_in_keyset_chunks
 from dibbler.models import Product, TransactionLog, TransactionLogProduct, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
+
+from ._helpers import (
+    DEFAULT_STREAMING_ITER_CHUNK_SIZE,
+    iter_in_keyset_chunks,
+    time_window_conditions,
+)
 
 
 def transaction_log_query(
@@ -22,8 +27,7 @@ def transaction_log_query(
     if user is not None and product is not None:
         raise ValueError("Cannot filter by both user and product.")
 
-    if after_time is not None and before_time is not None and after_time > before_time:
-        raise ValueError("after_time cannot be after before_time.")
+    time_conditions = time_window_conditions(TransactionLog.time, after_time, before_time)
 
     if limit is not None and limit <= 0:
         raise ValueError("Limit must be positive.")
@@ -31,8 +35,6 @@ def transaction_log_query(
     optional_conditions = [
         user is not None and TransactionLog.users.any(user=user),
         product is not None and TransactionLog.products.any(product=product),
-        after_time is not None and TransactionLog.time >= after_time,
-        before_time is not None and TransactionLog.time < before_time,
         entry_type is not None
         and (
             TransactionLog.type.not_in(entry_type)
@@ -40,7 +42,10 @@ def transaction_log_query(
             else TransactionLog.type.in_(entry_type)
         ),
     ]
-    conditions = [condition for condition in optional_conditions if not isinstance(condition, bool)]
+    conditions = [
+        *(condition for condition in optional_conditions if not isinstance(condition, bool)),
+        *time_conditions,
+    ]
 
     if limit is not None:
         conditions.append(
