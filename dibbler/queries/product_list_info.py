@@ -18,7 +18,10 @@ class ProductListInfo(NamedTuple):
     last_activity: datetime | None
 
 
-def product_list_info_query() -> Select[tuple[Product, int, int, datetime | None]]:
+def product_list_info_query(
+    include_hidden: bool = False,
+    include_zero_stock: bool = True,
+) -> Select[tuple[Product, int, int, datetime | None]]:
     totals = (
         select(
             TransactionLogProduct.product_id,
@@ -37,7 +40,7 @@ def product_list_info_query() -> Select[tuple[Product, int, int, datetime | None
         .subquery()
     )
 
-    return (
+    query = (
         select(
             Product,
             func.coalesce(totals.c.bought, 0),
@@ -45,25 +48,39 @@ def product_list_info_query() -> Select[tuple[Product, int, int, datetime | None
             totals.c.last_activity,
         )
         .outerjoin(totals, totals.c.product_id == Product.id)
-        .where(Product.hidden.is_(False))
         .options(selectinload(Product.barcodes))
         .order_by(Product.stock.desc(), Product.id)
     )
 
+    if not include_hidden:
+        query = query.where(Product.hidden.is_(False))
 
-def product_list_info(sql_session: Session) -> list[ProductListInfo]:
+    if not include_zero_stock:
+        query = query.where(Product.stock != 0)
+
+    return query
+
+
+def product_list_info(
+    sql_session: Session,
+    include_hidden: bool = False,
+    include_zero_stock: bool = True,
+) -> list[ProductListInfo]:
     """
-    Retrieve all non-hidden products with their bought/added counts and last activity.
+    Retrieve products with their bought/added counts and last activity.
 
     Sorted by stock, highest first.
     """
-    return [ProductListInfo(*row) for row in sql_session.execute(product_list_info_query())]
+    query = product_list_info_query(include_hidden, include_zero_stock)
+    return [ProductListInfo(*row) for row in sql_session.execute(query)]
 
 
 def product_list_info_stream(
     sql_session: Session,
+    include_hidden: bool = False,
+    include_zero_stock: bool = True,
     chunk_size: int = DEFAULT_STREAMING_ITER_CHUNK_SIZE,
 ) -> Iterator[ProductListInfo]:
     """Streaming variant of `product_list_info`, which fetches `chunk_size` products at a time."""
-    query = product_list_info_query()
+    query = product_list_info_query(include_hidden, include_zero_stock)
     return (ProductListInfo(*row) for row in iter_rows_in_chunks(sql_session, query, chunk_size))

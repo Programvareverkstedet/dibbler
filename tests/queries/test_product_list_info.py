@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytest
 from sqlalchemy import inspect, select
 from sqlalchemy.orm import Session
 
@@ -62,11 +63,41 @@ def test_no_activity(sql_session: Session) -> None:
     assert product_list_info(sql_session) == [ProductListInfo(pepsi, 0, 0, None)]
 
 
-def test_excludes_hidden(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
-    _make_product(sql_session, "2222222222", "Cola", hidden=True)
+@pytest.mark.parametrize(
+    ("include_hidden", "include_zero_stock", "expected"),
+    [
+        (False, True, ["Pepsi", "Fanta"]),
+        (True, True, ["Pepsi", "Cola", "Fanta", "Solo", "Urge"]),
+        (False, False, ["Pepsi"]),
+        (True, False, ["Pepsi", "Cola", "Urge"]),
+    ],
+)
+def test_include_flags(
+    sql_session: Session,
+    include_hidden: bool,
+    include_zero_stock: bool,
+    expected: list[str],
+) -> None:
+    _make_product(sql_session, "1111111111", "Pepsi", stock=5)
+    _make_product(sql_session, "2222222222", "Cola", stock=3, hidden=True)
+    _make_product(sql_session, "3333333333", "Fanta", stock=0)
+    _make_product(sql_session, "4444444444", "Solo", stock=0, hidden=True)
+    _make_product(sql_session, "5555555555", "Urge", stock=-2, hidden=True)
 
-    assert [row.product for row in product_list_info(sql_session)] == [pepsi]
+    rows = product_list_info(
+        sql_session,
+        include_hidden=include_hidden,
+        include_zero_stock=include_zero_stock,
+    )
+    streamed = product_list_info_stream(
+        sql_session,
+        include_hidden=include_hidden,
+        include_zero_stock=include_zero_stock,
+        chunk_size=2,
+    )
+
+    assert [row.product.name for row in rows] == expected
+    assert list(streamed) == rows
 
 
 def test_ordered_by_stock_then_id(sql_session: Session) -> None:

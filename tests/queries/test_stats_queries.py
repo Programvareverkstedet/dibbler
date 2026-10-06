@@ -22,8 +22,6 @@ from dibbler.queries import (
 from dibbler.queries.stats import (
     daily_stats_list,
     daily_stats_stream,
-    products_nonzero_stock_list,
-    products_nonzero_stock_stream,
     products_top_selling_list,
     products_top_selling_stream,
     summarize_product_stock,
@@ -40,7 +38,6 @@ from dibbler.queries.stats import (
 
 STATS_QUERIES: list[Callable[[Session], object]] = [
     daily_stats_list,
-    products_nonzero_stock_list,
     products_top_selling_list,
     products_top_selling_list,
     users_top_depositing_list,
@@ -51,16 +48,6 @@ STATS_QUERIES: list[Callable[[Session], object]] = [
 ]
 
 STREAMABLE_QUERIES = [
-    pytest.param(
-        products_nonzero_stock_stream,
-        products_nonzero_stock_list,
-        id="products_nonzero_stock_list",
-    ),
-    pytest.param(
-        partial(products_nonzero_stock_stream, include_hidden=True),
-        partial(products_nonzero_stock_list, include_hidden=True),
-        id="products_nonzero_stock_list(include_hidden)",
-    ),
     pytest.param(
         products_top_selling_stream,
         partial(products_top_selling_list, limit=None),
