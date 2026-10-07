@@ -8,49 +8,27 @@ from dibbler.models.enums import TransactionLogEntryType
 # NOTE: ikik, this code is not very beautiful, nor very readable.
 #       if you came over this and gasped audibly, feel free to refactor.
 
-_TREE_CHARS = {
-    "normal": {
-        "vertical": "│  ",
-        "branch": "├─ ",
-        "last": "└─ ",
-        "empty": "   ",
-    },
-    "ascii": {
-        "vertical": "|  ",
-        "branch": "|- ",
-        "last": "`- ",
-        "empty": "   ",
-    },
-}
-
-assert len({frozenset(charset) for charset in _TREE_CHARS.values()}) == 1
-assert all(len({len(piece) for piece in charset.values()}) == 1 for charset in _TREE_CHARS.values())
+VERTICAL = "│  "
+BRANCH = "├─ "
+LAST = "└─ "
+EMPTY = "   "
 
 
-def _tree_chars(ascii_only: bool) -> dict[str, str]:
-    return _TREE_CHARS["ascii"] if ascii_only else _TREE_CHARS["normal"]
-
-
-def _render_tree_items(
-    items: list[str | list],
-    chars: dict[str, str],
-    prefix: str,
-    closed: bool,
-) -> list[str]:
+def _render_tree_items(items: list[str | list], prefix: str, closed: bool) -> list[str]:
     lines: list[str] = []
     for index, item in enumerate(items):
         if isinstance(item, list):
             is_last = closed and index == len(items) - 1
-            child_prefix = prefix + (chars["empty"] if is_last else chars["vertical"])
-            lines.extend(_render_tree_items(item, chars, child_prefix, closed=True))
+            child_prefix = prefix + (EMPTY if is_last else VERTICAL)
+            lines.extend(_render_tree_items(item, child_prefix, closed=True))
 
         else:
             has_children = index + 1 < len(items) and isinstance(items[index + 1], list)
             last_index = index + 1 if has_children else index
             is_last = closed and last_index == len(items) - 1
 
-            corner = chars["last"] if is_last else chars["branch"]
-            trunk = chars["empty"] if is_last else chars["vertical"]
+            corner = LAST if is_last else BRANCH
+            trunk = EMPTY if is_last else VERTICAL
             first, *rest = item.split("\n")
             lines.append(f"{prefix}{corner}{first}")
             lines.extend(f"{prefix}{trunk}{line}" for line in rest)
@@ -60,7 +38,6 @@ def _render_tree_items(
 def render_tree(
     tree: list[str | list],
     *,
-    ascii_only: bool = False,
     more_follows: bool = False,
     trailing_newline: bool = False,
 ) -> str:
@@ -71,7 +48,6 @@ def render_tree(
     or another list (the children of the preceding string).
     A string may span multiple lines, the continuation lines are drawn along the trunk.
 
-    - When `ascii_only` is set, only ASCII characters are used for drawing the tree.
     - If `more_follow` is set, the bottom will be rendered as a T branch instead of a corner.
     - Trailing newline does exactly what you expect it to do.
 
@@ -90,7 +66,7 @@ def render_tree(
             ],
             "root2",
         ]
-        print(render_tree(tree, ascii_only=False))
+        print(render_tree(tree))
     ```
 
     Output:
@@ -103,25 +79,8 @@ def render_tree(
     │  └─ child2
     └─ root2
     ```
-
-    Example with ASCII only:
-
-    ```python
-        print(render_tree(tree, ascii_only=True))
-    ```
-
-    Output:
-
-    ```
-    |- root
-    |  |- child1
-    |  |  |- grandchild1
-    |  |  `- grandchild2
-    |  `- child2
-    `- root2
-    ```
     """
-    lines = _render_tree_items(tree, _tree_chars(ascii_only), "", closed=not more_follows)
+    lines = _render_tree_items(tree, "", closed=not more_follows)
     return "\n".join(lines) + ("\n" if trailing_newline and lines else "")
 
 
@@ -136,10 +95,8 @@ def _flag_last(items: Iterable[TransactionLog]) -> Iterator[tuple[TransactionLog
     yield previous, True
 
 
-def _render_separator(label: str, ascii_only: bool, width: int) -> str:
-    chars = _tree_chars(ascii_only)
-    trunk, dash = chars["branch"][:2]
-    return trunk + f" {label} ".center(width - len(trunk), dash)
+def _render_separator(label: str, width: int) -> str:
+    return "├" + f" {label} ".center(width - 1, "─")
 
 
 def _render_header(entry: TransactionLog) -> str:
@@ -203,21 +160,18 @@ def _render_children(entry: TransactionLog, width: int) -> list[str]:
 
 def render_transaction_log(
     transaction_log: Iterable[TransactionLog],
-    ascii_only: bool = False,
     width: int = 80,
 ) -> Iterator[str]:
-    chars = _tree_chars(ascii_only)
-    trunk = chars["vertical"][0]
-    indent = len(chars["branch"])
+    indent = len(BRANCH)
     current_day = None
 
     for entry, is_last in _flag_last(transaction_log):
         day = entry.time.date()
         if day != current_day:
             if current_day is not None:
-                yield f"{trunk}\n"
-            label = _day_label(current_day, day, trunk)
-            yield f"{_render_separator(label, ascii_only, width)}\n{trunk}\n"
+                yield "│\n"
+            label = _day_label(current_day, day, "│")
+            yield f"{_render_separator(label, width)}\n│\n"
             current_day = day
 
         yield render_tree(
@@ -225,7 +179,6 @@ def render_transaction_log(
                 _wrap(_render_header(entry), width - indent),
                 _render_children(entry, width - 2 * indent),
             ],
-            ascii_only=ascii_only,
             more_follows=not is_last,
             trailing_newline=True,
         )
