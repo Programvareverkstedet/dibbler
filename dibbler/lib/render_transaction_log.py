@@ -136,10 +136,10 @@ def _flag_last(items: Iterable[TransactionLog]) -> Iterator[tuple[TransactionLog
     yield previous, True
 
 
-def _render_separator(label: str, ascii_only: bool, width: int = 30) -> str:
+def _render_separator(label: str, ascii_only: bool, width: int) -> str:
     chars = _tree_chars(ascii_only)
     trunk, dash = chars["branch"][:2]
-    return f"{trunk}{dash}{dash} {label} ".ljust(width, dash) + dash * 3
+    return trunk + f" {label} ".center(width - len(trunk), dash)
 
 
 def _render_header(entry: TransactionLog) -> str:
@@ -217,7 +217,7 @@ def render_transaction_log(
             if current_day is not None:
                 yield f"{trunk}\n"
             label = _day_label(current_day, day, trunk)
-            yield f"{_render_separator(label, ascii_only)}\n{trunk}\n"
+            yield f"{_render_separator(label, ascii_only, width)}\n{trunk}\n"
             current_day = day
 
         yield render_tree(
