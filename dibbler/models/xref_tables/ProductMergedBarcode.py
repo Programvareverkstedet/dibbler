@@ -31,4 +31,4 @@ class ProductMergedBarcode(XrefMixin, Base, UidMixin):
     merge_log: Mapped[ProductLog] = relationship()
 
     # NOTE: Not a foreign key, the barcode might be removed from the product after the merge.
-    bar_code: Mapped[str] = mapped_column(String(Product.bar_code_length))
+    barcode: Mapped[str] = mapped_column(String(Product.barcode_length))

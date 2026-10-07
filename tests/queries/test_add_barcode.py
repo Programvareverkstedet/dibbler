@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, ProductLog
 from dibbler.models.enums import ProductLogEntryType
-from dibbler.queries import add_bar_code
+from dibbler.queries import add_barcode
 
 
 def _make_product(sql_session: Session) -> Product:
@@ -16,7 +16,7 @@ def _make_product(sql_session: Session) -> Product:
 def test_appends_a_new_code(sql_session: Session) -> None:
     product = _make_product(sql_session)
 
-    add_bar_code(sql_session, product, "0987654321")
+    add_barcode(sql_session, product, "0987654321")
 
     sql_session.expire_all()
 
@@ -26,7 +26,7 @@ def test_appends_a_new_code(sql_session: Session) -> None:
 def test_records_a_log_entry(sql_session: Session) -> None:
     product = _make_product(sql_session)
 
-    add_bar_code(sql_session, product, "0987654321")
+    add_barcode(sql_session, product, "0987654321")
 
     sql_session.expire_all()
 
@@ -36,24 +36,24 @@ def test_records_a_log_entry(sql_session: Session) -> None:
         .one()
     )
     assert log.product_id == product.id
-    assert log.bar_code == "0987654321"
+    assert log.barcode == "0987654321"
 
 
 @pytest.mark.parametrize(
-    ("bar_code", "error"),
+    ("barcode", "error"),
     [
         pytest.param("", "Barcode cannot be empty", id="empty"),
         pytest.param("123abc", "digits only", id="non-digit"),
         pytest.param("1111111111", "already in use", id="used-by-other-product"),
         pytest.param("1234567890", "already in use", id="used-by-same-product"),
-        pytest.param("1" * (Product.bar_code_length + 1), "Barcode must be at most", id="too-long"),
+        pytest.param("1" * (Product.barcode_length + 1), "Barcode must be at most", id="too-long"),
     ],
 )
-def test_invariants(sql_session: Session, bar_code: str, error: str) -> None:
+def test_invariants(sql_session: Session, barcode: str, error: str) -> None:
     product = _make_product(sql_session)
     other = Product("1111111111", "Pepsi", 15)
     sql_session.add(other)
     sql_session.flush()
 
     with pytest.raises(ValueError, match=error):
-        add_bar_code(sql_session, product, bar_code)
+        add_barcode(sql_session, product, barcode)

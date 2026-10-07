@@ -54,13 +54,13 @@
 #     dr.text((0, 0), date, fill=(0, 0, 0))
 
 #     base_path = os.path.dirname(os.path.realpath(__file__))
-#     fn = os.path.join(base_path, "bar_codes", text + ".png")
+#     fn = os.path.join(base_path, "barcodes", text + ".png")
 
 #     im.save(fn, "PNG")
 #     print_image(fn, printer_type, label_type)
 
 
-# def print_bar_code(
+# def print_barcode(
 #     barcode_value,
 #     barcode_text,
 #     barcode_type="ean13",
@@ -68,12 +68,12 @@
 #     printer_type="QL-700",
 #     label_type="62",
 # ):
-#     bar_coder = barcode.get_barcode_class(barcode_type)
+#     barcoder = barcode.get_barcode_class(barcode_type)
 #     wr = BrotherLabelWriter(typ=label_type, rot=rotate, text=barcode_text, max_height=1000)
 
-#     test = bar_coder(barcode_value, writer=wr)
+#     test = barcoder(barcode_value, writer=wr)
 #     base_path = os.path.dirname(os.path.realpath(__file__))
-#     fn = test.save(os.path.join(base_path, "bar_codes", barcode_value))
+#     fn = test.save(os.path.join(base_path, "barcodes", barcode_value))
 #     print_image(fn, printer_type, label_type)
 
 

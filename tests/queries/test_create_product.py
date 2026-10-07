@@ -52,7 +52,7 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
 
     log = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.CREATE).one()
     assert log.product_id == product.id
-    assert log.bar_code is None
+    assert log.barcode is None
     assert log.name == "Cola"
     assert log.price == 15
     assert log.hidden is True
@@ -63,7 +63,7 @@ def test_create_product_records_a_create_log_entry(sql_session: Session) -> None
         .one()
     )
     assert log.product_id == product.id
-    assert log.bar_code == "1234567890"
+    assert log.barcode == "1234567890"
 
 
 def test_create_product_records_initial_stock_as_a_stock_adjustment(sql_session: Session) -> None:
@@ -87,12 +87,12 @@ def test_create_product_without_stock_records_no_transaction(sql_session: Sessio
 
 
 @pytest.mark.parametrize(
-    ("bar_code", "name", "price", "stock", "error"),
+    ("barcode", "name", "price", "stock", "error"),
     [
-        pytest.param("", "Pepsi", 20, 0, "Barcode cannot be empty", id="empty-bar-code"),
-        pytest.param("123abc", "Pepsi", 20, 0, "digits only", id="non-digit-bar-code"),
-        pytest.param("1" * (Product.bar_code_length + 1), "Pepsi", 20, 0, "Barcode must be at most", id="too-long-bar-code"),
-        pytest.param("1234567890", "Pepsi", 20, 0, "already in use", id="duplicate-bar-code"),
+        pytest.param("", "Pepsi", 20, 0, "Barcode cannot be empty", id="empty-barcode"),
+        pytest.param("123abc", "Pepsi", 20, 0, "digits only", id="non-digit-barcode"),
+        pytest.param("1" * (Product.barcode_length + 1), "Pepsi", 20, 0, "Barcode must be at most", id="too-long-barcode"),
+        pytest.param("1234567890", "Pepsi", 20, 0, "already in use", id="duplicate-barcode"),
 
         pytest.param("0987654321", "", 20, 0, "Name cannot be empty", id="empty-name"),
         pytest.param("0987654321", "Pep\nsi", 20, 0, "Name has an invalid format", id="invalid-chars-name"),
@@ -106,7 +106,7 @@ def test_create_product_without_stock_records_no_transaction(sql_session: Sessio
 )  # fmt: skip
 def test_invariants(
     sql_session: Session,
-    bar_code: str,
+    barcode: str,
     name: str,
     price: int,
     stock: int,
@@ -115,4 +115,4 @@ def test_invariants(
     create_product(sql_session, "1234567890", "Cola", 15)
 
     with pytest.raises(ValueError, match=error):
-        create_product(sql_session, bar_code, name, price, stock)
+        create_product(sql_session, barcode, name, price, stock)

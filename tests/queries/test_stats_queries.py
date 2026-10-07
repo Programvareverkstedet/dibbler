@@ -85,7 +85,7 @@ class CreateUser(NamedTuple):
 
 
 class CreateProduct(NamedTuple):
-    bar_code: str
+    barcode: str
     name: str
     price: int
     stock: int = 0
@@ -204,10 +204,10 @@ def _apply(
     match event:
         case CreateUser(name, credit):
             users[name] = create_user(sql_session, name, credit=credit)
-        case CreateProduct(bar_code, name, price, stock, hidden, user):
+        case CreateProduct(barcode, name, price, stock, hidden, user):
             products[name] = create_product(
                 sql_session,
-                bar_code,
+                barcode,
                 name,
                 price,
                 stock,

@@ -32,7 +32,7 @@ class ProductLog(Base, UidMixin):
         *type_field_constraints(
             {
                 ProductLogEntryType.CREATE: {
-                    "bar_code": False,
+                    "barcode": False,
                     "name": True,
                     "price": True,
                     "hidden": True,
@@ -40,7 +40,7 @@ class ProductLog(Base, UidMixin):
                     "merge_ref_id": False,
                 },
                 ProductLogEntryType.DELETE: {
-                    "bar_code": False,
+                    "barcode": False,
                     "name": False,
                     "price": False,
                     "hidden": False,
@@ -48,7 +48,7 @@ class ProductLog(Base, UidMixin):
                     "merge_ref_id": None,
                 },
                 ProductLogEntryType.ADD_BARCODE: {
-                    "bar_code": True,
+                    "barcode": True,
                     "name": False,
                     "price": False,
                     "hidden": False,
@@ -56,7 +56,7 @@ class ProductLog(Base, UidMixin):
                     "merge_ref_id": False,
                 },
                 ProductLogEntryType.REMOVE_BARCODE: {
-                    "bar_code": True,
+                    "barcode": True,
                     "name": False,
                     "price": False,
                     "hidden": False,
@@ -64,7 +64,7 @@ class ProductLog(Base, UidMixin):
                     "merge_ref_id": False,
                 },
                 ProductLogEntryType.MERGE: {
-                    "bar_code": False,
+                    "barcode": False,
                     "name": False,
                     "price": False,
                     "hidden": False,
@@ -72,7 +72,7 @@ class ProductLog(Base, UidMixin):
                     "merge_ref_id": False,
                 },
                 ProductLogEntryType.EDIT: {
-                    "bar_code": False,
+                    "barcode": False,
                     "merged_product_id": False,
                     "merge_ref_id": None,
                 },
@@ -108,7 +108,7 @@ class ProductLog(Base, UidMixin):
         viewonly=True,
     )
 
-    bar_code: Mapped[str | None] = mapped_column(String(Product.bar_code_length))
+    barcode: Mapped[str | None] = mapped_column(String(Product.barcode_length))
     name: Mapped[str | None] = mapped_column(String(Product.name_length))
     price: Mapped[int | None] = mapped_column(Integer)
     hidden: Mapped[bool | None] = mapped_column(Boolean)

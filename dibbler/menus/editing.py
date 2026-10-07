@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, User
 from dibbler.queries import (
-    add_bar_code,
+    add_barcode,
     adjust_stock,
     create_product,
     create_user,
@@ -11,7 +11,7 @@ from dibbler.queries import (
     edit_user,
     merge_products,
     product_list_info,
-    remove_bar_code,
+    remove_barcode,
 )
 
 from .helpermenus import Menu, Selector
@@ -136,15 +136,15 @@ class AddProductMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        bar_code = self.input_str("Barcode", regex=Product.bar_code_re, length_range=(8, 13))
-        assert bar_code is not None
+        barcode = self.input_str("Barcode", regex=Product.barcode_re, length_range=(8, 13))
+        assert barcode is not None
 
         name = self.input_str("Name", regex=Product.name_re, length_range=(1, Product.name_length))
         assert name is not None
 
         price = self.input_int("Price", 1, 100000)
         try:
-            create_product(self.sql_session, bar_code, name, price)
+            create_product(self.sql_session, barcode, name, price)
             self.sql_session.commit()
             print(f"Product {name} stored")
         except (ValueError, SQLAlchemyError) as e:
@@ -200,14 +200,14 @@ class EditProductMenu(Menu):
                         print(f"Could not edit price of {product.name}: {e}")
 
                 case "add_barcode":
-                    bar_code = self.input_str(
+                    barcode = self.input_str(
                         "New barcode",
-                        regex=Product.bar_code_re,
+                        regex=Product.barcode_re,
                         length_range=(8, 13),
                     )
-                    assert bar_code is not None
+                    assert barcode is not None
                     try:
-                        add_bar_code(self.sql_session, product, bar_code)
+                        add_barcode(self.sql_session, product, barcode)
                     except ValueError as e:
                         print(f"Could not add barcode to {product.name}: {e}")
 
@@ -215,14 +215,14 @@ class EditProductMenu(Menu):
                     print("Current barcodes:")
                     for code in sorted(bc.code for bc in product.barcodes):
                         print(f"  - {code}")
-                    bar_code = self.input_str(
+                    barcode = self.input_str(
                         "Barcode to remove",
-                        regex=Product.bar_code_re,
+                        regex=Product.barcode_re,
                         length_range=(8, 13),
                     )
-                    assert bar_code is not None
+                    assert barcode is not None
                     try:
-                        remove_bar_code(self.sql_session, product, bar_code)
+                        remove_barcode(self.sql_session, product, barcode)
                     except ValueError as e:
                         print(f"Could not remove barcode from {product.name}: {e}")
 

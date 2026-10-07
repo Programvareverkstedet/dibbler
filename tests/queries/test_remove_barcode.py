@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, ProductLog
 from dibbler.models.enums import ProductLogEntryType
-from dibbler.queries import add_bar_code, create_product, remove_bar_code
+from dibbler.queries import add_barcode, create_product, remove_barcode
 
 
 def _make_product(sql_session: Session) -> Product:
@@ -15,9 +15,9 @@ def _make_product(sql_session: Session) -> Product:
 
 def test_removes_the_given_code(sql_session: Session) -> None:
     product = _make_product(sql_session)
-    add_bar_code(sql_session, product, "0987654321")
+    add_barcode(sql_session, product, "0987654321")
 
-    remove_bar_code(sql_session, product, "1234567890")
+    remove_barcode(sql_session, product, "1234567890")
 
     sql_session.expire_all()
 
@@ -26,9 +26,9 @@ def test_removes_the_given_code(sql_session: Session) -> None:
 
 def test_records_a_log_entry(sql_session: Session) -> None:
     product = _make_product(sql_session)
-    add_bar_code(sql_session, product, "0987654321")
+    add_barcode(sql_session, product, "0987654321")
 
-    remove_bar_code(sql_session, product, "0987654321")
+    remove_barcode(sql_session, product, "0987654321")
 
     sql_session.expire_all()
 
@@ -38,13 +38,13 @@ def test_records_a_log_entry(sql_session: Session) -> None:
         .one()
     )
     assert log.product_id == product.id
-    assert log.bar_code == "0987654321"
+    assert log.barcode == "0987654321"
 
 
 def test_freed_code_can_be_used_by_another_product(sql_session: Session) -> None:
     product = _make_product(sql_session)
-    add_bar_code(sql_session, product, "0987654321")
-    remove_bar_code(sql_session, product, "0987654321")
+    add_barcode(sql_session, product, "0987654321")
+    remove_barcode(sql_session, product, "0987654321")
 
     other = create_product(sql_session, "0987654321", "Pepsi", 20)
 
@@ -54,7 +54,7 @@ def test_freed_code_can_be_used_by_another_product(sql_session: Session) -> None
 
 
 @pytest.mark.parametrize(
-    ("add_extra_bar_code", "bar_code", "error"),
+    ("add_extra_barcode", "barcode", "error"),
     [
         pytest.param(False, "1234567890", "last barcode", id="last-code"),
         pytest.param(True, "1111111111", "not found", id="unknown"),
@@ -63,13 +63,13 @@ def test_freed_code_can_be_used_by_another_product(sql_session: Session) -> None
 )
 def test_invariants(
     sql_session: Session,
-    add_extra_bar_code: bool,
-    bar_code: str,
+    add_extra_barcode: bool,
+    barcode: str,
     error: str,
 ) -> None:
     product = _make_product(sql_session)
-    if add_extra_bar_code:
-        add_bar_code(sql_session, product, "0987654321")
+    if add_extra_barcode:
+        add_barcode(sql_session, product, "0987654321")
 
     with pytest.raises(ValueError, match=error):
-        remove_bar_code(sql_session, product, bar_code)
+        remove_barcode(sql_session, product, barcode)

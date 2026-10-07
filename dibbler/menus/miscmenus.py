@@ -213,7 +213,7 @@ class ProductListMenu(Menu):
     def _execute(self, **_kwargs) -> None:
         self.print_header()
         table = Table(
-            TableColumn("bar code", 20),
+            TableColumn("barcode", 20),
             TableColumn("price", 5, align="right"),
             TableColumn("name", 36, truncate=True),
             TableColumn("stock", 5, align="right"),
@@ -245,7 +245,7 @@ class ProductSearchMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        self.set_context("Enter (part of) product name or bar code")
+        self.set_context("Enter (part of) product name or barcode")
         product = self.input_product()
         print(
             ", ".join(

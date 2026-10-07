@@ -11,21 +11,21 @@ from .adjust_stock import adjust_stock
 
 def create_product(
     sql_session: Session,
-    bar_code: str,
+    barcode: str,
     name: str,
     price: int,
     stock: int = 0,
     hidden: bool = False,
     user: User | None = None,
 ) -> Product:
-    if not bar_code:
+    if not barcode:
         raise ValueError("Barcode cannot be empty.")
 
-    if not re.fullmatch(Product.bar_code_re, bar_code):
+    if not re.fullmatch(Product.barcode_re, barcode):
         raise ValueError("Barcode must consist of digits only.")
 
-    if len(bar_code) > Product.bar_code_length:
-        raise ValueError(f"Barcode must be at most {Product.bar_code_length} characters.")
+    if len(barcode) > Product.barcode_length:
+        raise ValueError(f"Barcode must be at most {Product.barcode_length} characters.")
 
     if not name:
         raise ValueError("Name cannot be empty.")
@@ -42,10 +42,10 @@ def create_product(
     if stock != 0 and user is None:
         raise ValueError("A user is required to set a non-zero initial stock.")
 
-    if sql_session.query(ProductBarcode).filter(ProductBarcode.code == bar_code).first():
+    if sql_session.query(ProductBarcode).filter(ProductBarcode.code == barcode).first():
         raise ValueError("Barcode already in use.")
 
-    product = Product(bar_code, name, price, 0, hidden)
+    product = Product(barcode, name, price, 0, hidden)
     sql_session.add(product)
     sql_session.flush()
 
@@ -64,7 +64,7 @@ def create_product(
             type=ProductLogEntryType.ADD_BARCODE,
             time=datetime.now(),
             product_id=product.id,
-            bar_code=bar_code,
+            barcode=barcode,
         ),
     )
     sql_session.flush()

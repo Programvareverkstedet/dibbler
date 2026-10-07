@@ -6,11 +6,11 @@ from dibbler.models import Product, ProductLog
 from dibbler.models.enums import ProductLogEntryType
 
 
-def remove_bar_code(sql_session: Session, product: Product, bar_code: str) -> Product:
-    if not bar_code:
+def remove_barcode(sql_session: Session, product: Product, barcode: str) -> Product:
+    if not barcode:
         raise ValueError("Barcode cannot be empty.")
 
-    matching = next((bc for bc in product.barcodes if bc.code == bar_code), None)
+    matching = next((bc for bc in product.barcodes if bc.code == barcode), None)
     if matching is None:
         raise ValueError("Barcode not found on this product.")
 
@@ -24,7 +24,7 @@ def remove_bar_code(sql_session: Session, product: Product, bar_code: str) -> Pr
             type=ProductLogEntryType.REMOVE_BARCODE,
             time=datetime.now(),
             product_id=product.id,
-            bar_code=bar_code,
+            barcode=barcode,
         ),
     )
 

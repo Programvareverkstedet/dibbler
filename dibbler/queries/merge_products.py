@@ -59,7 +59,7 @@ def merge_products(
     # Remember which rows belonged to the source, so that the merge can be undone later.
     sql_session.execute(
         insert(ProductMergedBarcode).from_select(
-            ["merge_log_id", "bar_code"],
+            ["merge_log_id", "barcode"],
             select(literal(merge_log.id), ProductBarcode.code).where(
                 ProductBarcode.product_id == source.id,
             ),

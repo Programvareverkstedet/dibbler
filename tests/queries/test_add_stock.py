@@ -11,12 +11,12 @@ from dibbler.queries.add_stock import NEGATIVE_STOCK_RESET_DESCRIPTION
 
 def _make_product(
     sql_session: Session,
-    bar_code: str = "1234567890",
+    barcode: str = "1234567890",
     stock: int = 10,
     price: int = 15,
     hidden: bool = False,
 ) -> Product:
-    product = Product(bar_code, "Pepsi 1.5L", price, stock=stock, hidden=hidden)
+    product = Product(barcode, "Pepsi 1.5L", price, stock=stock, hidden=hidden)
     sql_session.add(product)
     sql_session.flush()
     return product
@@ -150,8 +150,8 @@ def test_add_stock_gives_the_rounding_remainder_to_every_credited_user(
 
 
 def test_add_stock_updates_multiple_products_independently(sql_session: Session) -> None:
-    cola = _make_product(sql_session, bar_code="1111111111", stock=10, price=15)
-    pepsi = _make_product(sql_session, bar_code="2222222222", stock=4, price=8)
+    cola = _make_product(sql_session, barcode="1111111111", stock=10, price=15)
+    pepsi = _make_product(sql_session, barcode="2222222222", stock=4, price=8)
     alice = _make_user(sql_session, "alice")
 
     purchase = add_stock(

@@ -7,27 +7,27 @@ from dibbler.models import Product, ProductBarcode, ProductLog
 from dibbler.models.enums import ProductLogEntryType
 
 
-def add_bar_code(sql_session: Session, product: Product, bar_code: str) -> Product:
-    if not bar_code:
+def add_barcode(sql_session: Session, product: Product, barcode: str) -> Product:
+    if not barcode:
         raise ValueError("Barcode cannot be empty.")
 
-    if not re.fullmatch(Product.bar_code_re, bar_code):
+    if not re.fullmatch(Product.barcode_re, barcode):
         raise ValueError("Barcode must consist of digits only.")
 
-    if len(bar_code) > Product.bar_code_length:
-        raise ValueError(f"Barcode must be at most {Product.bar_code_length} characters.")
+    if len(barcode) > Product.barcode_length:
+        raise ValueError(f"Barcode must be at most {Product.barcode_length} characters.")
 
-    if sql_session.query(ProductBarcode).filter(ProductBarcode.code == bar_code).first():
+    if sql_session.query(ProductBarcode).filter(ProductBarcode.code == barcode).first():
         raise ValueError("Barcode already in use.")
 
-    product.barcodes.add(ProductBarcode(code=bar_code))
+    product.barcodes.add(ProductBarcode(code=barcode))
 
     sql_session.add(
         ProductLog(
             type=ProductLogEntryType.ADD_BARCODE,
             time=datetime.now(),
             product_id=product.id,
-            bar_code=bar_code,
+            barcode=barcode,
         ),
     )
 

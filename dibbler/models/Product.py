@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 class Product(Base, UidMixin):
     __tablename__ = "products"
 
-    bar_code_length = 13
+    barcode_length = 13
     name_length = 45
 
     name: Mapped[str] = mapped_column(String(name_length))
@@ -41,19 +41,19 @@ class Product(Base, UidMixin):
         cascade="all, delete-orphan",
     )
 
-    bar_code_re = r"[0-9]+"
+    barcode_re = r"[0-9]+"
     name_re = r".+"
 
     def __init__(
         self,
-        bar_code: str,
+        barcode: str,
         name: str,
         price: int,
         stock: int = 0,
         hidden: bool = False,
     ) -> None:
         self.name = name
-        self.barcodes = {ProductBarcode(code=bar_code)}
+        self.barcodes = {ProductBarcode(code=barcode)}
         self.price = price
         self.stock = stock
         self.hidden = hidden

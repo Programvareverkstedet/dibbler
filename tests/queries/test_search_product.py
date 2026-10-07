@@ -26,8 +26,8 @@ def _make_products(sql_session: Session) -> dict[str, Product]:
     [
         pytest.param("nonexistent", True, set(), id="no-match"),
 
-        pytest.param("1234567890", True, "Pepsi", id="exact-bar-code"),
-        pytest.param("34567", True, {"Pepsi"}, id="partial-bar-code"),
+        pytest.param("1234567890", True, "Pepsi", id="exact-barcode"),
+        pytest.param("34567", True, {"Pepsi"}, id="partial-barcode"),
 
         pytest.param("Pepsi", True, "Pepsi", id="exact-name"),
         pytest.param("pepsi", True, "Pepsi", id="exact-name-ignores-case"),
@@ -41,7 +41,7 @@ def _make_products(sql_session: Session) -> dict[str, Product]:
         pytest.param("Pep", False, {"Pepsi", "Pepsi Zero"}, id="visible-only-partial-name"),
         pytest.param("Secret Cola", False, set(), id="visible-only-hidden-exact-name"),
         pytest.param("Secret", False, set(), id="visible-only-hidden-partial-name"),
-        pytest.param("4444444444", False, "Secret Cola", id="visible-only-hidden-bar-code"),
+        pytest.param("4444444444", False, "Secret Cola", id="visible-only-hidden-barcode"),
     ],
 )  # fmt: skip
 def test_search_product(

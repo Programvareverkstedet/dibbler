@@ -427,7 +427,7 @@ class Menu:
             thing_for_type = {
                 "card": "user",
                 "username": "user",
-                "bar_code": "product",
+                "barcode": "product",
                 "rfid": "rfid",
             }
             type_guess = guess_data_type(search_str)
@@ -524,10 +524,9 @@ class Menu:
                     case _:
                         return None
 
-            case "bar_code":
+            case "barcode":
                 print(
-                    f'"{string}" looks like the bar code for a product, '
-                    "but no such product exists.",
+                    f'"{string}" looks like the barcode for a product, but no such product exists.',
                 )
                 return None
 

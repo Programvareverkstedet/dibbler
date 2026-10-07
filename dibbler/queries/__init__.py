@@ -1,5 +1,5 @@
 __all__ = [
-    "add_bar_code",
+    "add_barcode",
     "add_stock",
     "adjust_balance",
     "adjust_stock",
@@ -12,7 +12,7 @@ __all__ = [
     "product_info",
     "product_list_info",
     "product_list_info_stream",
-    "remove_bar_code",
+    "remove_barcode",
     "search_product",
     "search_user",
     "transaction_log",
@@ -25,7 +25,7 @@ __all__ = [
     "user_product_stats_stream",
 ]
 
-from .add_bar_code import add_bar_code
+from .add_barcode import add_barcode
 from .add_stock import add_stock
 from .adjust_balance import adjust_balance
 from .adjust_stock import adjust_stock
@@ -37,7 +37,7 @@ from .edit_user import edit_user
 from .merge_products import merge_products
 from .product_info import product_info
 from .product_list_info import product_list_info, product_list_info_stream
-from .remove_bar_code import remove_bar_code
+from .remove_barcode import remove_barcode
 from .search_product import search_product
 from .search_user import search_user
 from .transaction_log import transaction_log, transaction_log_stream

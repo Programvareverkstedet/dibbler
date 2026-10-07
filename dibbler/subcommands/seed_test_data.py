@@ -4,10 +4,10 @@ from dibbler.models import Base
 from dibbler.queries import create_product, create_user
 
 MOCK_PRODUCTS = [
-    {"bar_code": "3707412130983", "name": "Cola 0.33L", "price": 13, "stock": 48},
-    {"bar_code": "1974798302392", "name": "Pepsi 0.5L", "price": 22, "stock": 36},
-    {"bar_code": "1293289192038", "name": "Pakke med kjeks", "price": 30, "stock": 20},
-    {"bar_code": "7000000000010", "name": "PVV T-skjorte", "price": 150, "stock": 15},
+    {"barcode": "3707412130983", "name": "Cola 0.33L", "price": 13, "stock": 48},
+    {"barcode": "1974798302392", "name": "Pepsi 0.5L", "price": 22, "stock": 36},
+    {"barcode": "1293289192038", "name": "Pakke med kjeks", "price": 30, "stock": 20},
+    {"barcode": "7000000000010", "name": "PVV T-skjorte", "price": 150, "stock": 15},
 ]
 
 MOCK_USERS = [

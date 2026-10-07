@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-# from dibbler.lib.printer_helpers import print_bar_code, print_name_label
+# from dibbler.lib.printer_helpers import print_barcode, print_name_label
 from .helpermenus import Menu
 
 
@@ -8,7 +8,7 @@ class PrintLabelMenu(Menu):
     def __init__(self, sql_session: Session) -> None:
         super().__init__("Print a label", sql_session)
         self.help_text = """
-Prints out a product bar code on the printer
+Prints out a product barcode on the printer
 
 Put it up somewhere in the vicinity.
 """
@@ -23,14 +23,14 @@ Put it up somewhere in the vicinity.
         # thing = self.input_thing("Product/User")
 
         # if isinstance(thing, Product):
-        #     if re.match(r"^[0-9]{13}$", thing.bar_code):
+        #     if re.match(r"^[0-9]{13}$", thing.barcode):
         #         bar_type = "ean13"
-        #     elif re.match(r"^[0-9]{8}$", thing.bar_code):
+        #     elif re.match(r"^[0-9]{8}$", thing.barcode):
         #         bar_type = "ean8"
         #     else:
         #         bar_type = "code39"
-        #     print_bar_code(
-        #         thing.bar_code,
+        #     print_barcode(
+        #         thing.barcode,
         #         thing.name,
         #         barcode_type=bar_type,
         #         rotate=config["printer"]["rotate"],

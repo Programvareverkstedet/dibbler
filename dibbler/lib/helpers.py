@@ -16,13 +16,13 @@ def system_user_exists(username: str) -> bool:
         return True
 
 
-def guess_data_type(string: str) -> Literal["card", "rfid", "bar_code", "username"] | None:
+def guess_data_type(string: str) -> Literal["card", "rfid", "barcode", "username"] | None:
     if string.startswith("ntnu") and string[4:].isdigit():
         return "card"
     if string.isdigit() and len(string) == 10:
         return "rfid"
     if string.isdigit() and len(string) in [8, 13]:
-        return "bar_code"
+        return "barcode"
     # 	if string.isdigit() and len(string) > 5:
     # 		return 'card'
     if string.isalpha() and string.islower() and system_user_exists(string):

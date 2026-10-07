@@ -19,12 +19,12 @@ from dibbler.queries.product_list_info import ProductListInfo
 
 def _make_product(
     sql_session: Session,
-    bar_code: str,
+    barcode: str,
     name: str,
     stock: int = 100,
     hidden: bool = False,
 ) -> Product:
-    product = Product(bar_code, name, 10, stock=stock, hidden=hidden)
+    product = Product(barcode, name, 10, stock=stock, hidden=hidden)
     sql_session.add(product)
     sql_session.flush()
     return product

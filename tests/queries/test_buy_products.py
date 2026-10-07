@@ -13,12 +13,12 @@ DEFAULT_PEPSI_PRICE = 15
 
 def _make_product(
     sql_session: Session,
-    bar_code: str = "1234567890",
+    barcode: str = "1234567890",
     name: str = "Pepsi",
     stock: int = DEFAULT_PEPSI_STOCK,
     price: int = DEFAULT_PEPSI_PRICE,
 ) -> Product:
-    product = Product(bar_code, name, price, stock=stock)
+    product = Product(barcode, name, price, stock=stock)
     sql_session.add(product)
     sql_session.flush()
     return product
@@ -130,8 +130,8 @@ def test_buy_products_multiplies_penalty_onto_the_already_rounded_share(
 
 
 def test_buy_products_updates_multiple_products_independently(sql_session: Session) -> None:
-    cola = _make_product(sql_session, bar_code="1111111111", name="Cola", stock=10, price=15)
-    pepsi = _make_product(sql_session, bar_code="2222222222", name="Pepsi", stock=4, price=8)
+    cola = _make_product(sql_session, barcode="1111111111", name="Cola", stock=10, price=15)
+    pepsi = _make_product(sql_session, barcode="2222222222", name="Pepsi", stock=4, price=8)
     alice = _make_user(sql_session, "alice")
 
     purchase = buy_products(sql_session, [(alice, 1)], [(cola, 2), (pepsi, 3)])

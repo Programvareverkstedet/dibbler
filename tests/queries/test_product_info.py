@@ -15,8 +15,8 @@ from dibbler.queries import (
 from dibbler.queries.product_info import ProductInfo
 
 
-def _make_product(sql_session: Session, bar_code: str, name: str) -> Product:
-    product = Product(bar_code, name, 10, stock=100)
+def _make_product(sql_session: Session, barcode: str, name: str) -> Product:
+    product = Product(barcode, name, 10, stock=100)
     sql_session.add(product)
     sql_session.flush()
     return product

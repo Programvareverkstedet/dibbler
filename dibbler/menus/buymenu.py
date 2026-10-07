@@ -23,7 +23,7 @@ class BuyMenu(Menu):
         self.help_text = """
 Each purchase may contain one or more products and one or more buyers.
 
-Enter products (by name or bar code) and buyers (by name or bar code)
+Enter products (by name or barcode) and buyers (by name or barcode)
 in any order.  The information gathered so far is displayed after each
 addition, and you can type 'what' at any time to redisplay it.
 
