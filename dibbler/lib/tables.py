@@ -7,7 +7,9 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Iterator, Sequence
 
 MAX_SCREEN_SIZE = 80
-SEPARATOR = " | "
+
+SEPARATOR = " │ "
+BORDER_WIDTH = len("│ ") + len(" │")
 
 
 @dataclass(frozen=True)
@@ -40,7 +42,7 @@ class TableColumn:
 
 class Table:
     """
-    An ASCII table that renders one line at a time, meant for use with `streaming_pager`.
+    A table that renders one line at a time, meant for use with `streaming_pager`.
     """
 
     def __init__(self, *columns: TableColumn) -> None:
@@ -51,17 +53,36 @@ class Table:
 
     @property
     def width(self) -> int:
-        return sum(c.width for c in self.columns) + len(SEPARATOR) * (len(self.columns) - 1)
+        return (
+            sum(c.width for c in self.columns)
+            + len(SEPARATOR) * (len(self.columns) - 1)
+            + BORDER_WIDTH
+        )
 
     def row(self, *values: object) -> str:
         cells = (c.format(v) for c, v in zip(self.columns, values, strict=True))
-        return SEPARATOR.join(cells).rstrip() + "\n"
+        return "│ " + SEPARATOR.join(cells) + " │\n"
 
     def header(self) -> str:
         return self.row(*(c.header for c in self.columns))
 
-    def hline(self, char: str = "-") -> str:
-        return char * self.width + "\n"
+    def _line(self, left: str, middle: str, right: str) -> str:
+        return left + middle.join("─" * (c.width + 2) for c in self.columns) + right + "\n"
+
+    def top(self, title: str | None = None) -> str:
+        line = self._line("┌", "┬", "┐")
+        if title is None:
+            return line
+        title = f" {title} "
+        assert len(title) <= self.width - 2, f"Title{title}is wider than the table"
+        start = (self.width - len(title)) // 2
+        return line[:start] + title + line[start + len(title) :]
+
+    def hline(self) -> str:
+        return self._line("├", "┼", "┤")
+
+    def bottom(self) -> str:
+        return self._line("└", "┴", "┘")
 
     def render(
         self,
@@ -70,6 +91,7 @@ class Table:
         hline: bool = True,
         footer: Callable[[], Sequence[object]] | None = None,
     ) -> Iterator[str]:
+        yield self.top()
         yield self.header()
         if hline:
             yield self.hline()
@@ -78,3 +100,4 @@ class Table:
         if footer is not None:
             yield self.hline()
             yield self.row(*footer())
+        yield self.bottom()

@@ -68,18 +68,20 @@ class BalanceMenu(Menu):
         super().__init__("Total balance of PVVVV", sql_session)
 
     def _execute(self, **_kwargs) -> None:
-        self.print_header()
+        print("")
         stock = summarize_product_stock(self.sql_session, include_hidden=True)
         balance = summarize_user_balance(self.sql_session)
 
-        table = Table(TableColumn("", 15, align="right"), TableColumn("", 5, align="right"))
-        text = table.row("Total value", stock.in_stock_value)
+        table = Table(TableColumn("", 17, align="right"), TableColumn("", 5, align="right"))
+        text = table.top(title=self.name)
+        text += table.row("Total value", stock.in_stock_value)
         text += table.hline()
         text += table.row("Positive credit", balance.positive_balance)
         text += table.row("Negative credit", balance.negative_balance)
         text += table.row("Total credit", balance.total)
         text += table.hline()
         text += table.row("Total balance", stock.in_stock_value - balance.total)
+        text += table.bottom()
         print(text)
         self.pause()
 

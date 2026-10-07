@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.lib.pager import streaming_pager
 from dibbler.lib.render_transaction_log import render_transaction_log
-from dibbler.lib.tables import MAX_SCREEN_SIZE, SEPARATOR, Table, TableColumn
+from dibbler.lib.tables import BORDER_WIDTH, MAX_SCREEN_SIZE, SEPARATOR, Table, TableColumn
 from dibbler.models import TransactionLog, User
 from dibbler.queries import (
     adjust_balance,
@@ -121,7 +121,7 @@ class ShowUserMenu(Menu):
             return
 
         count_width = len("bought")
-        name_width = MAX_SCREEN_SIZE - 2 * (count_width + len(SEPARATOR))
+        name_width = MAX_SCREEN_SIZE - BORDER_WIDTH - 2 * (count_width + len(SEPARATOR))
         table = Table(
             TableColumn("product", name_width, truncate=True),
             TableColumn("bought", count_width, align="right"),
@@ -215,7 +215,7 @@ class ProductListMenu(Menu):
         table = Table(
             TableColumn("bar code", 20),
             TableColumn("price", 5, align="right"),
-            TableColumn("name", 40, truncate=True),
+            TableColumn("name", 36, truncate=True),
             TableColumn("stock", 5, align="right"),
         )
 
