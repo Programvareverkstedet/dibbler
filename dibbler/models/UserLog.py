@@ -57,7 +57,7 @@ class UserLog(Base, UidMixin):
     type: Mapped[UserLogEntryType] = mapped_column(UserLogEntryTypeSQL)
 
     # NOTE: Technically a foreign key, but we don't enforce so we can delete users.
-    user_id: Mapped[int] = mapped_column(Integer)
+    user_id: Mapped[int] = mapped_column(Integer, index=True)
     user: Mapped[User | None] = relationship(
         primaryjoin=lambda: foreign(UserLog.user_id) == User.id,
         viewonly=True,

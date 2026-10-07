@@ -102,7 +102,7 @@ class ProductLog(Base, UidMixin):
     type: Mapped[ProductLogEntryType] = mapped_column(ProductLogEntryTypeSQL)
 
     # NOTE: Technically a foreign key, but we don't enforce so we can delete products.
-    product_id: Mapped[int] = mapped_column(Integer)
+    product_id: Mapped[int] = mapped_column(Integer, index=True)
     product: Mapped[Product | None] = relationship(
         primaryjoin=lambda: foreign(ProductLog.product_id) == Product.id,
         viewonly=True,

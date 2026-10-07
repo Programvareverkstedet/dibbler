@@ -22,5 +22,5 @@ if TYPE_CHECKING:
 class ProductBarcode(Base, UidMixin):
     code: Mapped[str] = mapped_column(String(13), unique=True)
 
-    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"))
+    product_id: Mapped[int] = mapped_column(ForeignKey("products.id"), index=True)
     product: Mapped[Product] = relationship(back_populates="barcodes")
