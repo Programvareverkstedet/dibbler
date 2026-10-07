@@ -34,7 +34,7 @@ def _page_transaction_log(entries: Iterator[TransactionLog]) -> None:
         print("No transactions yet")
         return
 
-    streaming_pager(render_transaction_log(chain([first], entries), ascii_only=True))
+    streaming_pager(render_transaction_log(chain([first], entries), ascii_only=False))
 
 
 class TransferMenu(Menu):
