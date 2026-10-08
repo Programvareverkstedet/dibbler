@@ -7,10 +7,7 @@ from dibbler.queries import add_barcode, create_product, remove_barcode
 
 
 def _make_product(sql_session: Session) -> Product:
-    product = Product("1234567890", "Cola", 15, stock=10, hidden=False)
-    sql_session.add(product)
-    sql_session.flush()
-    return product
+    return create_product(sql_session, "1234567890", "Cola", 15)
 
 
 def test_removes_the_given_code(sql_session: Session) -> None:

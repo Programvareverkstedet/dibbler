@@ -9,16 +9,18 @@ from sqlalchemy import (
     Integer,
     String,
     column,
+    event,
     or_,
 )
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     foreign,
     mapped_column,
     relationship,
 )
 
-from ._helpers import type_field_constraints
+from ._helpers import type_field_constraints, validate_log_lifecycle
 from .Base import Base
 from .enums import UserLogEntryType, UserLogEntryTypeSQL
 from .mixins import UidMixin
@@ -69,3 +71,18 @@ class UserLog(Base, UidMixin):
     rfid: Mapped[str | None] = mapped_column(String(User.rfid_length))
     rfid_touched: Mapped[bool] = mapped_column(Boolean, default=False)
     credit: Mapped[int | None] = mapped_column(Integer)
+
+
+@event.listens_for(Session, "before_flush")
+def _validate_user_log_lifecycles(
+    session: Session,
+    _flush_context: object,
+    _instances: object,
+) -> None:
+    validate_log_lifecycle(
+        session,
+        UserLog,
+        UserLog.user_id,
+        create_type=UserLogEntryType.CREATE,
+        delete_type=UserLogEntryType.DELETE,
+    )

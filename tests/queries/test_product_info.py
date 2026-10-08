@@ -9,24 +9,12 @@ from dibbler.queries import (
     add_stock,
     adjust_stock,
     buy_products,
+    create_product,
+    create_user,
     merge_products,
     product_info,
 )
 from dibbler.queries.product_info import ProductInfo
-
-
-def _make_product(sql_session: Session, barcode: str, name: str) -> Product:
-    product = Product(barcode, name, 10, stock=100)
-    sql_session.add(product)
-    sql_session.flush()
-    return product
-
-
-def _make_user(sql_session: Session, name: str) -> User:
-    user = User(name, None, credit=1000)
-    sql_session.add(user)
-    sql_session.flush()
-    return user
 
 
 def _set_last_entry_time(sql_session: Session, time: datetime) -> None:
@@ -35,6 +23,24 @@ def _set_last_entry_time(sql_session: Session, time: datetime) -> None:
     ).one()
     entry.time = time
     sql_session.flush()
+
+
+def _make_product(
+    sql_session: Session,
+    barcode: str,
+    name: str,
+    stock: int = 0,
+    user: User | None = None,
+) -> Product:
+    product = create_product(sql_session, barcode, name, 10, stock=stock, user=user)
+    if stock != 0:
+        # NOTE: initial stock adjustment gets moved out of the way.
+        _set_last_entry_time(sql_session, datetime(2000, 1, 1))
+    return product
+
+
+def _make_user(sql_session: Session, name: str) -> User:
+    return create_user(sql_session, name, credit=1000)
 
 
 def _add(sql_session: Session, users: list[User], product: Product, amount: int) -> None:
@@ -51,8 +57,8 @@ def test_no_activity(sql_session: Session) -> None:
 
 
 def test_last_activity(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
     alice = _make_user(sql_session, "alice")
+    pepsi = _make_product(sql_session, "1111111111", "Pepsi", stock=10, user=alice)
 
     buy_products(sql_session, [(alice, 1)], [(pepsi, 1)])
     _set_last_entry_time(sql_session, datetime(2024, 1, 3))
@@ -81,10 +87,10 @@ def test_last_activity_ignores_other_products(sql_session: Session) -> None:
 
 
 def test_product_sum(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
-    cola = _make_product(sql_session, "2222222222", "Cola")
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
+    pepsi = _make_product(sql_session, "1111111111", "Pepsi", stock=10, user=alice)
+    cola = _make_product(sql_session, "2222222222", "Cola", stock=10, user=alice)
 
     buy_products(sql_session, [(alice, 1)], [(pepsi, 2), (cola, 3)])
     buy_products(sql_session, [(bob, 1)], [(pepsi, 1)])
@@ -130,12 +136,12 @@ def test_time_filter(sql_session: Session) -> None:
     pepsi = _make_product(sql_session, "1111111111", "Pepsi")
     alice = _make_user(sql_session, "alice")
 
+    _add(sql_session, [alice], pepsi, 4)
+    _set_last_entry_time(sql_session, datetime(2024, 1, 3))
     buy_products(sql_session, [(alice, 1)], [(pepsi, 1)])
     _set_last_entry_time(sql_session, datetime(2024, 1, 1))
     buy_products(sql_session, [(alice, 1)], [(pepsi, 2)])
     _set_last_entry_time(sql_session, datetime(2024, 1, 2))
-    _add(sql_session, [alice], pepsi, 4)
-    _set_last_entry_time(sql_session, datetime(2024, 1, 3))
 
     assert product_info(
         sql_session,
@@ -176,10 +182,10 @@ def test_invalid_time_range(sql_session: Session) -> None:
 
 
 def test_stock_adjustments(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
-    cola = _make_product(sql_session, "2222222222", "Cola")
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
+    pepsi = _make_product(sql_session, "1111111111", "Pepsi", stock=100, user=alice)
+    cola = _make_product(sql_session, "2222222222", "Cola")
 
     buy_products(sql_session, [(alice, 1)], [(pepsi, 4)])
     _add(sql_session, [alice], pepsi, 6)
@@ -189,13 +195,14 @@ def test_stock_adjustments(sql_session: Session) -> None:
 
     info = product_info(sql_session, pepsi)
 
-    assert (info.stock_adjustments, info.stock_adjustment_sum) == (2, -5)
-    assert pepsi.stock == 100 - info.times_bought + info.times_added + info.stock_adjustment_sum
+    # NOTE: The initial stock is a stock adjustment as well.
+    assert (info.stock_adjustments, info.stock_adjustment_sum) == (3, 100 - 7 + 2)
+    assert pepsi.stock == info.times_added - info.times_bought + info.stock_adjustment_sum
 
 
 def test_stock_adjustments_time_filter(sql_session: Session) -> None:
-    pepsi = _make_product(sql_session, "1111111111", "Pepsi")
     alice = _make_user(sql_session, "alice")
+    pepsi = _make_product(sql_session, "1111111111", "Pepsi", stock=10, user=alice)
 
     adjust_stock(sql_session, alice, pepsi, -7)
     _set_last_entry_time(sql_session, datetime(2024, 1, 1))

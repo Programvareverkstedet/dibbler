@@ -14,10 +14,7 @@ def _make_user(
     card: str | None = "ntnu123",
     rfid: str | None = "deadbeef",
 ) -> User:
-    user = User(name, card, rfid)
-    sql_session.add(user)
-    sql_session.flush()
-    return user
+    return create_user(sql_session, name, card, rfid)
 
 
 def test_edit_user_updates_only_the_given_fields(sql_session: Session) -> None:
@@ -38,7 +35,7 @@ def test_edit_user_records_the_users_id_as_user_id(sql_session: Session) -> None
 
     sql_session.expire_all()
 
-    log = sql_session.query(UserLog).one()
+    log = sql_session.query(UserLog).filter(UserLog.type == UserLogEntryType.EDIT).one()
     assert log.type == UserLogEntryType.EDIT
     assert log.user_id == user.id
     assert log.card == "ntnu456"

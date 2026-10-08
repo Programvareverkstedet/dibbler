@@ -5,14 +5,11 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, ProductLog
 from dibbler.models.enums import ProductLogEntryType
-from dibbler.queries import edit_product
+from dibbler.queries import create_product, edit_product
 
 
 def _make_product(sql_session: Session) -> Product:
-    product = Product("1234567890", "Cola", 15, stock=10, hidden=False)
-    sql_session.add(product)
-    sql_session.flush()
-    return product
+    return create_product(sql_session, "1234567890", "Cola", 15)
 
 
 def test_edit_product_updates_only_the_given_fields(sql_session: Session) -> None:
@@ -37,7 +34,7 @@ def test_edit_product_records_an_edit_log_entry_with_only_touched_fields(
 
     sql_session.expire_all()
 
-    log = sql_session.query(ProductLog).one()
+    log = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.EDIT).one()
     assert log.type == ProductLogEntryType.EDIT
     assert log.product_id == product.id
     assert log.price == 20

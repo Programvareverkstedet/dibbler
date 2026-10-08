@@ -14,7 +14,7 @@ from dibbler.models import (
     User,
 )
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
-from dibbler.queries import add_stock, buy_products, merge_products
+from dibbler.queries import add_stock, buy_products, create_product, create_user, merge_products
 
 
 def _make_product(
@@ -22,20 +22,23 @@ def _make_product(
     barcode: str = "1234567890",
     name: str = "Cola",
     price: int = 15,
-    stock: int = 10,
+    stock: int = 0,
     hidden: bool = False,
+    user: User | None = None,
 ) -> Product:
-    product = Product(barcode, name, price, stock=stock, hidden=hidden)
-    sql_session.add(product)
-    sql_session.flush()
-    return product
+    return create_product(
+        sql_session,
+        barcode,
+        name,
+        price,
+        stock=stock,
+        hidden=hidden,
+        user=user,
+    )
 
 
 def _make_user(sql_session: Session, name: str = "alice", credit: int = 1000) -> User:
-    user = User(name, None, credit=credit)
-    sql_session.add(user)
-    sql_session.flush()
-    return user
+    return create_user(sql_session, name, credit=credit)
 
 
 @pytest.mark.parametrize("preload", [True, False])
@@ -70,8 +73,22 @@ def test_deletes_the_source_product(sql_session: Session) -> None:
 
 def test_keeps_targets_own_fields_by_default(sql_session: Session) -> None:
     alice = _make_user(sql_session)
-    source = _make_product(sql_session, barcode="1111111111", name="Cola", price=15, stock=10)
-    target = _make_product(sql_session, barcode="2222222222", name="Pepsi", price=20, stock=5)
+    source = _make_product(
+        sql_session,
+        barcode="1111111111",
+        name="Cola",
+        price=15,
+        stock=10,
+        user=alice,
+    )
+    target = _make_product(
+        sql_session,
+        barcode="2222222222",
+        name="Pepsi",
+        price=20,
+        stock=5,
+        user=alice,
+    )
 
     merge_products(sql_session, alice, source, target)
 
@@ -106,8 +123,8 @@ def test_can_edit_the_merged_product(sql_session: Session) -> None:
 
 def test_can_set_a_custom_stock(sql_session: Session) -> None:
     alice = _make_user(sql_session)
-    source = _make_product(sql_session, barcode="1111111111", stock=10)
-    target = _make_product(sql_session, barcode="2222222222", stock=5)
+    source = _make_product(sql_session, barcode="1111111111", stock=10, user=alice)
+    target = _make_product(sql_session, barcode="2222222222", stock=5, user=alice)
 
     merge_products(sql_session, alice, source, target, stock=source.stock + target.stock)
 
@@ -272,33 +289,38 @@ def test_no_change_implies_no_edit_log(sql_session: Session) -> None:
 def test_no_stock_change_implies_no_transaction_log(sql_session: Session) -> None:
     alice = _make_user(sql_session)
     source = _make_product(sql_session, barcode="1111111111", stock=0)
-    target = _make_product(sql_session, barcode="2222222222", stock=5)
+    target = _make_product(sql_session, barcode="2222222222", stock=5, user=alice)
+    transaction_log_count = sql_session.query(TransactionLog).count()
 
     merge_products(sql_session, alice, source, target)
 
     sql_session.expire_all()
 
     assert target.stock == 5
-    assert sql_session.query(TransactionLog).count() == 0
+    assert sql_session.query(TransactionLog).count() == transaction_log_count
 
 
 def test_summed_stock_is_not_logged(sql_session: Session) -> None:
     alice = _make_user(sql_session)
-    source = _make_product(sql_session, barcode="1111111111", stock=10)
-    target = _make_product(sql_session, barcode="2222222222", stock=5)
+    source = _make_product(sql_session, barcode="1111111111", stock=10, user=alice)
+    target = _make_product(sql_session, barcode="2222222222", stock=5, user=alice)
+    transaction_log_count = sql_session.query(TransactionLog).count()
 
     merge_products(sql_session, alice, source, target, stock=15)
 
     sql_session.expire_all()
 
     assert target.stock == 15
-    assert sql_session.query(TransactionLog).count() == 0
+    assert sql_session.query(TransactionLog).count() == transaction_log_count
 
 
 def _stock_adjustment(sql_session: Session) -> int:
     log = (
         sql_session.query(TransactionLog)
-        .filter(TransactionLog.type == TransactionLogEntryType.ADJUST_STOCK)
+        .filter(
+            TransactionLog.type == TransactionLogEntryType.ADJUST_STOCK,
+            TransactionLog.merge_ref_id.is_not(None),
+        )
         .one()
     )
     return log.products.pop().amount
@@ -306,8 +328,8 @@ def _stock_adjustment(sql_session: Session) -> int:
 
 def test_keeping_target_stock_is_logged(sql_session: Session) -> None:
     alice = _make_user(sql_session)
-    source = _make_product(sql_session, barcode="1111111111", stock=10)
-    target = _make_product(sql_session, barcode="2222222222", stock=5)
+    source = _make_product(sql_session, barcode="1111111111", stock=10, user=alice)
+    target = _make_product(sql_session, barcode="2222222222", stock=5, user=alice)
 
     merge_products(sql_session, alice, source, target)
 
@@ -319,8 +341,8 @@ def test_keeping_target_stock_is_logged(sql_session: Session) -> None:
 
 def test_custom_stock_is_logged(sql_session: Session) -> None:
     alice = _make_user(sql_session)
-    source = _make_product(sql_session, barcode="1111111111", stock=10)
-    target = _make_product(sql_session, barcode="2222222222", stock=5)
+    source = _make_product(sql_session, barcode="1111111111", stock=10, user=alice)
+    target = _make_product(sql_session, barcode="2222222222", stock=5, user=alice)
 
     merge_products(sql_session, alice, source, target, stock=12)
 
@@ -391,7 +413,9 @@ def test_invariants(
 ) -> None:
     alice = _make_user(sql_session)
     source = _make_product(sql_session, barcode="1111111111")
-    target = _make_product(sql_session, barcode="2222222222")
+    target = _make_product(sql_session, barcode="2222222222", stock=10, user=alice)
+    product_log_count = sql_session.query(ProductLog).count()
+    transaction_log_count = sql_session.query(TransactionLog).count()
 
     with pytest.raises(ValueError, match=error):
         merge_products(sql_session, alice, source, source if merge_into_self else target, **kwargs)
@@ -402,5 +426,5 @@ def test_invariants(
     assert {bc.code for bc in source.barcodes} == {"1111111111"}
     assert {bc.code for bc in target.barcodes} == {"2222222222"}
     assert (target.name, target.price, target.stock, target.hidden) == ("Cola", 15, 10, False)
-    assert sql_session.query(ProductLog).count() == 0
-    assert sql_session.query(TransactionLog).count() == 0
+    assert sql_session.query(ProductLog).count() == product_log_count
+    assert sql_session.query(TransactionLog).count() == transaction_log_count

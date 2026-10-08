@@ -10,16 +10,18 @@ from sqlalchemy import (
     Integer,
     String,
     column,
+    event,
     or_,
 )
 from sqlalchemy.orm import (
     Mapped,
+    Session,
     foreign,
     mapped_column,
     relationship,
 )
 
-from ._helpers import type_field_constraints
+from ._helpers import type_field_constraints, validate_log_lifecycle
 from .Base import Base
 from .enums import ProductLogEntryType, ProductLogEntryTypeSQL
 from .mixins import UidMixin
@@ -122,3 +124,18 @@ class ProductLog(Base, UidMixin):
 
     merge_ref_id: Mapped[int | None] = mapped_column(ForeignKey("product_log.id"))
     merge_ref: Mapped[ProductLog | None] = relationship(remote_side="ProductLog.id")
+
+
+@event.listens_for(Session, "before_flush")
+def _validate_product_log_lifecycles(
+    session: Session,
+    _flush_context: object,
+    _instances: object,
+) -> None:
+    validate_log_lifecycle(
+        session,
+        ProductLog,
+        ProductLog.product_id,
+        create_type=ProductLogEntryType.CREATE,
+        delete_type=ProductLogEntryType.DELETE,
+    )

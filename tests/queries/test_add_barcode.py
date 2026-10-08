@@ -3,14 +3,11 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, ProductLog
 from dibbler.models.enums import ProductLogEntryType
-from dibbler.queries import add_barcode
+from dibbler.queries import add_barcode, create_product
 
 
 def _make_product(sql_session: Session) -> Product:
-    product = Product("1234567890", "Cola", 15, stock=10, hidden=False)
-    sql_session.add(product)
-    sql_session.flush()
-    return product
+    return create_product(sql_session, "1234567890", "Cola", 15)
 
 
 def test_appends_a_new_code(sql_session: Session) -> None:
@@ -32,7 +29,10 @@ def test_records_a_log_entry(sql_session: Session) -> None:
 
     log = (
         sql_session.query(ProductLog)
-        .filter(ProductLog.type == ProductLogEntryType.ADD_BARCODE)
+        .filter(
+            ProductLog.type == ProductLogEntryType.ADD_BARCODE,
+            ProductLog.barcode == "0987654321",
+        )
         .one()
     )
     assert log.product_id == product.id

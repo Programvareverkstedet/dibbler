@@ -8,6 +8,8 @@ from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import (
     add_stock,
     buy_products,
+    create_product,
+    create_user,
     merge_products,
     user_product_stats,
     user_product_stats_stream,
@@ -16,17 +18,11 @@ from dibbler.queries.user_product_stats import UserProductStats
 
 
 def _make_product(sql_session: Session, barcode: str, name: str) -> Product:
-    product = Product(barcode, name, 10, stock=100)
-    sql_session.add(product)
-    sql_session.flush()
-    return product
+    return create_product(sql_session, barcode, name, 10)
 
 
 def _make_user(sql_session: Session, name: str) -> User:
-    user = User(name, None, credit=1000)
-    sql_session.add(user)
-    sql_session.flush()
-    return user
+    return create_user(sql_session, name, credit=1000)
 
 
 def _set_last_entry_time(sql_session: Session, time: datetime) -> None:
