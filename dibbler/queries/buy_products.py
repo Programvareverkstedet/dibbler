@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.lib.helpers import simplify_shares
+from dibbler import economy
 from dibbler.models import (
     Product,
     Purchase,
@@ -44,21 +44,29 @@ def buy_products(
     if sum(amount for _, amount in products) > MAX_BUY_AMOUNT_TOTAL:
         raise ValueError(f"Total product amount must be at most {MAX_BUY_AMOUNT_TOTAL}.")
 
-    buyers = simplify_shares(buyers)
+    total_price = economy.purchase_price(products)
+    charges = economy.buyer_charges(total_price, buyers)
+
+    for product, amount in products:
+        product.stock -= amount
 
     with sql_session.no_autoflush:
         purchase = Purchase()
+        purchase.time = datetime.now()
+        purchase.price = total_price
         sql_session.add(purchase)
 
         transactions = [
-            Transaction(user, purchase=purchase, penalty=penalty) for user, penalty in buyers
+            Transaction(user, charge, purchase=purchase, penalty=penalty)
+            for user, penalty, charge in charges
         ]
+        for transaction in transactions:
+            transaction.time = purchase.time
+            transaction.user.credit -= transaction.amount
         sql_session.add_all(transactions)
         sql_session.add_all(
             PurchaseEntry(purchase, product, amount) for product, amount in products
         )
-
-        purchase.perform_purchase()
     sql_session.flush()
 
     header = TransactionLog(type=TransactionLogEntryType.BUY_PRODUCT, time=datetime.now())

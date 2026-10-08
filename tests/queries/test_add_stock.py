@@ -129,19 +129,6 @@ def test_add_stock_keeps_log_sum_equal_to_stock(sql_session: Session, stock: int
     assert logged == product.stock
 
 
-def test_add_stock_splits_total_price_evenly_across_users(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice", credit=0)
-    bob = _make_user(sql_session, "bob", credit=0)
-
-    add_stock(sql_session, [alice, bob], [(product, 1, 100)], total_price=100)
-
-    sql_session.expire_all()
-
-    assert alice.credit == 50
-    assert bob.credit == 50
-
-
 @pytest.mark.parametrize(
     ("users", "expected_credits", "expected_transactions"),
     [
@@ -185,7 +172,7 @@ def test_add_stock_simplifies_user_shares_by_their_gcd(
 def test_add_stock_gives_the_rounding_remainder_to_every_credited_user(
     sql_session: Session,
 ) -> None:
-    # Quirk from original implementation of Purchase.perform_soft_purchase,
+    # Quirk from version 1 of the economy (see economy.version_1.restock_credits),
     # undivisible splits are rounded up for each user
     product = _make_product(sql_session)
     users = [_make_user(sql_session, name) for name in ("alice", "bob", "carol")]

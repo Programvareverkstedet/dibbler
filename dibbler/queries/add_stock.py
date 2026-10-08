@@ -1,9 +1,8 @@
 from datetime import datetime
-from math import ceil
 
 from sqlalchemy.orm import Session
 
-from dibbler.lib.helpers import simplify_shares
+from dibbler import economy
 from dibbler.models import (
     Product,
     ProductLog,
@@ -53,23 +52,23 @@ def add_stock(
     if description is not None and len(description) > max_description_length:
         raise ValueError(f"Description must be at most {max_description_length} characters.")
 
-    users = simplify_shares(users)
+    user_credits = economy.restock_credits(total_price, users)
 
     for product, _amount, _paid_amount in products:
-        if product.stock < 0:
+        reset = economy.stock_reset_before_restock(product.stock)
+        if reset != 0:
             adjust_stock(
                 sql_session,
                 users[0],
                 product,
-                -product.stock,
+                reset,
                 description=NEGATIVE_STOCK_RESET_DESCRIPTION,
             )
 
     edits: list[tuple[Product, int | None, bool | None]] = []
 
     for product, amount, paid_amount in products:
-        value = max(product.stock, 0) * product.price + paid_amount
-        price = int(ceil(float(value) / (max(product.stock, 0) + amount)))
+        price = economy.restock_price(product.stock, product.price, amount, paid_amount)
 
         edited_price = price if price != product.price else None
         edited_hidden = False if product.hidden else None
@@ -82,17 +81,21 @@ def add_stock(
 
     with sql_session.no_autoflush:
         purchase = Purchase()
+        purchase.time = datetime.now()
+        purchase.price = -total_price
         sql_session.add(purchase)
 
         transactions = [
-            Transaction(user, purchase=purchase, description=description) for user in users
+            Transaction(user, -credit, description=description, purchase=purchase)
+            for user, credit in user_credits
         ]
+        for transaction in transactions:
+            transaction.time = purchase.time
+            transaction.user.credit -= transaction.amount
         sql_session.add_all(transactions)
         sql_session.add_all(
             PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
         )
-
-        purchase.perform_soft_purchase(-total_price, round_up=False)
     sql_session.flush()
 
     header = TransactionLog(

@@ -43,10 +43,6 @@ GENERAL_SCHEMA: dict[str, ConfigField] = {
     "show_tracebacks": ConfigField(bool, default=True),
 }
 
-LIMITS_SCHEMA: dict[str, ConfigField] = {
-    "low_credit_warning_limit": ConfigField(int, default=-100),
-}
-
 SQLITE_SCHEMA: dict[str, ConfigField] = {
     "path": ConfigField(str, default="test.db"),
 }
@@ -99,7 +95,6 @@ def _fill_section_defaults(section: dict[str, Any], schema: dict[str, ConfigFiel
 
 def fill_config_defaults() -> None:
     _fill_section_defaults(config.setdefault("general", {}), GENERAL_SCHEMA)
-    _fill_section_defaults(config.setdefault("limits", {}), LIMITS_SCHEMA)
 
     database = config.setdefault("database", {})
     if database.get("type") == "sqlite":
@@ -133,7 +128,6 @@ def validate_config() -> None:
     errors: list[str] = []
 
     _validate_section(config.get("general"), GENERAL_SCHEMA, "general", errors)
-    _validate_section(config.get("limits"), LIMITS_SCHEMA, "limits", errors)
 
     database = _validate_section(config.get("database"), None, "database", errors)
     if database is not None:

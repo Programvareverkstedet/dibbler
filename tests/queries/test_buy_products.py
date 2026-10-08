@@ -64,57 +64,7 @@ def test_buy_products_with_expired_buyers_and_products(sql_session: Session) -> 
     assert product.stock == DEFAULT_PEPSI_STOCK - amount
 
 
-def test_buy_products_splits_the_price_evenly_across_buyers(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob")
-    amount = 3
-
-    buy_products(sql_session, [(alice, 1), (bob, 1)], [(product, amount)])
-
-    sql_session.expire_all()
-
-    buyer_share = math.ceil(amount * DEFAULT_PEPSI_PRICE / 2)
-    assert alice.credit == 100 - buyer_share
-    assert bob.credit == 100 - buyer_share
-
-
-def test_buy_products_rounds_each_buyers_share_up(sql_session: Session) -> None:
-    product = _make_product(sql_session, price=10)
-    users = [_make_user(sql_session, name) for name in ("alice", "bob", "carol")]
-
-    purchase = buy_products(sql_session, [(u, 1) for u in users], [(product, 1)])
-
-    sql_session.expire_all()
-
-    buyer_share = math.ceil(purchase.price / len(users))
-
-    assert [100 - u.credit for u in users] == [buyer_share] * len(users)
-    assert purchase.price == 10
-
-
-def test_buy_products_applies_penalty_per_buyer(sql_session: Session) -> None:
-    product = _make_product(sql_session, price=10)
-    alice = _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob")
-
-    purchase = buy_products(sql_session, [(alice, 1), (bob, 2)], [(product, 1)])
-
-    sql_session.expire_all()
-
-    buyer_share = math.ceil(purchase.price / 2)
-
-    assert alice.credit == 100 - buyer_share
-    assert bob.credit == 100 - buyer_share * 2
-    assert purchase.price == 10
-
-
-def test_buy_products_multiplies_penalty_onto_the_already_rounded_share(
-    sql_session: Session,
-) -> None:
-    # Just pinning the implementation here, the penalty is multiplied onto
-    # the already rounded-up share, not the other way around.
-
+def test_buy_products_charges_each_share_with_its_penalty(sql_session: Session) -> None:
     product = _make_product(sql_session, price=10)
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")

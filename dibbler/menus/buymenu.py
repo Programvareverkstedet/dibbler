@@ -1,16 +1,12 @@
-import math
 from typing import Any
 
 from sqlalchemy.orm import Session
 
-from dibbler.conf import config
-from dibbler.lib.helpers import simplify_shares
+from dibbler import economy
 from dibbler.models import Product, User
 from dibbler.queries import buy_products
 
 from .helpermenus import Menu
-
-PENALTY_MULTIPLIER = 2
 
 
 class BuyMenu(Menu):
@@ -29,18 +25,6 @@ in any order.  The information gathered so far is displayed after each
 addition, and you can type 'what' at any time to redisplay it.
 
 When finished, write an empty line to confirm the purchase.\n"""
-
-    @staticmethod
-    def credit_check(user: User) -> bool:
-        """
-
-        :param user:
-        :type user: User
-        :rtype: boolean
-        """
-        assert isinstance(user, User)
-
-        return user.credit > config["limits"]["low_credit_warning_limit"]
 
     def low_credit_warning(
         self,
@@ -65,7 +49,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         print(r"***********************************************************************")
         print(r"")
         print(
-            f"USER {user.name} HAS LOWER CREDIT THAN {config['limits']['low_credit_warning_limit']:d}.",
+            f"USER {user.name} HAS LOWER CREDIT THAN {economy.LOW_CREDIT_LIMIT:d}.",
         )
         print("THIS PURCHASE WILL CHARGE YOUR CREDIT TWICE AS MUCH.")
         print("CONSIDER PUTTING MONEY IN THE BOX TO AVOID THIS.")
@@ -89,16 +73,13 @@ When finished, write an empty line to confirm the purchase.\n"""
                 print("| You have to put money in the anonym-jar.  |")
                 print("---------------------------------------------")
 
-            if not self.credit_check(thing):
-                if self.low_credit_warning(
-                    user=thing,
-                    timeout=self.superfast_mode,
-                ):
-                    self.buyers.append((thing, PENALTY_MULTIPLIER))
-                else:
-                    return False
-            else:
-                self.buyers.append((thing, 1))
+            penalty = economy.buyer_penalty_multiplier(thing.credit)
+            if penalty > 1 and not self.low_credit_warning(
+                user=thing,
+                timeout=self.superfast_mode,
+            ):
+                return False
+            self.buyers.append((thing, penalty))
         elif isinstance(thing, Product):
             self.products[thing] = self.products.get(thing, 0) + amount
         return True
@@ -201,9 +182,9 @@ When finished, write an empty line to confirm the purchase.\n"""
             for t in purchase.transactions:
                 if not t.user.is_anonymous():
                     print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
-                    if not self.credit_check(t.user):
+                    if economy.has_low_credit(t.user.credit):
                         print(
-                            f"USER {t.user.name} HAS LOWER CREDIT THAN {config['limits']['low_credit_warning_limit']:d},",
+                            f"USER {t.user.name} HAS LOWER CREDIT THAN {economy.LOW_CREDIT_LIMIT:d},",
                             "AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.",
                         )
 
@@ -219,7 +200,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         if len(self.buyers) == 0 and len(self.products) == 0:
             return None
 
-        price = sum(amount * product.price for product, amount in self.products.items())
+        price = economy.purchase_price(self.products.items())
         string = "Purchase:"
         string += "\n  buyers: "
         if len(self.buyers) == 0:
@@ -227,7 +208,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         else:
             string += ", ".join(
                 [
-                    user.name + ("*" if not self.credit_check(user) else "")
+                    user.name + ("*" if economy.has_low_credit(user.credit) else "")
                     for user, _penalty in self.buyers
                 ],
             )
@@ -246,18 +227,23 @@ When finished, write an empty line to confirm the purchase.\n"""
 
         string += f"\n  total price: {price:d} kr"
 
-        buyers = simplify_shares(self.buyers)
+        charges = economy.buyer_charges(price, self.buyers)
+        has_penalty = any(penalty > 1 for _, penalty, _ in charges)
 
-        if len(buyers) > 0:
-            price_per_transaction = math.ceil(price / len(buyers))
-            if len(buyers) > 1:
-                string += f"\n  price per person: {price_per_transaction:d} kr"
-                if any(penalty > 1 for _, penalty in buyers):
-                    string += f" *({price_per_transaction * PENALTY_MULTIPLIER:d} kr)"
+        if len(charges) > 1:
+            price_per_person = economy.buyer_charge(price, len(charges), 1)
+            string += f"\n  price per person: {price_per_person:d} kr"
+            if has_penalty:
+                price_with_penalty = economy.buyer_charge(
+                    price,
+                    len(charges),
+                    economy.PENALTY_MULTIPLIER,
+                )
+                string += f" *({price_with_penalty:d} kr)"
 
-            if any(penalty > 1 for _, penalty in buyers):
-                total = sum(price_per_transaction * penalty for _, penalty in buyers)
-                string += f"\n  *total with penalty: {total} kr"
+        if has_penalty:
+            total = sum(charge for _, _, charge in charges)
+            string += f"\n  *total with penalty: {total} kr"
 
         return string
 
