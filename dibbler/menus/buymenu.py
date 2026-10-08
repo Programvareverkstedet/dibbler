@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from dibbler.conf import config
+from dibbler.lib.helpers import simplify_shares
 from dibbler.models import Product, User
 from dibbler.queries import buy_products
 
@@ -245,7 +246,7 @@ When finished, write an empty line to confirm the purchase.\n"""
 
         string += f"\n  total price: {price:d} kr"
 
-        buyers = self.buyers[:1] if len({user for user, _ in self.buyers}) == 1 else self.buyers
+        buyers = simplify_shares(self.buyers)
 
         if len(buyers) > 0:
             price_per_transaction = math.ceil(price / len(buyers))

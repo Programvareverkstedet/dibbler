@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
+from dibbler.lib.helpers import simplify_shares
 from dibbler.models import (
     Product,
     Purchase,
@@ -38,7 +39,7 @@ def buy_products(
     if any(amount <= 0 for _, amount in products):
         raise ValueError("Product amounts must be positive.")
 
-    buyers = buyers[:1] if len({user for user, _ in buyers}) == 1 else buyers
+    buyers = simplify_shares(buyers)
 
     with sql_session.no_autoflush:
         purchase = Purchase()

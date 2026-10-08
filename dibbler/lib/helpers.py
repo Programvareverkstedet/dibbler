@@ -1,8 +1,12 @@
 import os
 import pwd
-from collections.abc import Callable
+from collections import Counter
+from collections.abc import Callable, Hashable
+from math import gcd
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
+
+HashableT = TypeVar("HashableT", bound=Hashable)
 
 
 def system_user_exists(username: str) -> bool:
@@ -47,6 +51,28 @@ def argmax(
     if all_:
         return [k for k in list(d.keys()) if d[k] == d[maxarg]]
     return maxarg
+
+
+def simplify_shares(shares: list[HashableT]) -> list[HashableT]:
+    """
+    Reduce a list of shares to its simplest variant with the same ratio.
+    Used for simplifying buyer and stock-adder shares.
+
+    Items are kept in the order they appear.
+    """
+    if not shares:
+        return []
+
+    counts = Counter(shares)
+    divisor = gcd(*counts.values())
+
+    simplified = []
+    remaining = {item: count // divisor for item, count in counts.items()}
+    for item in shares:
+        if remaining[item] > 0:
+            simplified.append(item)
+            remaining[item] -= 1
+    return simplified
 
 
 def pascal_case_to_snake_case(name: str) -> str:

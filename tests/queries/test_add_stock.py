@@ -134,6 +134,46 @@ def test_add_stock_splits_total_price_evenly_across_users(sql_session: Session) 
     assert bob.credit == 50
 
 
+@pytest.mark.parametrize(
+    ("users", "expected_credits", "expected_transactions"),
+    [
+        pytest.param(
+            ["alice", "alice"],
+            {"alice": 101},
+            ["alice"],
+            id="single-repeated-user",
+        ),
+        pytest.param(
+            ["alice", "bob", "alice", "bob"],
+            {"alice": 51, "bob": 51},
+            ["alice", "bob"],
+            id="2x2",
+        ),
+    ],
+)
+def test_add_stock_simplifies_user_shares_by_their_gcd(
+    sql_session: Session,
+    users: list[str],
+    expected_credits: dict[str, int],
+    expected_transactions: list[str],
+) -> None:
+    product = _make_product(sql_session)
+    users_by_name = {name: _make_user(sql_session, name) for name in expected_credits}
+
+    purchase = add_stock(
+        sql_session,
+        [users_by_name[name] for name in users],
+        [(product, 1, 101)],
+        total_price=101,
+    )
+
+    sql_session.expire_all()
+
+    assert {name: user.credit for name, user in users_by_name.items()} == expected_credits
+    assert sorted(t.user.name for t in purchase.transactions) == expected_transactions
+    assert len(sql_session.query(TransactionLog).one().users) == len(expected_transactions)
+
+
 def test_add_stock_gives_the_rounding_remainder_to_every_credited_user(
     sql_session: Session,
 ) -> None:

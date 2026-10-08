@@ -3,6 +3,7 @@ from math import ceil
 
 from sqlalchemy.orm import Session
 
+from dibbler.lib.helpers import simplify_shares
 from dibbler.models import (
     Product,
     ProductLog,
@@ -47,6 +48,8 @@ def add_stock(
     max_description_length = min(Transaction.description_length, TransactionLog.description_length)
     if description is not None and len(description) > max_description_length:
         raise ValueError(f"Description must be at most {max_description_length} characters.")
+
+    users = simplify_shares(users)
 
     for product, _amount, _paid_amount in products:
         if product.stock < 0:

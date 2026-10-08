@@ -144,20 +144,6 @@ def test_buy_products_updates_multiple_products_independently(sql_session: Sessi
     assert alice.credit == 100 - (2 * 15 + 3 * 8)
 
 
-def test_buy_products_dedupes_a_single_repeated_buyer(sql_session: Session) -> None:
-    product = _make_product(sql_session, price=11)
-    alice = _make_user(sql_session, "alice")
-
-    purchase = buy_products(sql_session, [(alice, 1), (alice, 1)], [(product, 1)])
-
-    sql_session.expire_all()
-
-    # i.e. not 2 * ceil(11 / 2) = 12
-    assert alice.credit == 100 - 11
-    assert [(t.user, t.penalty) for t in purchase.transactions] == [(alice, 1)]
-    assert len(sql_session.query(TransactionLog).one().users) == 1
-
-
 def test_buy_products_allows_a_repeated_buyer_alongside_another_buyer(
     sql_session: Session,
 ) -> None:
@@ -179,6 +165,48 @@ def test_buy_products_allows_a_repeated_buyer_alongside_another_buyer(
 
     assert len(purchase.transactions) == 3
     assert {t.user for t in purchase.transactions} == {alice, bob}
+
+
+@pytest.mark.parametrize(
+    ("price", "buyers", "expected_charges", "expected_transactions"),
+    [
+        pytest.param(
+            11,
+            [("alice", 1), ("alice", 1)],
+            {"alice": 11},
+            [("alice", 1)],
+            id="single-repeated-buyer",
+        ),
+        pytest.param(
+            13,
+            [("alice", 1), ("bob", 2), ("alice", 1), ("bob", 2)],
+            {"alice": 7, "bob": 14},
+            [("alice", 1), ("bob", 2)],
+            id="2x2",
+        ),
+    ],
+)
+def test_buy_products_simplifies_buyer_shares_by_their_gcd(
+    sql_session: Session,
+    price: int,
+    buyers: list[tuple[str, int]],
+    expected_charges: dict[str, int],
+    expected_transactions: list[tuple[str, int]],
+) -> None:
+    product = _make_product(sql_session, price=price)
+    users = {name: _make_user(sql_session, name) for name in expected_charges}
+
+    purchase = buy_products(
+        sql_session,
+        [(users[name], penalty) for name, penalty in buyers],
+        [(product, 1)],
+    )
+
+    sql_session.expire_all()
+
+    assert {name: 100 - user.credit for name, user in users.items()} == expected_charges
+    assert sorted((t.user.name, t.penalty) for t in purchase.transactions) == expected_transactions
+    assert len(sql_session.query(TransactionLog).one().users) == len(expected_transactions)
 
 
 def test_buy_products_records_a_purchase_linking_entries_and_transactions(
