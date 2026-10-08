@@ -19,6 +19,7 @@ from dibbler.queries import (
     user_product_stats_stream,
 )
 
+from .editing import EditProductMenu, EditUserMenu
 from .helpermenus import Menu, Selector
 
 
@@ -98,6 +99,7 @@ class ShowUserMenu(Menu):
             items=[
                 ("transactions", "Transactions"),
                 ("products", f"Which products {user.name} has bought, and how many"),
+                ("edit", f"Edit {user.name}"),
             ],
         )
         what = selector.execute()
@@ -105,6 +107,8 @@ class ShowUserMenu(Menu):
             self.print_transactions(user)
         elif what == "products":
             self.print_product_stats(user)
+        elif what == "edit":
+            EditUserMenu(self.sql_session).execute(user=user)
         else:
             print("What what?")
 
@@ -270,6 +274,7 @@ class ProductSearchMenu(Menu):
             self.sql_session,
             items=[
                 ("transactions", "Transactions"),
+                ("edit", f"Edit {product.name}"),
             ],
         )
         what = selector.execute()
@@ -277,6 +282,8 @@ class ProductSearchMenu(Menu):
             _page_transaction_log(
                 transaction_log_stream(self.sql_session, product=product, newest_first=True),
             )
+        elif what == "edit":
+            EditProductMenu(self.sql_session).execute(product=product)
         else:
             print("What what?")
 

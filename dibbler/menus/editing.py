@@ -81,9 +81,10 @@ default to keep the current one), then a new card number, then rfid
 (write an empty line to remove the card number or rfid).
 """
 
-    def _execute(self, **_kwargs) -> None:
+    def _execute(self, user: User | None = None, **_kwargs) -> None:
         self.print_header()
-        user = self.input_user("User")
+        if user is None:
+            user = self.input_user("User")
         self.printc(f"Editing user {user.name}")
         name = self.input_str(
             "Name",
@@ -161,9 +162,10 @@ class EditProductMenu(Menu):
     def __init__(self, sql_session: Session) -> None:
         super().__init__("Edit product", sql_session)
 
-    def _execute(self, **_kwargs) -> None:
+    def _execute(self, product: Product | None = None, **_kwargs) -> None:
         self.print_header()
-        product = self.input_product("Product")
+        if product is None:
+            product = self.input_product("Product")
         self.printc(f"Editing product {product.name}")
         while True:
             selector = Selector(
