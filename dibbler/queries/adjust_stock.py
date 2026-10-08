@@ -11,6 +11,9 @@ from dibbler.models import (
 )
 from dibbler.models.enums import TransactionLogEntryType
 
+MIN_ADJUSTED_STOCK = 0
+MAX_ADJUSTED_STOCK = 9999
+
 
 def adjust_stock(
     sql_session: Session,
@@ -21,6 +24,11 @@ def adjust_stock(
 ) -> Product:
     if delta == 0:
         raise ValueError("Delta must be non-zero.")
+
+    if not MIN_ADJUSTED_STOCK <= product.stock + delta <= MAX_ADJUSTED_STOCK:
+        raise ValueError(
+            f"Resulting stock must be between {MIN_ADJUSTED_STOCK} and {MAX_ADJUSTED_STOCK}.",
+        )
 
     if description is not None and len(description) > TransactionLog.description_length:
         raise ValueError(

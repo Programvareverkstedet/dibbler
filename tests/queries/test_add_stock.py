@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, ProductLog, TransactionLog, TransactionLogProduct, User
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
-from dibbler.queries import add_stock, adjust_stock
-from dibbler.queries.add_stock import NEGATIVE_STOCK_RESET_DESCRIPTION
+from dibbler.queries import add_stock, adjust_stock, buy_products
+from dibbler.queries.add_stock import MAX_ADD_AMOUNT_PER_PRODUCT, NEGATIVE_STOCK_RESET_DESCRIPTION
 
 
 def _make_product(
@@ -105,8 +105,11 @@ def test_add_stock_does_not_reset_non_negative_stock(sql_session: Session) -> No
 def test_add_stock_keeps_log_sum_equal_to_stock(sql_session: Session, stock: int) -> None:
     product = _make_product(sql_session, stock=0)
     alice = _make_user(sql_session, "alice")
-    if stock:
+    if stock > 0:
         adjust_stock(sql_session, alice, product, stock)
+    elif stock < 0:
+        # Stock only goes negative when buying more than there is
+        buy_products(sql_session, [(alice, 1)], [(product, -stock)])
 
     add_stock(sql_session, [alice], [(product, 5, 50)], total_price=50)
 
@@ -307,6 +310,8 @@ def test_add_stock_allows_crediting_nothing_for_stock_received_for_free(
         pytest.param(True, [(0, 100)], 100, None, "Product amounts must be positive", id="zero-amount"),
         pytest.param(True, [(-1, 100)], 100, None, "Product amounts must be positive", id="negative-amount"),
         pytest.param(True, [(5, 100), (0, 100)], 100, None, "Product amounts must be positive", id="valid-amount-zero-amount"),
+        pytest.param(True, [(MAX_ADD_AMOUNT_PER_PRODUCT + 1, 100)], 100, None, "Product amounts must be at most", id="too-large-amount"),
+        pytest.param(True, [(5, 100), (MAX_ADD_AMOUNT_PER_PRODUCT + 1, 100)], 100, None, "Product amounts must be at most", id="valid-amount-too-large-amount"),
         pytest.param(True, [(5, -1)], 0, None, "Paid amounts must not be negative", id="negative-paid-amount"),
         pytest.param(True, [(5, 100), (5, -1)], 100, None, "Paid amounts must not be negative", id="valid-paid-amount-negative-paid-amount"),
     ],

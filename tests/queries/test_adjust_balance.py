@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from dibbler.models import Transaction, TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import adjust_balance
+from dibbler.queries.adjust_balance import MAX_BALANCE_ADJUSTMENT
 
 
 def _make_user(sql_session: Session, credit: int = 100) -> User:
@@ -48,11 +49,24 @@ def test_adjust_balance_records_a_transaction_log_entry(sql_session: Session) ->
     assert log.type == TransactionLogEntryType.ADJUST_BALANCE
 
 
+@pytest.mark.parametrize("amount", [MAX_BALANCE_ADJUSTMENT, -MAX_BALANCE_ADJUSTMENT])
+def test_adjust_balance_allows_adjusting_by_the_limit(sql_session: Session, amount: int) -> None:
+    user = _make_user(sql_session, credit=0)
+
+    adjust_balance(sql_session, user, amount)
+
+    sql_session.expire_all()
+
+    assert user.credit == -amount
+
+
 @pytest.mark.parametrize(
     ("amount", "description", "error"),
     [
         pytest.param(0, None, "Amount must be non-zero", id="zero-amount"),
         pytest.param(10, "x" * (Transaction.description_length + 1), "Description must be at most", id="too-long-description"),
+        pytest.param(MAX_BALANCE_ADJUSTMENT + 1, None, "Amount must be between", id="too-large-positive-amount"),
+        pytest.param(-MAX_BALANCE_ADJUSTMENT - 1, None, "Amount must be between", id="too-large-negative-amount"),
     ],
 )  # fmt: skip
 def test_invariants(

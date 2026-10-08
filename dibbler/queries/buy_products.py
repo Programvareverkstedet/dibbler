@@ -15,6 +15,8 @@ from dibbler.models import (
 )
 from dibbler.models.enums import TransactionLogEntryType
 
+MAX_BUY_AMOUNT_TOTAL = 999
+
 
 def buy_products(
     sql_session: Session,
@@ -38,6 +40,9 @@ def buy_products(
 
     if any(amount <= 0 for _, amount in products):
         raise ValueError("Product amounts must be positive.")
+
+    if sum(amount for _, amount in products) > MAX_BUY_AMOUNT_TOTAL:
+        raise ValueError(f"Total product amount must be at most {MAX_BUY_AMOUNT_TOTAL}.")
 
     buyers = simplify_shares(buyers)
 

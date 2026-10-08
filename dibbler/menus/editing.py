@@ -13,6 +13,7 @@ from dibbler.queries import (
     product_list_info,
     remove_barcode,
 )
+from dibbler.queries.adjust_stock import MAX_ADJUSTED_STOCK, MIN_ADJUSTED_STOCK
 
 from .helpermenus import Menu, Selector
 
@@ -477,7 +478,12 @@ class CleanupStockMenu(Menu):
 
         for product in products:
             oldstock = product.stock
-            newstock = self.input_int(product.name, 0, 10000, default=max(0, oldstock))
+            newstock = self.input_int(
+                product.name,
+                MIN_ADJUSTED_STOCK,
+                MAX_ADJUSTED_STOCK,
+                default=max(0, oldstock),
+            )
             if newstock != oldstock:
                 try:
                     adjust_stock(self.sql_session, user, product, newstock - oldstock)

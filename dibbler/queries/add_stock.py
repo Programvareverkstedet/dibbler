@@ -20,6 +20,7 @@ from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
 from .adjust_stock import adjust_stock
 
 NEGATIVE_STOCK_RESET_DESCRIPTION = "Autonullstilling av negativ beholdning ved innkjøp"
+MAX_ADD_AMOUNT_PER_PRODUCT = 999
 
 
 def add_stock(
@@ -40,6 +41,9 @@ def add_stock(
 
     if any(amount <= 0 for _, amount, _ in products):
         raise ValueError("Product amounts must be positive.")
+
+    if any(amount > MAX_ADD_AMOUNT_PER_PRODUCT for _, amount, _ in products):
+        raise ValueError(f"Product amounts must be at most {MAX_ADD_AMOUNT_PER_PRODUCT}.")
 
     if any(paid_amount < 0 for _, _, paid_amount in products):
         raise ValueError("Paid amounts must not be negative.")

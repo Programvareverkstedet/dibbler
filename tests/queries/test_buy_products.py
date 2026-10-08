@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from dibbler.models import Product, TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import buy_products
+from dibbler.queries.buy_products import MAX_BUY_AMOUNT_TOTAL
 
 DEFAULT_PEPSI_STOCK = 10
 DEFAULT_PEPSI_PRICE = 15
@@ -238,6 +239,19 @@ def test_buy_products_records_a_transaction_log_entry(sql_session: Session) -> N
     assert log.type == TransactionLogEntryType.BUY_PRODUCT
 
 
+def test_buy_products_allows_buying_the_max_amount_in_total(sql_session: Session) -> None:
+    cola = _make_product(sql_session, barcode="1111111111", name="Cola")
+    pepsi = _make_product(sql_session, barcode="2222222222", name="Pepsi")
+    alice = _make_user(sql_session, "alice")
+
+    buy_products(sql_session, [(alice, 1)], [(cola, MAX_BUY_AMOUNT_TOTAL - 1), (pepsi, 1)])
+
+    sql_session.expire_all()
+
+    assert cola.stock == DEFAULT_PEPSI_STOCK - (MAX_BUY_AMOUNT_TOTAL - 1)
+    assert pepsi.stock == DEFAULT_PEPSI_STOCK - 1
+
+
 @pytest.mark.parametrize(
     ("penalties", "amounts", "error"),
     [
@@ -250,6 +264,8 @@ def test_buy_products_records_a_transaction_log_entry(sql_session: Session) -> N
         pytest.param([1], [0], "Product amounts must be positive", id="zero-amount"),
         pytest.param([1], [-1], "Product amounts must be positive", id="negative-amount"),
         pytest.param([1], [1, 0], "Product amounts must be positive", id="valid-amount-zero-amount"),
+        pytest.param([1], [MAX_BUY_AMOUNT_TOTAL + 1], "Total product amount must be at most", id="too-large-amount"),
+        pytest.param([1], [MAX_BUY_AMOUNT_TOTAL, 1], "Total product amount must be at most", id="too-large-total-amount"),
     ],
 )  # fmt: skip
 def test_invariants(

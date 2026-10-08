@@ -18,6 +18,7 @@ from dibbler.queries import (
     user_list_info_stream,
     user_product_stats_stream,
 )
+from dibbler.queries.adjust_balance import MAX_BALANCE_ADJUSTMENT
 
 from .editing import EditProductMenu, EditUserMenu
 from .helpermenus import Menu, Selector
@@ -188,7 +189,7 @@ class AdjustCreditMenu(Menu):
         print("(Note on sign convention: Enter a positive amount here if you have")
         print("added money to the PVVVV money box, a negative amount if you have")
         print("taken money from it)")
-        amount = self.input_int("Add amount", -100000, 100000)
+        amount = self.input_int("Add amount", -MAX_BALANCE_ADJUSTMENT, MAX_BALANCE_ADJUSTMENT)
         print('(The "log message" will show up in the transaction history in the')
         print('"Show user" menu.  It is not necessary to enter a message, but it')
         print("might be useful to help you remember why you adjusted the credit)")

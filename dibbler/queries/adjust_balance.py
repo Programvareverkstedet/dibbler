@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 from dibbler.models import Transaction, TransactionLog, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
+MAX_BALANCE_ADJUSTMENT = 9999
+
 
 def adjust_balance(
     sql_session: Session,
@@ -14,6 +16,11 @@ def adjust_balance(
 ) -> Transaction:
     if amount == 0:
         raise ValueError("Amount must be non-zero.")
+
+    if abs(amount) > MAX_BALANCE_ADJUSTMENT:
+        raise ValueError(
+            f"Amount must be between {-MAX_BALANCE_ADJUSTMENT} and {MAX_BALANCE_ADJUSTMENT}.",
+        )
 
     # TODO: remove this `min` once we get rid of `Transaction`
     max_description_length = min(Transaction.description_length, TransactionLog.description_length)
