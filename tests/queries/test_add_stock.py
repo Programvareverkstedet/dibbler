@@ -253,10 +253,11 @@ def test_add_stock_records_a_transaction_log_entry(sql_session: Session) -> None
 
 
 def test_add_stock_logs_unhiding_a_hidden_product(sql_session: Session) -> None:
-    product = _make_product(sql_session, hidden=True)
+    product = _make_product(sql_session, stock=10, price=15, hidden=True)
     alice = _make_user(sql_session, "alice")
 
-    add_stock(sql_session, [alice], [(product, 5, 100)], total_price=100)
+    # NOTE: Paying the current price per item keeps the price unchanged.
+    add_stock(sql_session, [alice], [(product, 5, 75)], total_price=75)
 
     sql_session.expire_all()
 
@@ -269,11 +270,41 @@ def test_add_stock_logs_unhiding_a_hidden_product(sql_session: Session) -> None:
     assert edit.time == header.time
 
 
-def test_add_stock_does_not_log_an_edit_for_a_visible_product(sql_session: Session) -> None:
-    product = _make_product(sql_session, hidden=False)
+def test_add_stock_logs_price(sql_session: Session) -> None:
+    product = _make_product(sql_session, stock=10, price=15, hidden=False)
     alice = _make_user(sql_session, "alice")
 
     add_stock(sql_session, [alice], [(product, 5, 100)], total_price=100)
+
+    sql_session.expire_all()
+
+    header = sql_session.query(TransactionLog).one()
+    edit = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.EDIT).one()
+    assert edit.product_id == product.id
+    assert edit.price == product.price == math.ceil(((10 * 15) + 100) / (10 + 5))
+    assert edit.name is None
+    assert edit.hidden is None
+    assert edit.time == header.time
+
+
+def test_add_stock_logs_price_and_unhiding_together(sql_session: Session) -> None:
+    product = _make_product(sql_session, stock=10, price=15, hidden=True)
+    alice = _make_user(sql_session, "alice")
+
+    add_stock(sql_session, [alice], [(product, 5, 100)], total_price=100)
+
+    sql_session.expire_all()
+
+    edit = sql_session.query(ProductLog).filter(ProductLog.type == ProductLogEntryType.EDIT).one()
+    assert edit.price == product.price
+    assert edit.hidden is False
+
+
+def test_add_stock_logs_nothing_if_unchanged(sql_session: Session) -> None:
+    product = _make_product(sql_session, stock=10, price=15, hidden=False)
+    alice = _make_user(sql_session, "alice")
+
+    add_stock(sql_session, [alice], [(product, 5, 75)], total_price=75)
 
     sql_session.expire_all()
 

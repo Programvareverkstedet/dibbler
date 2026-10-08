@@ -65,11 +65,18 @@ def add_stock(
                 description=NEGATIVE_STOCK_RESET_DESCRIPTION,
             )
 
-    unhidden = [product for product, _amount, _paid_amount in products if product.hidden]
+    edits: list[tuple[Product, int | None, bool | None]] = []
 
     for product, amount, paid_amount in products:
         value = max(product.stock, 0) * product.price + paid_amount
-        product.price = int(ceil(float(value) / (max(product.stock, 0) + amount)))
+        price = int(ceil(float(value) / (max(product.stock, 0) + amount)))
+
+        edited_price = price if price != product.price else None
+        edited_hidden = False if product.hidden else None
+        if edited_price is not None or edited_hidden is not None:
+            edits.append((product, edited_price, edited_hidden))
+
+        product.price = price
         product.stock += amount
         product.hidden = False
 
@@ -112,9 +119,10 @@ def add_stock(
             type=ProductLogEntryType.EDIT,
             time=header.time,
             product_id=product.id,
-            hidden=False,
+            price=edited_price,
+            hidden=edited_hidden,
         )
-        for product in unhidden
+        for product, edited_price, edited_hidden in edits
     )
     sql_session.flush()
 
