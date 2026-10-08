@@ -82,6 +82,7 @@ ignore-fully-untyped = true
 
 [tool.pytest.ini_options]
 addopts = [
+    "--cov=dibbler.economy",
     "--cov=dibbler.models",
     "--cov=dibbler.queries",
 
