@@ -19,12 +19,8 @@ def transfer(
     if from_user == to_user:
         raise ValueError("Cannot transfer to the same user.")
 
-    outgoing = Transaction(from_user, amount, f'transfer to {to_user.name} "{comment}"')
-    incoming = Transaction(to_user, -amount, f'transfer from {from_user.name} "{comment}"')
-    outgoing.perform_transaction()
-    incoming.perform_transaction()
-    sql_session.add(outgoing)
-    sql_session.add(incoming)
+    from_user.credit -= amount
+    to_user.credit += amount
 
     header = TransactionLog(
         type=TransactionLogEntryType.TRANSFER,
@@ -34,10 +30,17 @@ def transfer(
     sql_session.add(header)
     sql_session.add_all(
         [
-            TransactionLogUser(transaction=header, user=from_user, amount=outgoing.amount),
-            TransactionLogUser(transaction=header, user=to_user, amount=incoming.amount),
+            TransactionLogUser(transaction=header, user=from_user, amount=amount),
+            TransactionLogUser(transaction=header, user=to_user, amount=-amount),
         ],
     )
+
+    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
+    outgoing = Transaction(from_user, amount, f'transfer to {to_user.name} "{comment}"')
+    incoming = Transaction(to_user, -amount, f'transfer from {from_user.name} "{comment}"')
+    outgoing.time = header.time
+    incoming.time = header.time
+    sql_session.add_all([outgoing, incoming])
     sql_session.flush()
 
     return outgoing, incoming

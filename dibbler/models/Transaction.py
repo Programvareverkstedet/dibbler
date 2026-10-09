@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime  # noqa: TC003 SQLAlchemy needs this at runtime
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -53,9 +53,3 @@ class Transaction(Base, UidMixin):
         self.description = description
         self.purchase = purchase
         self.penalty = penalty
-
-    def perform_transaction(self, ignore_penalty: bool = False) -> None:
-        self.time = datetime.now()
-        if not ignore_penalty:
-            self.amount *= self.penalty
-        self.user.credit -= self.amount

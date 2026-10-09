@@ -27,9 +27,7 @@ def adjust_balance(
     if description is not None and len(description) > max_description_length:
         raise ValueError(f"Description must be at most {max_description_length} characters.")
 
-    transaction = Transaction(user, amount, description)
-    transaction.perform_transaction()
-    sql_session.add(transaction)
+    user.credit -= amount
 
     header = TransactionLog(
         type=TransactionLogEntryType.ADJUST_BALANCE,
@@ -37,9 +35,12 @@ def adjust_balance(
         description=description,
     )
     sql_session.add(header)
-    sql_session.add(
-        TransactionLogUser(transaction=header, user=user, amount=transaction.amount),
-    )
+    sql_session.add(TransactionLogUser(transaction=header, user=user, amount=amount))
+
+    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
+    transaction = Transaction(user, amount, description)
+    transaction.time = header.time
+    sql_session.add(transaction)
     sql_session.flush()
 
     return transaction
