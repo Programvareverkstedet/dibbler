@@ -22,10 +22,10 @@ def adjust_balance(
             f"Amount must be between {-MAX_BALANCE_ADJUSTMENT} and {MAX_BALANCE_ADJUSTMENT}.",
         )
 
-    # TODO: remove this `min` once we get rid of `Transaction`
-    max_description_length = min(Transaction.description_length, TransactionLog.description_length)
-    if description is not None and len(description) > max_description_length:
-        raise ValueError(f"Description must be at most {max_description_length} characters.")
+    if description is not None and len(description) > TransactionLog.description_length:
+        raise ValueError(
+            f"Description must be at most {TransactionLog.description_length} characters.",
+        )
 
     user.credit -= amount
 
