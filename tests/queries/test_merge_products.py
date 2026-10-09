@@ -8,7 +8,6 @@ from dibbler.models import (
     ProductLog,
     ProductMergedBarcode,
     ProductMergedTransaction,
-    PurchaseEntry,
     TransactionLog,
     TransactionLogProduct,
     User,
@@ -131,29 +130,6 @@ def test_can_set_a_custom_stock(sql_session: Session) -> None:
     sql_session.expire_all()
 
     assert target.stock == 15
-
-
-@pytest.mark.parametrize("preload", [True, False])
-def test_repoints_purchase_history_to_the_target(sql_session: Session, preload: bool) -> None:
-    source = _make_product(sql_session, barcode="1111111111")
-    target = _make_product(sql_session, barcode="2222222222")
-    alice = _make_user(sql_session)
-
-    buy_products(sql_session, [(alice, 1)], [(source, 1)])
-
-    if preload:
-        preloaded = set(source.purchases)
-        assert len(preloaded) == 1
-
-    merge_products(sql_session, alice, source, target, stock=source.stock + target.stock)
-
-    sql_session.expire_all()
-
-    entry = sql_session.query(PurchaseEntry).one()
-    assert entry.product_id == target.id
-
-    xref = sql_session.query(TransactionLogProduct).one()
-    assert xref.product_id == target.id
 
 
 def test_records_logs(sql_session: Session) -> None:

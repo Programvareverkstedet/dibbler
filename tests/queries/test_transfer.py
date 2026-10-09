@@ -26,24 +26,6 @@ def test_transfer_moves_credit_without_creating_or_destroying_it(sql_session: Se
     assert alice.credit + bob.credit == 150
 
 
-def test_transfer_records_linked_transactions_for_both_users(sql_session: Session) -> None:
-    alice = _make_user(sql_session, "alice")
-    bob = _make_user(sql_session, "bob")
-
-    transfer(sql_session, alice, bob, 30, comment="rent")
-
-    sql_session.expire_all()
-
-    [outgoing] = alice.transactions
-    [incoming] = bob.transactions
-    assert outgoing.amount == 30
-    assert incoming.amount == -30
-    assert outgoing.description is not None
-    assert "bob" in outgoing.description and "rent" in outgoing.description
-    assert incoming.description is not None
-    assert "alice" in incoming.description and "rent" in incoming.description
-
-
 def test_transfer_records_a_transaction_log_entry(sql_session: Session) -> None:
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
@@ -54,6 +36,11 @@ def test_transfer_records_a_transaction_log_entry(sql_session: Session) -> None:
 
     log = sql_session.query(TransactionLog).one()
     assert log.type == TransactionLogEntryType.TRANSFER
+    assert log.description == "rent"
+    assert sorted((share.user.name, share.amount) for share in log.users) == [
+        ("alice", 30),
+        ("bob", -30),
+    ]
 
 
 @pytest.mark.parametrize(

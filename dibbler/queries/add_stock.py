@@ -6,9 +6,6 @@ from dibbler import economy
 from dibbler.models import (
     Product,
     ProductLog,
-    Purchase,
-    PurchaseEntry,
-    Transaction,
     TransactionLog,
     TransactionLogProduct,
     TransactionLogUser,
@@ -111,18 +108,4 @@ def add_stock(
         )
         for product, edited_price, edited_hidden in edits
     )
-
-    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
-    with sql_session.no_autoflush:
-        purchase = Purchase()
-        purchase.time = header.time
-        purchase.price = -total_price
-        sql_session.add(purchase)
-        for user, credit in user_credits:
-            transaction = Transaction(user, -credit, description=description, purchase=purchase)
-            transaction.time = header.time
-            sql_session.add(transaction)
-        sql_session.add_all(
-            PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
-        )
     sql_session.flush()

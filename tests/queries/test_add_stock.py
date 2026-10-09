@@ -6,7 +6,6 @@ from sqlalchemy.orm import Session
 from dibbler.models import (
     Product,
     ProductLog,
-    Purchase,
     TransactionLog,
     TransactionLogProduct,
     User,
@@ -171,11 +170,9 @@ def test_add_stock_simplifies_user_shares_by_their_gcd(
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
+    log = sql_session.query(TransactionLog).one()
     assert {name: user.credit for name, user in users_by_name.items()} == expected_credits
-    assert sorted(t.user.name for t in purchase.transactions) == expected_transactions
-    assert len(sql_session.query(TransactionLog).one().users) == len(expected_transactions)
+    assert sorted(share.user.name for share in log.users) == expected_transactions
 
 
 def test_add_stock_gives_the_rounding_remainder_to_every_credited_user(
@@ -207,22 +204,19 @@ def test_add_stock_updates_multiple_products_independently(sql_session: Session)
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
+    log = (
+        sql_session.query(TransactionLog)
+        .filter(TransactionLog.type == TransactionLogEntryType.ADD_PRODUCT)
+        .one()
+    )
     assert cola.stock == 15
     assert cola.price == math.ceil(((10 * 15) + 100) / (10 + 5))
     assert pepsi.stock == 6
     assert pepsi.price == math.ceil(((4 * 8) + 20) / (4 + 2))
-    assert {entry.product for entry in purchase.entries} == {cola, pepsi}
-    assert {(entry.product, entry.amount) for entry in purchase.entries} == {
-        (cola, -5),
-        (pepsi, -2),
-    }
+    assert {(entry.product, entry.amount) for entry in log.products} == {(cola, 5), (pepsi, 2)}
 
 
-def test_add_stock_records_a_purchase_linking_entries_and_transactions(
-    sql_session: Session,
-) -> None:
+def test_add_stock_records_a_transaction_log_entry(sql_session: Session) -> None:
     product = _make_product(sql_session)
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
@@ -237,24 +231,16 @@ def test_add_stock_records_a_purchase_linking_entries_and_transactions(
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
-    assert [entry.product for entry in purchase.entries] == [product]
-    assert [entry.amount for entry in purchase.entries] == [-5]
-    assert {t.user for t in purchase.transactions} == {alice, bob}
-    assert all(t.description == "restocked" for t in purchase.transactions)
-
-
-def test_add_stock_records_a_transaction_log_entry(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
-
-    add_stock(sql_session, [alice], [(product, 5, 100)], total_price=100)
-
-    sql_session.expire_all()
-
     log = sql_session.query(TransactionLog).one()
     assert log.type == TransactionLogEntryType.ADD_PRODUCT
+    assert log.description == "restocked"
+    assert sorted((share.user.name, share.amount) for share in log.users) == [
+        ("alice", -50),
+        ("bob", -50),
+    ]
+    assert [(entry.product, entry.amount, entry.price_at_time) for entry in log.products] == [
+        (product, 5, product.price),
+    ]
 
 
 def test_add_stock_logs_unhiding_a_hidden_product(sql_session: Session) -> None:

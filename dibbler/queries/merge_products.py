@@ -11,7 +11,6 @@ from dibbler.models import (
     ProductLog,
     ProductMergedBarcode,
     ProductMergedTransaction,
-    PurchaseEntry,
     TransactionLog,
     TransactionLogProduct,
     TransactionLogUser,
@@ -80,14 +79,6 @@ def merge_products(
         .values(product_id=target.id),
     )
     sql_session.expire(source, ["barcodes"])
-
-    sql_session.execute(
-        update(PurchaseEntry)
-        .where(PurchaseEntry.product_id == source.id)
-        .values(product_id=target.id),
-    )
-
-    sql_session.expire(source, ["purchases"])
 
     sql_session.execute(
         update(TransactionLogProduct)

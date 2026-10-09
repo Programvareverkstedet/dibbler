@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Transaction, TransactionLog, TransactionLogUser, User
+from dibbler.models import TransactionLog, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
 MAX_BALANCE_ADJUSTMENT = 9999
@@ -36,9 +36,4 @@ def adjust_balance(
     )
     sql_session.add(header)
     sql_session.add(TransactionLogUser(transaction=header, user=user, amount=amount))
-
-    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
-    transaction = Transaction(user, amount, description)
-    transaction.time = header.time
-    sql_session.add(transaction)
     sql_session.flush()

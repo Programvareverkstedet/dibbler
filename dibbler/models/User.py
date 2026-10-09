@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from sqlalchemy import (
     Integer,
     String,
@@ -9,14 +7,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
-    relationship,
 )
 
 from .Base import Base
 from .mixins import UidMixin
-
-if TYPE_CHECKING:
-    from .Transaction import Transaction
 
 
 class User(Base, UidMixin):
@@ -30,11 +24,6 @@ class User(Base, UidMixin):
     credit: Mapped[int] = mapped_column(Integer)
     card: Mapped[str | None] = mapped_column(String(card_length), unique=True)
     rfid: Mapped[str | None] = mapped_column(String(rfid_length), unique=True)
-
-    transactions: Mapped[list[Transaction]] = relationship(
-        back_populates="user",
-        order_by="Transaction.time",
-    )
 
     name_re = r"[a-z]+"
     card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"

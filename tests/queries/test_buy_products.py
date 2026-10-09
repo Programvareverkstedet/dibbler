@@ -3,7 +3,7 @@ import math
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, Purchase, TransactionLog, User
+from dibbler.models import Product, TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import buy_products
 from dibbler.queries.buy_products import MAX_BUY_AMOUNT_TOTAL
@@ -41,9 +41,6 @@ def test_buy_products_charges_a_single_buyer_and_decrements_stock(sql_session: S
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
-    assert purchase.price == amount * DEFAULT_PEPSI_PRICE
     assert alice.credit == 100 - amount * DEFAULT_PEPSI_PRICE
     assert product.stock == DEFAULT_PEPSI_STOCK - amount
 
@@ -91,11 +88,8 @@ def test_buy_products_updates_multiple_products_independently(sql_session: Sessi
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
     assert cola.stock == 8
     assert pepsi.stock == 1
-    assert purchase.price == 2 * 15 + 3 * 8
     assert alice.credit == 100 - (2 * 15 + 3 * 8)
 
 
@@ -110,9 +104,7 @@ def test_buy_products_allows_a_repeated_buyer_alongside_another_buyer(
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
-    buyer_share = math.ceil(purchase.price / 3)
+    buyer_share = math.ceil(12 / 3)
 
     # 2 buyer shares for alice
     assert alice.credit == 100 - 2 * buyer_share
@@ -120,8 +112,9 @@ def test_buy_products_allows_a_repeated_buyer_alongside_another_buyer(
     # 1 buyer share for bob, but multiplied by his penalty of 2
     assert bob.credit == 100 - buyer_share * 2
 
-    assert len(purchase.transactions) == 3
-    assert {t.user for t in purchase.transactions} == {alice, bob}
+    log = sql_session.query(TransactionLog).one()
+    assert len(log.users) == 3
+    assert {share.user for share in log.users} == {alice, bob}
 
 
 @pytest.mark.parametrize(
@@ -161,16 +154,12 @@ def test_buy_products_simplifies_buyer_shares_by_their_gcd(
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
+    log = sql_session.query(TransactionLog).one()
     assert {name: 100 - user.credit for name, user in users.items()} == expected_charges
-    assert sorted((t.user.name, t.penalty) for t in purchase.transactions) == expected_transactions
-    assert len(sql_session.query(TransactionLog).one().users) == len(expected_transactions)
+    assert sorted((share.user.name, share.penalty) for share in log.users) == expected_transactions
 
 
-def test_buy_products_records_a_purchase_linking_entries_and_transactions(
-    sql_session: Session,
-) -> None:
+def test_buy_products_records_a_transaction_log_entry(sql_session: Session) -> None:
     product = _make_product(sql_session)
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
@@ -179,24 +168,15 @@ def test_buy_products_records_a_purchase_linking_entries_and_transactions(
 
     sql_session.expire_all()
 
-    purchase = sql_session.query(Purchase).one()
-
-    assert [entry.product for entry in purchase.entries] == [product]
-    assert [entry.amount for entry in purchase.entries] == [5]
-    assert {t.user for t in purchase.transactions} == {alice, bob}
-    assert {t.penalty for t in purchase.transactions} == {1, 2}
-
-
-def test_buy_products_records_a_transaction_log_entry(sql_session: Session) -> None:
-    product = _make_product(sql_session)
-    alice = _make_user(sql_session, "alice")
-
-    buy_products(sql_session, [(alice, 1)], [(product, 1)])
-
-    sql_session.expire_all()
-
     log = sql_session.query(TransactionLog).one()
     assert log.type == TransactionLogEntryType.BUY_PRODUCT
+    assert sorted((share.user.name, share.amount, share.penalty) for share in log.users) == [
+        ("alice", 38, 1),
+        ("bob", 76, 2),
+    ]
+    assert [(entry.product, entry.amount, entry.price_at_time) for entry in log.products] == [
+        (product, -5, DEFAULT_PEPSI_PRICE),
+    ]
 
 
 def test_buy_products_allows_buying_the_max_amount_in_total(sql_session: Session) -> None:

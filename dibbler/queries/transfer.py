@@ -2,7 +2,7 @@ from datetime import datetime
 
 from sqlalchemy.orm import Session
 
-from dibbler.models import Transaction, TransactionLog, TransactionLogUser, User
+from dibbler.models import TransactionLog, TransactionLogUser, User
 from dibbler.models.enums import TransactionLogEntryType
 
 
@@ -34,11 +34,4 @@ def transfer(
             TransactionLogUser(transaction=header, user=to_user, amount=-amount),
         ],
     )
-
-    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
-    outgoing = Transaction(from_user, amount, f'transfer to {to_user.name} "{comment}"')
-    incoming = Transaction(to_user, -amount, f'transfer from {from_user.name} "{comment}"')
-    outgoing.time = header.time
-    incoming.time = header.time
-    sql_session.add_all([outgoing, incoming])
     sql_session.flush()

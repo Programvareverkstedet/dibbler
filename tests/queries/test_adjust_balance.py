@@ -26,18 +26,6 @@ def test_adjust_balance_moves_credit_by_amount(sql_session: Session) -> None:
     assert user.credit == 120
 
 
-def test_adjust_balance_records_a_transaction_for_the_user(sql_session: Session) -> None:
-    user = _make_user(sql_session)
-
-    adjust_balance(sql_session, user, 10, description="manual fix")
-
-    sql_session.expire_all()
-
-    [transaction] = user.transactions
-    assert transaction.description == "manual fix"
-    assert transaction.time is not None
-
-
 def test_adjust_balance_records_a_transaction_log_entry(sql_session: Session) -> None:
     user = _make_user(sql_session)
 
@@ -47,6 +35,9 @@ def test_adjust_balance_records_a_transaction_log_entry(sql_session: Session) ->
 
     log = sql_session.query(TransactionLog).one()
     assert log.type == TransactionLogEntryType.ADJUST_BALANCE
+    assert log.description == "manual fix"
+    assert log.time is not None
+    assert [(share.user, share.amount) for share in log.users] == [(user, 10)]
 
 
 @pytest.mark.parametrize("amount", [MAX_BALANCE_ADJUSTMENT, -MAX_BALANCE_ADJUSTMENT])

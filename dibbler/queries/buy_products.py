@@ -5,9 +5,6 @@ from sqlalchemy.orm import Session
 from dibbler import economy
 from dibbler.models import (
     Product,
-    Purchase,
-    PurchaseEntry,
-    Transaction,
     TransactionLog,
     TransactionLogProduct,
     TransactionLogUser,
@@ -68,18 +65,4 @@ def buy_products(
         )
         for product, amount in products
     )
-
-    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
-    with sql_session.no_autoflush:
-        purchase = Purchase()
-        purchase.time = header.time
-        purchase.price = total_price
-        sql_session.add(purchase)
-        for user, penalty, charge in charges:
-            transaction = Transaction(user, charge, purchase=purchase, penalty=penalty)
-            transaction.time = header.time
-            sql_session.add(transaction)
-        sql_session.add_all(
-            PurchaseEntry(purchase, product, amount) for product, amount in products
-        )
     sql_session.flush()

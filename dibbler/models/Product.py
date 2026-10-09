@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from sqlalchemy import (
     Boolean,
     Integer,
@@ -20,9 +18,6 @@ from .Base import Base
 from .mixins import UidMixin
 from .ProductBarcode import ProductBarcode
 
-if TYPE_CHECKING:
-    from .PurchaseEntry import PurchaseEntry
-
 
 class Product(Base, UidMixin):
     __tablename__ = "products"
@@ -35,7 +30,6 @@ class Product(Base, UidMixin):
     stock: Mapped[int] = mapped_column(Integer)
     hidden: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
-    purchases: Mapped[set[PurchaseEntry]] = relationship(back_populates="product")
     barcodes: Mapped[set[ProductBarcode]] = relationship(
         back_populates="product",
         cascade="all, delete-orphan",
