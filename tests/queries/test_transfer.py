@@ -30,12 +30,12 @@ def test_transfer_records_linked_transactions_for_both_users(sql_session: Sessio
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
 
-    outgoing, incoming = transfer(sql_session, alice, bob, 30, comment="rent")
+    transfer(sql_session, alice, bob, 30, comment="rent")
 
     sql_session.expire_all()
 
-    assert outgoing in alice.transactions
-    assert incoming in bob.transactions
+    [outgoing] = alice.transactions
+    [incoming] = bob.transactions
     assert outgoing.amount == 30
     assert incoming.amount == -30
     assert outgoing.description is not None

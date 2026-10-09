@@ -13,7 +13,7 @@ def adjust_balance(
     user: User,
     amount: int,
     description: str | None = None,
-) -> Transaction:
+) -> None:
     if amount == 0:
         raise ValueError("Amount must be non-zero.")
 
@@ -42,5 +42,3 @@ def adjust_balance(
     transaction.time = header.time
     sql_session.add(transaction)
     sql_session.flush()
-
-    return transaction

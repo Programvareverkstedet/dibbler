@@ -28,7 +28,7 @@ def add_stock(
     products: list[tuple[Product, int, int]],
     total_price: int,
     description: str | None = None,
-) -> Purchase:
+) -> None:
     if not users:
         raise ValueError("At least one user must be specified.")
 
@@ -126,5 +126,3 @@ def add_stock(
             PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
         )
     sql_session.flush()
-
-    return purchase

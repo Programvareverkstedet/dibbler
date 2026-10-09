@@ -22,7 +22,7 @@ def buy_products(
     sql_session: Session,
     buyers: list[tuple[User, int]],
     products: list[tuple[Product, int]],
-) -> Purchase:
+) -> None:
     if not buyers:
         raise ValueError("At least one buyer must be specified.")
 
@@ -83,5 +83,3 @@ def buy_products(
             PurchaseEntry(purchase, product, amount) for product, amount in products
         )
     sql_session.flush()
-
-    return purchase

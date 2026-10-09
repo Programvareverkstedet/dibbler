@@ -29,11 +29,11 @@ def test_adjust_balance_moves_credit_by_amount(sql_session: Session) -> None:
 def test_adjust_balance_records_a_transaction_for_the_user(sql_session: Session) -> None:
     user = _make_user(sql_session)
 
-    transaction = adjust_balance(sql_session, user, 10, description="manual fix")
+    adjust_balance(sql_session, user, 10, description="manual fix")
 
     sql_session.expire_all()
 
-    assert transaction in user.transactions
+    [transaction] = user.transactions
     assert transaction.description == "manual fix"
     assert transaction.time is not None
 

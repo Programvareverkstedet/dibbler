@@ -3,7 +3,7 @@ import math
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, TransactionLog, User
+from dibbler.models import Product, Purchase, TransactionLog, User
 from dibbler.models.enums import TransactionLogEntryType
 from dibbler.queries import buy_products
 from dibbler.queries.buy_products import MAX_BUY_AMOUNT_TOTAL
@@ -37,9 +37,11 @@ def test_buy_products_charges_a_single_buyer_and_decrements_stock(sql_session: S
     alice = _make_user(sql_session, "alice", credit=100)
     amount = 3
 
-    purchase = buy_products(sql_session, [(alice, 1)], [(product, amount)])
+    buy_products(sql_session, [(alice, 1)], [(product, amount)])
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     assert purchase.price == amount * DEFAULT_PEPSI_PRICE
     assert alice.credit == 100 - amount * DEFAULT_PEPSI_PRICE
@@ -85,9 +87,11 @@ def test_buy_products_updates_multiple_products_independently(sql_session: Sessi
     pepsi = _make_product(sql_session, barcode="2222222222", name="Pepsi", stock=4, price=8)
     alice = _make_user(sql_session, "alice")
 
-    purchase = buy_products(sql_session, [(alice, 1)], [(cola, 2), (pepsi, 3)])
+    buy_products(sql_session, [(alice, 1)], [(cola, 2), (pepsi, 3)])
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     assert cola.stock == 8
     assert pepsi.stock == 1
@@ -102,9 +106,11 @@ def test_buy_products_allows_a_repeated_buyer_alongside_another_buyer(
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
 
-    purchase = buy_products(sql_session, [(alice, 1), (alice, 1), (bob, 2)], [(product, 1)])
+    buy_products(sql_session, [(alice, 1), (alice, 1), (bob, 2)], [(product, 1)])
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     buyer_share = math.ceil(purchase.price / 3)
 
@@ -147,13 +153,15 @@ def test_buy_products_simplifies_buyer_shares_by_their_gcd(
     product = _make_product(sql_session, price=price)
     users = {name: _make_user(sql_session, name) for name in expected_charges}
 
-    purchase = buy_products(
+    buy_products(
         sql_session,
         [(users[name], penalty) for name, penalty in buyers],
         [(product, 1)],
     )
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     assert {name: 100 - user.credit for name, user in users.items()} == expected_charges
     assert sorted((t.user.name, t.penalty) for t in purchase.transactions) == expected_transactions
@@ -167,9 +175,11 @@ def test_buy_products_records_a_purchase_linking_entries_and_transactions(
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
 
-    purchase = buy_products(sql_session, [(alice, 1), (bob, 2)], [(product, 5)])
+    buy_products(sql_session, [(alice, 1), (bob, 2)], [(product, 5)])
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     assert [entry.product for entry in purchase.entries] == [product]
     assert [entry.amount for entry in purchase.entries] == [5]

@@ -139,7 +139,7 @@ def test_repoints_purchase_history_to_the_target(sql_session: Session, preload: 
     target = _make_product(sql_session, barcode="2222222222")
     alice = _make_user(sql_session)
 
-    purchase = buy_products(sql_session, [(alice, 1)], [(source, 1)])
+    buy_products(sql_session, [(alice, 1)], [(source, 1)])
 
     if preload:
         preloaded = set(source.purchases)
@@ -149,7 +149,7 @@ def test_repoints_purchase_history_to_the_target(sql_session: Session, preload: 
 
     sql_session.expire_all()
 
-    entry = sql_session.query(PurchaseEntry).filter(PurchaseEntry.purchase_id == purchase.id).one()
+    entry = sql_session.query(PurchaseEntry).one()
     assert entry.product_id == target.id
 
     xref = sql_session.query(TransactionLogProduct).one()

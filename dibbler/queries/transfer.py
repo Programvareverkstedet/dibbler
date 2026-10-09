@@ -12,7 +12,7 @@ def transfer(
     to_user: User,
     amount: int,
     comment: str = "",
-) -> tuple[Transaction, Transaction]:
+) -> None:
     if amount <= 0:
         raise ValueError("Amount must be positive.")
 
@@ -42,5 +42,3 @@ def transfer(
     incoming.time = header.time
     sql_session.add_all([outgoing, incoming])
     sql_session.flush()
-
-    return outgoing, incoming

@@ -3,7 +3,14 @@ import math
 import pytest
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, ProductLog, TransactionLog, TransactionLogProduct, User
+from dibbler.models import (
+    Product,
+    ProductLog,
+    Purchase,
+    TransactionLog,
+    TransactionLogProduct,
+    User,
+)
 from dibbler.models.enums import ProductLogEntryType, TransactionLogEntryType
 from dibbler.queries import add_stock, adjust_stock, buy_products, create_product, create_user
 from dibbler.queries.add_stock import MAX_ADD_AMOUNT_PER_PRODUCT, NEGATIVE_STOCK_RESET_DESCRIPTION
@@ -155,7 +162,7 @@ def test_add_stock_simplifies_user_shares_by_their_gcd(
     product = _make_product(sql_session)
     users_by_name = {name: _make_user(sql_session, name) for name in expected_credits}
 
-    purchase = add_stock(
+    add_stock(
         sql_session,
         [users_by_name[name] for name in users],
         [(product, 1, 101)],
@@ -163,6 +170,8 @@ def test_add_stock_simplifies_user_shares_by_their_gcd(
     )
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     assert {name: user.credit for name, user in users_by_name.items()} == expected_credits
     assert sorted(t.user.name for t in purchase.transactions) == expected_transactions
@@ -189,7 +198,7 @@ def test_add_stock_updates_multiple_products_independently(sql_session: Session)
     cola = _make_product(sql_session, barcode="1111111111", stock=10, price=15, user=alice)
     pepsi = _make_product(sql_session, barcode="2222222222", stock=4, price=8, user=alice)
 
-    purchase = add_stock(
+    add_stock(
         sql_session,
         [alice],
         [(cola, 5, 100), (pepsi, 2, 20)],
@@ -197,6 +206,8 @@ def test_add_stock_updates_multiple_products_independently(sql_session: Session)
     )
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     assert cola.stock == 15
     assert cola.price == math.ceil(((10 * 15) + 100) / (10 + 5))
@@ -216,7 +227,7 @@ def test_add_stock_records_a_purchase_linking_entries_and_transactions(
     alice = _make_user(sql_session, "alice")
     bob = _make_user(sql_session, "bob")
 
-    purchase = add_stock(
+    add_stock(
         sql_session,
         [alice, bob],
         [(product, 5, 100)],
@@ -225,6 +236,8 @@ def test_add_stock_records_a_purchase_linking_entries_and_transactions(
     )
 
     sql_session.expire_all()
+
+    purchase = sql_session.query(Purchase).one()
 
     assert [entry.product for entry in purchase.entries] == [product]
     assert [entry.amount for entry in purchase.entries] == [-5]
