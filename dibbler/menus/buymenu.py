@@ -162,7 +162,7 @@ When finished, write an empty line to confirm the purchase.\n"""
                 break
 
         try:
-            purchase = buy_products(
+            buy_products(
                 self.sql_session,
                 self.buyers,
                 list(self.products.items()),
@@ -179,12 +179,12 @@ When finished, write an empty line to confirm the purchase.\n"""
         else:
             print("Purchase stored.")
             self.print_purchase()
-            for t in purchase.transactions:
-                if not t.user.is_anonymous():
-                    print(f"User {t.user.name}'s credit is now {t.user.credit:d} kr")
-                    if economy.has_low_credit(t.user.credit):
+            for user in dict.fromkeys(user for user, _penalty in self.buyers):
+                if not user.is_anonymous():
+                    print(f"User {user.name}'s credit is now {user.credit:d} kr")
+                    if economy.has_low_credit(user.credit):
                         print(
-                            f"USER {t.user.name} HAS LOWER CREDIT THAN {economy.LOW_CREDIT_LIMIT:d},",
+                            f"USER {user.name} HAS LOWER CREDIT THAN {economy.LOW_CREDIT_LIMIT:d},",
                             "AND SHOULD CONSIDER PUTTING SOME MONEY IN THE BOX.",
                         )
 
