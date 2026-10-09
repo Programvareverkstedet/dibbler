@@ -47,38 +47,17 @@ def buy_products(
     total_price = economy.purchase_price(products)
     charges = economy.buyer_charges(total_price, buyers)
 
+    for user, _penalty, charge in charges:
+        user.credit -= charge
+
     for product, amount in products:
         product.stock -= amount
-
-    with sql_session.no_autoflush:
-        purchase = Purchase()
-        purchase.time = datetime.now()
-        purchase.price = total_price
-        sql_session.add(purchase)
-
-        transactions = [
-            Transaction(user, charge, purchase=purchase, penalty=penalty)
-            for user, penalty, charge in charges
-        ]
-        for transaction in transactions:
-            transaction.time = purchase.time
-            transaction.user.credit -= transaction.amount
-        sql_session.add_all(transactions)
-        sql_session.add_all(
-            PurchaseEntry(purchase, product, amount) for product, amount in products
-        )
-    sql_session.flush()
 
     header = TransactionLog(type=TransactionLogEntryType.BUY_PRODUCT, time=datetime.now())
     sql_session.add(header)
     sql_session.add_all(
-        TransactionLogUser(
-            transaction=header,
-            user=transaction.user,
-            amount=transaction.amount,
-            penalty=transaction.penalty,
-        )
-        for transaction in transactions
+        TransactionLogUser(transaction=header, user=user, amount=charge, penalty=penalty)
+        for user, penalty, charge in charges
     )
     sql_session.add_all(
         TransactionLogProduct(
@@ -89,6 +68,20 @@ def buy_products(
         )
         for product, amount in products
     )
+
+    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
+    with sql_session.no_autoflush:
+        purchase = Purchase()
+        purchase.time = header.time
+        purchase.price = total_price
+        sql_session.add(purchase)
+        for user, penalty, charge in charges:
+            transaction = Transaction(user, charge, purchase=purchase, penalty=penalty)
+            transaction.time = header.time
+            sql_session.add(transaction)
+        sql_session.add_all(
+            PurchaseEntry(purchase, product, amount) for product, amount in products
+        )
     sql_session.flush()
 
     return purchase

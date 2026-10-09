@@ -79,24 +79,8 @@ def add_stock(
         product.stock += amount
         product.hidden = False
 
-    with sql_session.no_autoflush:
-        purchase = Purchase()
-        purchase.time = datetime.now()
-        purchase.price = -total_price
-        sql_session.add(purchase)
-
-        transactions = [
-            Transaction(user, -credit, description=description, purchase=purchase)
-            for user, credit in user_credits
-        ]
-        for transaction in transactions:
-            transaction.time = purchase.time
-            transaction.user.credit -= transaction.amount
-        sql_session.add_all(transactions)
-        sql_session.add_all(
-            PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
-        )
-    sql_session.flush()
+    for user, credit in user_credits:
+        user.credit += credit
 
     header = TransactionLog(
         type=TransactionLogEntryType.ADD_PRODUCT,
@@ -105,8 +89,8 @@ def add_stock(
     )
     sql_session.add(header)
     sql_session.add_all(
-        TransactionLogUser(transaction=header, user=transaction.user, amount=transaction.amount)
-        for transaction in transactions
+        TransactionLogUser(transaction=header, user=user, amount=-credit)
+        for user, credit in user_credits
     )
     sql_session.add_all(
         TransactionLogProduct(
@@ -127,6 +111,20 @@ def add_stock(
         )
         for product, edited_price, edited_hidden in edits
     )
+
+    # NOTE: Only kept around for backwards compatibility until the legacy tables are dropped.
+    with sql_session.no_autoflush:
+        purchase = Purchase()
+        purchase.time = header.time
+        purchase.price = -total_price
+        sql_session.add(purchase)
+        for user, credit in user_credits:
+            transaction = Transaction(user, -credit, description=description, purchase=purchase)
+            transaction.time = header.time
+            sql_session.add(transaction)
+        sql_session.add_all(
+            PurchaseEntry(purchase, product, -amount) for product, amount, _paid_amount in products
+        )
     sql_session.flush()
 
     return purchase
