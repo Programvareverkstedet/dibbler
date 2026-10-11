@@ -5,6 +5,7 @@ from dibbler.models import Product, User
 from dibbler.queries import (
     add_barcode,
     adjust_stock,
+    check_barcode_available,
     check_user_card_available,
     check_user_name_available,
     check_user_rfid_available,
@@ -151,6 +152,7 @@ class AddProductMenu(Menu):
             "Barcode",
             regex=Product.barcode_re,
             length_range=(8, Product.barcode_length),
+            validate=lambda barcode: check_barcode_available(self.sql_session, barcode),
         )
         assert barcode is not None
 

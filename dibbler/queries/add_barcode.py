@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from dibbler.models import Product, ProductBarcode, ProductLog
 from dibbler.models.enums import ProductLogEntryType
 
+from .check_barcode_available import check_barcode_available
+
 
 def add_barcode(sql_session: Session, product: Product, barcode: str) -> Product:
     if not barcode:
@@ -17,8 +19,7 @@ def add_barcode(sql_session: Session, product: Product, barcode: str) -> Product
     if len(barcode) > Product.barcode_length:
         raise ValueError(f"Barcode must be at most {Product.barcode_length} characters.")
 
-    if sql_session.query(ProductBarcode).filter(ProductBarcode.code == barcode).first():
-        raise ValueError("Barcode already in use.")
+    check_barcode_available(sql_session, barcode)
 
     product.barcodes.add(ProductBarcode(code=barcode))
 

@@ -4,6 +4,7 @@ __all__ = [
     "adjust_balance",
     "adjust_stock",
     "buy_products",
+    "check_barcode_available",
     "check_user_card_available",
     "check_user_name_available",
     "check_user_rfid_available",
@@ -33,6 +34,7 @@ from .add_stock import add_stock
 from .adjust_balance import adjust_balance
 from .adjust_stock import adjust_stock
 from .buy_products import buy_products
+from .check_barcode_available import check_barcode_available
 from .check_user_available import (
     check_user_card_available,
     check_user_name_available,
