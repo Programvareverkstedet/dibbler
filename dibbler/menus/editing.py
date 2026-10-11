@@ -5,6 +5,9 @@ from dibbler.models import Product, User
 from dibbler.queries import (
     add_barcode,
     adjust_stock,
+    check_user_card_available,
+    check_user_name_available,
+    check_user_rfid_available,
     create_product,
     create_user,
     edit_product,
@@ -38,6 +41,7 @@ class AddUserMenu(Menu):
             "Username (should be same as PVV username)",
             regex=User.name_re,
             length_range=(1, User.name_length),
+            validate=lambda name: check_user_name_available(self.sql_session, name),
         )
         assert username is not None
 
@@ -46,6 +50,7 @@ class AddUserMenu(Menu):
             regex=User.card_re,
             length_range=(0, User.card_length),
             empty_string_is_none=True,
+            validate=lambda card: check_user_card_available(self.sql_session, card),
         )
         if cardnum is not None:
             cardnum = cardnum.lower()
@@ -55,6 +60,7 @@ class AddUserMenu(Menu):
             regex=User.rfid_re,
             length_range=(0, User.rfid_length),
             empty_string_is_none=True,
+            validate=lambda rfid: check_user_rfid_available(self.sql_session, rfid),
         )
 
         try:
@@ -92,6 +98,7 @@ default to keep the current one), then a new card number, then rfid
             default=user.name,
             regex=User.name_re,
             length_range=(1, User.name_length),
+            validate=lambda name: check_user_name_available(self.sql_session, name, user),
         )
         assert name is not None
 
@@ -101,6 +108,7 @@ default to keep the current one), then a new card number, then rfid
             regex=User.card_re,
             length_range=(0, User.card_length),
             empty_string_is_none=True,
+            validate=lambda card: check_user_card_available(self.sql_session, card, user),
         )
         if card:
             card = card.lower()
@@ -111,6 +119,7 @@ default to keep the current one), then a new card number, then rfid
             regex=User.rfid_re,
             length_range=(0, User.rfid_length),
             empty_string_is_none=True,
+            validate=lambda rfid: check_user_rfid_available(self.sql_session, rfid, user),
         )
 
         if name == user.name and card == user.card and rfid == user.rfid:
