@@ -37,14 +37,14 @@ class AddUserMenu(Menu):
         username = self.input_str(
             "Username (should be same as PVV username)",
             regex=User.name_re,
-            length_range=(1, 10),
+            length_range=(1, User.name_length),
         )
         assert username is not None
 
         cardnum = self.input_str(
             "Card number (optional)",
             regex=User.card_re,
-            length_range=(0, 10),
+            length_range=(0, User.card_length),
             empty_string_is_none=True,
         )
         if cardnum is not None:
@@ -53,7 +53,7 @@ class AddUserMenu(Menu):
         rfid = self.input_str(
             "RFID (optional)",
             regex=User.rfid_re,
-            length_range=(0, 10),
+            length_range=(0, User.rfid_length),
             empty_string_is_none=True,
         )
 
@@ -99,7 +99,7 @@ default to keep the current one), then a new card number, then rfid
         card = self.input_str(
             f"Card number (currently {card_str})",
             regex=User.card_re,
-            length_range=(0, 10),
+            length_range=(0, User.card_length),
             empty_string_is_none=True,
         )
         if card:
@@ -109,7 +109,7 @@ default to keep the current one), then a new card number, then rfid
         rfid = self.input_str(
             f"RFID (currently {rfid_str})",
             regex=User.rfid_re,
-            length_range=(0, 10),
+            length_range=(0, User.rfid_length),
             empty_string_is_none=True,
         )
 
@@ -138,10 +138,18 @@ class AddProductMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        barcode = self.input_str("Barcode", regex=Product.barcode_re, length_range=(8, 13))
+        barcode = self.input_str(
+            "Barcode",
+            regex=Product.barcode_re,
+            length_range=(8, Product.barcode_length),
+        )
         assert barcode is not None
 
-        name = self.input_str("Name", regex=Product.name_re, length_range=(1, Product.name_length))
+        name = self.input_str(
+            "Name",
+            regex=Product.name_re,
+            length_range=(1, Product.name_length),
+        )
         assert name is not None
 
         price = self.input_int("Price", 1, 100000)
@@ -187,7 +195,7 @@ class EditProductMenu(Menu):
                         "Name",
                         default=product.name,
                         regex=Product.name_re,
-                        length_range=(1, product.name_length),
+                        length_range=(1, Product.name_length),
                     )
                     assert name is not None
                     try:
@@ -206,7 +214,7 @@ class EditProductMenu(Menu):
                     barcode = self.input_str(
                         "New barcode",
                         regex=Product.barcode_re,
-                        length_range=(8, 13),
+                        length_range=(8, Product.barcode_length),
                     )
                     assert barcode is not None
                     try:
@@ -221,7 +229,7 @@ class EditProductMenu(Menu):
                     barcode = self.input_str(
                         "Barcode to remove",
                         regex=Product.barcode_re,
-                        length_range=(8, 13),
+                        length_range=(8, Product.barcode_length),
                     )
                     assert barcode is not None
                     try:
