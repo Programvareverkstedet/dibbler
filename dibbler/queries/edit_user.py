@@ -2,11 +2,16 @@ import re
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from dibbler.models import User, UserLog
 from dibbler.models.enums import UserLogEntryType
+
+from .check_user_available import (
+    check_user_card_available,
+    check_user_name_available,
+    check_user_rfid_available,
+)
 
 UNSET: Any = object()
 
@@ -25,8 +30,7 @@ def edit_user(
             raise ValueError("Name must consist of lowercase letters only.")
         if len(name) > User.name_length:
             raise ValueError(f"Name must be at most {User.name_length} characters.")
-        if name != user.name and sql_session.scalar(select(exists().where(User.name == name))):
-            raise ValueError(f'A user named "{name}" already exists.')
+        check_user_name_available(sql_session, name, user)
 
     if card == "":
         card = None
@@ -40,8 +44,7 @@ def edit_user(
         if len(card) > User.card_length:
             raise ValueError(f"Card number must be at most {User.card_length} characters.")
         card = card.lower()
-        if card != user.card and sql_session.scalar(select(exists().where(User.card == card))):
-            raise ValueError(f'A user with card number "{card}" already exists.')
+        check_user_card_available(sql_session, card, user)
 
     if rfid is not UNSET and rfid:
         if not re.fullmatch(User.rfid_re, rfid):
@@ -49,8 +52,7 @@ def edit_user(
         if len(rfid) > User.rfid_length:
             raise ValueError(f"RFID must be at most {User.rfid_length} characters.")
         rfid = rfid.lower()
-        if rfid != user.rfid and sql_session.scalar(select(exists().where(User.rfid == rfid))):
-            raise ValueError(f'A user with RFID "{rfid}" already exists.')
+        check_user_rfid_available(sql_session, rfid, user)
 
     changed = (
         (name is not UNSET and name != user.name)

@@ -1,11 +1,16 @@
 import re
 from datetime import datetime
 
-from sqlalchemy import exists, select
 from sqlalchemy.orm import Session
 
 from dibbler.models import User, UserLog
 from dibbler.models.enums import UserLogEntryType
+
+from .check_user_available import (
+    check_user_card_available,
+    check_user_name_available,
+    check_user_rfid_available,
+)
 
 
 def create_user(
@@ -24,8 +29,7 @@ def create_user(
     if len(name) > User.name_length:
         raise ValueError(f"Name must be at most {User.name_length} characters.")
 
-    if sql_session.scalar(select(exists().where(User.name == name))):
-        raise ValueError(f'A user named "{name}" already exists.')
+    check_user_name_available(sql_session, name)
 
     if card:
         if not re.fullmatch(User.card_re, card):
@@ -41,11 +45,11 @@ def create_user(
             raise ValueError(f"RFID must be at most {User.rfid_length} characters.")
         rfid = rfid.lower()
 
-    if card and sql_session.scalar(select(exists().where(User.card == card))):
-        raise ValueError(f'A user with card number "{card}" already exists.')
+    if card:
+        check_user_card_available(sql_session, card)
 
-    if rfid and sql_session.scalar(select(exists().where(User.rfid == rfid))):
-        raise ValueError(f'A user with RFID "{rfid}" already exists.')
+    if rfid:
+        check_user_rfid_available(sql_session, rfid)
 
     user = User(name, card, rfid, credit)
     sql_session.add(user)
