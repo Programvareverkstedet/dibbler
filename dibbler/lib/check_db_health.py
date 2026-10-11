@@ -1,6 +1,4 @@
-import sys
 from pathlib import Path
-from typing import NoReturn
 
 from sqlalchemy import Engine, inspect, select
 from sqlalchemy.exc import DBAPIError, OperationalError
@@ -8,20 +6,11 @@ from sqlalchemy.orm import RelationshipProperty
 from sqlalchemy.orm.clsregistry import _ModuleMarker
 
 from dibbler.lib.helpers import file_is_submissive_and_readable
-from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Base
 
-logger = get_syslog_logger()
 
-
-def _report(message: str) -> None:
-    print(message, file=sys.stderr)
-    logger.error(message)
-
-
-def _fail(message: str) -> NoReturn:
-    _report(message)
-    sys.exit(1)
+class DatabaseHealthError(Exception):
+    pass
 
 
 def check_db_health(engine: Engine, verify_table_existence: bool = False) -> None:
@@ -43,9 +32,11 @@ def check_postgres_ping(engine: Engine) -> None:
             result = conn.execute(select(1))
             scalar = result.scalar()
             if scalar != 1 and scalar is not None:
-                _fail(f"Unexpected response from Postgres when running 'SELECT 1': {scalar!r}")
+                raise DatabaseHealthError(
+                    f"Unexpected response from Postgres when running 'SELECT 1': {scalar!r}",
+                )
     except (OperationalError, DBAPIError) as exc:
-        _fail(f"Failed to connect to Postgres database: {exc}")
+        raise DatabaseHealthError(f"Failed to connect to Postgres database: {exc}") from exc
 
 
 def check_sqlite_file(engine: Engine) -> None:
@@ -64,20 +55,20 @@ def check_sqlite_file(engine: Engine) -> None:
     path = Path(db_path)
 
     if not path.exists():
-        _fail(f"SQLite database file does not exist: {path}")
+        raise DatabaseHealthError(f"SQLite database file does not exist: {path}")
 
     if not path.is_file():
-        _fail(f"SQLite database path is not a file: {path}")
+        raise DatabaseHealthError(f"SQLite database path is not a file: {path}")
 
     if not file_is_submissive_and_readable(path):
-        _fail(f"SQLite database file is not submissive and readable: {path}")
+        raise DatabaseHealthError(f"SQLite database file is not submissive and readable: {path}")
 
     return
 
 
 def verify_tables_and_columns(engine: Engine) -> None:
     iengine = inspect(engine)
-    errors = False
+    errors: list[str] = []
     tables = iengine.get_table_names()
     views = iengine.get_view_names()
     tables.extend(views)
@@ -97,16 +88,14 @@ def verify_tables_and_columns(engine: Engine) -> None:
                 else:
                     for column in column_prop.columns:
                         if not column.key in columns:
-                            _report(
+                            errors.append(
                                 f"Model '{klass}' declares column '{column.key}' which does not exist in database {engine}",
                             )
-                            errors = True
         else:
-            _report(
+            errors.append(
                 f"Model '{klass}' declares table '{table}' which does not exist in database {engine}",
             )
-            errors = True
 
     if errors:
-        print("Have you remembered to run `dibbler create-db?", file=sys.stderr)
-        sys.exit(1)
+        errors.append("Have you remembered to run `dibbler create-db`?")
+        raise DatabaseHealthError("\n".join(errors))

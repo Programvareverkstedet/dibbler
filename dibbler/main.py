@@ -11,10 +11,13 @@ import dibbler.subcommands.makedb as makedb
 import dibbler.subcommands.seed_test_data as seed_test_data
 import dibbler.subcommands.slabbedasker as slabbedasker
 import dibbler.subcommands.transaction_log as transaction_log
-from dibbler.conf import config_db_string, load_config
-from dibbler.lib.check_db_health import check_db_health
+from dibbler.conf import ConfigError, config, config_db_string, load_config
+from dibbler.lib.check_db_health import DatabaseHealthError, check_db_health
+from dibbler.lib.syslog import get_syslog_logger
 
 from ._version import commit_id, version
+
+logger = get_syslog_logger()
 
 
 def _parse_time(string: str) -> datetime:
@@ -101,16 +104,23 @@ def main() -> None:
         parser.print_help()
         sys.exit(1)
 
-    load_config(args.config)
+    try:
+        load_config(args.config)
 
-    if args.subcommand == "verify-config":
-        return
+        if args.subcommand == "verify-config":
+            return
 
-    engine = create_engine(config_db_string())
+        engine = create_engine(config_db_string(config))
 
-    if args.subcommand == "create-db":
-        makedb.main(engine)
-        return
+        if args.subcommand == "create-db":
+            makedb.main(engine)
+            return
+
+        check_db_health(engine, verify_table_existence=True)
+    except (ConfigError, DatabaseHealthError) as e:
+        print(e, file=sys.stderr)
+        logger.error("%s", e)
+        sys.exit(1)
 
     sql_session = Session(
         engine,
@@ -119,8 +129,6 @@ def main() -> None:
         autoflush=False,
         close_resets_only=True,
     )
-
-    check_db_health(engine, verify_table_existence=True)
 
     if args.subcommand == "loop":
         loop.main(sql_session)

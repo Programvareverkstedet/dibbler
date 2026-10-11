@@ -1,5 +1,4 @@
 import shlex
-import sys
 import tomllib
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -9,7 +8,6 @@ from typing import Any
 from sqlalchemy.engine import URL
 
 from dibbler.lib.helpers import file_is_submissive_and_readable
-from dibbler.lib.syslog import get_syslog_logger
 
 DEFAULT_CONFIG_PATH = Path("/etc/dibbler/dibbler.toml")
 
@@ -18,9 +16,11 @@ DEFAULT_POSTGRESQL_USERNAME = "dibbler"
 DEFAULT_POSTGRESQL_DBNAME = "dibbler"
 
 
-logger = get_syslog_logger()
-
 config: dict[str, dict[str, Any]] = {}
+
+
+class ConfigError(Exception):
+    pass
 
 
 class _Default(Enum):
@@ -59,34 +59,33 @@ POSTGRESQL_SCHEMA: dict[str, ConfigField] = {
 }
 
 
-def load_config(config_path: Path | None = None) -> None:
-    global config
+def read_config(config_path: Path | None = None) -> dict[str, dict[str, Any]]:
     if config_path is None:
         if not file_is_submissive_and_readable(DEFAULT_CONFIG_PATH):
-            print(
-                "Could not read config file, it was neither provided nor readable in default location",
-                file=sys.stderr,
+            raise ConfigError(
+                "Could not read config file, it was neither provided "
+                f"nor readable at {DEFAULT_CONFIG_PATH}",
             )
-            logger.error(
-                "Could not read config file, it was neither provided nor readable at %s",
-                DEFAULT_CONFIG_PATH,
-            )
-            sys.exit(1)
         config_path = DEFAULT_CONFIG_PATH
 
     try:
         with Path(config_path).open("rb") as file:
             loaded = tomllib.load(file)
     except (OSError, tomllib.TOMLDecodeError) as e:
-        print(f"Could not load config file {config_path}: {e}", file=sys.stderr)
-        logger.error("Could not load config file %s: %s", config_path, e)
-        sys.exit(1)
+        raise ConfigError(f"Could not load config file {config_path}: {e}") from e
 
+    fill_config_defaults(loaded)
+    validate_config(loaded)
+    return loaded
+
+
+def replace_config(new_config: dict[str, dict[str, Any]]) -> None:
     config.clear()
-    config.update(loaded)
+    config.update(new_config)
 
-    fill_config_defaults()
-    validate_config()
+
+def load_config(config_path: Path | None = None) -> None:
+    replace_config(read_config(config_path))
 
 
 def _fill_section_defaults(section: dict[str, Any], schema: dict[str, ConfigField]) -> None:
@@ -95,10 +94,10 @@ def _fill_section_defaults(section: dict[str, Any], schema: dict[str, ConfigFiel
             section[key] = field.default
 
 
-def fill_config_defaults() -> None:
-    _fill_section_defaults(config.setdefault("general", {}), GENERAL_SCHEMA)
+def fill_config_defaults(cfg: dict[str, Any]) -> None:
+    _fill_section_defaults(cfg.setdefault("general", {}), GENERAL_SCHEMA)
 
-    database = config.setdefault("database", {})
+    database = cfg.setdefault("database", {})
     if database.get("type") == "sqlite":
         _fill_section_defaults(database.setdefault("sqlite", {}), SQLITE_SCHEMA)
     elif database.get("type") == "postgresql":
@@ -126,10 +125,10 @@ def _validate_section(
     return data
 
 
-def validate_config() -> None:
+def validate_config(cfg: dict[str, Any]) -> None:
     errors: list[str] = []
 
-    general = _validate_section(config.get("general"), GENERAL_SCHEMA, "general", errors)
+    general = _validate_section(cfg.get("general"), GENERAL_SCHEMA, "general", errors)
     if general is not None and isinstance(general.get("pager"), str):
         try:
             if not shlex.split(general["pager"]):
@@ -137,7 +136,7 @@ def validate_config() -> None:
         except ValueError as e:
             errors.append(f"Config key general.pager could not be parsed: {e}")
 
-    database = _validate_section(config.get("database"), None, "database", errors)
+    database = _validate_section(cfg.get("database"), None, "database", errors)
     if database is not None:
         db_type = database.get("type")
         if db_type not in ("sqlite", "postgresql"):
@@ -155,20 +154,19 @@ def validate_config() -> None:
             )
 
     if errors:
-        message = "Invalid configuration:\n" + "\n".join(f"  - {error}" for error in errors)
-        print(message, file=sys.stderr)
-        logger.error(message)
-        sys.exit(1)
+        raise ConfigError(
+            "Invalid configuration:\n" + "\n".join(f"  - {error}" for error in errors),
+        )
 
 
-def config_db_string() -> URL:
-    db_type = config["database"]["type"]
+def config_db_string(cfg: dict[str, Any]) -> URL:
+    db_type = cfg["database"]["type"]
 
     if db_type == "sqlite":
-        path = Path(config["database"]["sqlite"]["path"])
+        path = Path(cfg["database"]["sqlite"]["path"])
         return URL.create("sqlite", database=str(path.absolute()))
 
-    postgresql = config["database"]["postgresql"]
+    postgresql = cfg["database"]["postgresql"]
     host = postgresql["host"]
     port = postgresql["port"]
     username = postgresql["username"]
@@ -180,9 +178,7 @@ def config_db_string() -> URL:
             with password_file.open("r") as f:
                 password = f.read().strip()
         except OSError as e:
-            print(f"Could not read Postgres password file: {e}", file=sys.stderr)
-            logger.error("Could not read Postgres password file %s: %s", password_file, e)
-            sys.exit(1)
+            raise ConfigError(f"Could not read Postgres password file {password_file}: {e}") from e
     else:
         password = postgresql["password"]
 
