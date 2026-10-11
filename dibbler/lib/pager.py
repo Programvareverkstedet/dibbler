@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import os
+import shlex
 import signal
 import subprocess
 from typing import TYPE_CHECKING
 
+from dibbler.conf import config
+
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable
 
 
 def pager(string: str) -> None:
     """
-    Run less with string as input; wait until it finishes.
+    Run the configured pager with string as input; wait until it finishes.
     """
     # If we don't ignore SIGINT while running the `less` process,
     # it will become a zombie when someone presses C-c.
@@ -19,8 +22,8 @@ def pager(string: str) -> None:
     try:
         env = dict(os.environ)
         env["LESSSECURE"] = "1"
-        proc = subprocess.Popen(
-            "less",
+        proc = subprocess.Popen(  # noqa: S603
+            shlex.split(config["general"]["pager"]),
             env=env,
             encoding="utf-8",
             stdin=subprocess.PIPE,
@@ -30,18 +33,15 @@ def pager(string: str) -> None:
         signal.signal(signal.SIGINT, int_handler)
 
 
-def streaming_pager(
-    lines: Iterable[str],
-    pager_command: str | Sequence[str] = "less",
-) -> None:
-    """This function takes a stream of text lines, and pipes them into a pager of choice."""
+def streaming_pager(lines: Iterable[str]) -> None:
+    """This function takes a stream of text lines, and pipes them into the configured pager."""
     int_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     try:
         env = dict(os.environ)
         env["LESSSECURE"] = "1"
         proc = subprocess.Popen(  # noqa: S603 input is controlled by configuration, not user input
-            pager_command,
+            shlex.split(config["general"]["pager"]),
             env=env,
             encoding="utf-8",
             stdin=subprocess.PIPE,

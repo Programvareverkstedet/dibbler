@@ -1,3 +1,4 @@
+import shlex
 import sys
 import tomllib
 from dataclasses import dataclass
@@ -41,6 +42,7 @@ GENERAL_SCHEMA: dict[str, ConfigField] = {
     "stop_allowed": ConfigField(bool, default=False),
     "quit_allowed": ConfigField(bool, default=True),
     "show_tracebacks": ConfigField(bool, default=True),
+    "pager": ConfigField(str, default="less"),
 }
 
 SQLITE_SCHEMA: dict[str, ConfigField] = {
@@ -127,7 +129,13 @@ def _validate_section(
 def validate_config() -> None:
     errors: list[str] = []
 
-    _validate_section(config.get("general"), GENERAL_SCHEMA, "general", errors)
+    general = _validate_section(config.get("general"), GENERAL_SCHEMA, "general", errors)
+    if general is not None and isinstance(general.get("pager"), str):
+        try:
+            if not shlex.split(general["pager"]):
+                errors.append("Config key general.pager must not be empty")
+        except ValueError as e:
+            errors.append(f"Config key general.pager could not be parsed: {e}")
 
     database = _validate_section(config.get("database"), None, "database", errors)
     if database is not None:

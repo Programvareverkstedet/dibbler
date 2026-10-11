@@ -4,6 +4,11 @@ stop_allowed = false
 show_tracebacks = true
 input_encoding = 'utf8'
 
+# NOTE: please make sure that the pager cannot execute arbitrary commands
+#       when running in kiosk mode. `less` is safe because we internally set
+#       `LESSECURE=1`, but other pagers may be unsafe.
+pager = 'less'
+
 [database]
 type = 'sqlite'
 
