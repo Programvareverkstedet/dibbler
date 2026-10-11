@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import textwrap
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Literal
 
@@ -23,21 +24,20 @@ class TableColumn:
     align: Literal["left", "right"] = "left"
     """Alignment of the column"""
 
-    truncate: bool = False
-    """Whether to truncate values longer than `width`"""
-
     def __post_init__(self) -> None:
         assert len(self.header) <= self.width, (
             f"Header {self.header} is wider than its column ({self.width})"
         )
 
-    def format(self, value: object) -> str:
-        text = str(value)
-        if self.truncate:
-            text = text[: self.width]
+    def format(self, value: object) -> list[str]:
+        lines = [
+            wrapped
+            for line in str(value).split("\n")
+            for wrapped in textwrap.wrap(line, self.width, break_on_hyphens=False) or [""]
+        ]
         if self.align == "right":
-            return text.rjust(self.width)
-        return text.ljust(self.width)
+            return [line.rjust(self.width) for line in lines]
+        return [line.ljust(self.width) for line in lines]
 
 
 class Table:
@@ -60,8 +60,11 @@ class Table:
         )
 
     def row(self, *values: object) -> str:
-        cells = (c.format(v) for c, v in zip(self.columns, values, strict=True))
-        return "│ " + SEPARATOR.join(cells) + " │\n"
+        cells = [c.format(v) for c, v in zip(self.columns, values, strict=True)]
+        height = max(len(cell) for cell in cells)
+        for c, cell in zip(self.columns, cells, strict=True):
+            cell += [" " * c.width] * (height - len(cell))
+        return "".join("│ " + SEPARATOR.join(line) + " │\n" for line in zip(*cells, strict=True))
 
     def header(self) -> str:
         return self.row(*(c.header for c in self.columns))

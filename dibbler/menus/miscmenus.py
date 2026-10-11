@@ -128,7 +128,7 @@ class ShowUserMenu(Menu):
         count_width = len("bought")
         name_width = MAX_SCREEN_SIZE - BORDER_WIDTH - 2 * (count_width + len(SEPARATOR))
         table = Table(
-            TableColumn("product", name_width, truncate=True),
+            TableColumn("product", name_width),
             TableColumn("bought", count_width, align="right"),
             TableColumn("added", count_width, align="right"),
         )
@@ -193,7 +193,10 @@ class AdjustCreditMenu(Menu):
         print('(The "log message" will show up in the transaction history in the')
         print('"Show user" menu.  It is not necessary to enter a message, but it')
         print("might be useful to help you remember why you adjusted the credit)")
-        description = self.input_str("Log message", length_range=(0, 50))
+        description = self.input_str(
+            "Log message",
+            length_range=(0, TransactionLog.description_length),
+        )
         if description == "":
             description = "manually adjusted credit"
         try:
@@ -220,7 +223,7 @@ class ProductListMenu(Menu):
         table = Table(
             TableColumn("barcode", 20),
             TableColumn("price", 5, align="right"),
-            TableColumn("name", 36, truncate=True),
+            TableColumn("name", 36),
             TableColumn("stock", 5, align="right"),
         )
 

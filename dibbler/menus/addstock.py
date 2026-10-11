@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from dibbler.models import Product, User
+from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import add_stock
 
 from .helpermenus import Menu
@@ -130,7 +130,10 @@ much money you're due in credits for the purchase when prompted.\n"""
         if self.confirm(">", default=False):
             self.price = self.input_int("How much did you pay?", 0, self.price, default=self.price)
 
-        description = self.input_str("Log message", length_range=(0, 50))
+        description = self.input_str(
+            "Log message",
+            length_range=(0, TransactionLog.description_length),
+        )
         if description == "":
             description = "Purchased products for PVVVV, adjusted credit " + str(self.price)
         try:
