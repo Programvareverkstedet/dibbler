@@ -198,7 +198,12 @@ class AdjustCreditMenu(Menu):
         print("(Note on sign convention: Enter a positive amount here if you have")
         print("added money to the PVVVV money box, a negative amount if you have")
         print("taken money from it)")
-        amount = self.input_int("Add amount", -MAX_BALANCE_ADJUSTMENT, MAX_BALANCE_ADJUSTMENT)
+        amount = self.input_int(
+            "Add amount",
+            -MAX_BALANCE_ADJUSTMENT,
+            MAX_BALANCE_ADJUSTMENT,
+            zero_allowed=False,
+        )
         print('(The "log message" will show up in the transaction history in the')
         print('"Show user" menu.  It is not necessary to enter a message, but it')
         print("might be useful to help you remember why you adjusted the credit)")
