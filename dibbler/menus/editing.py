@@ -252,7 +252,7 @@ class EditProductMenu(Menu):
 
                 case None:
                     self.sql_session.rollback()
-                    print("Edit aborted")
+                    print("Cancelled.")
                     return
 
                 case _:
@@ -316,7 +316,7 @@ then choose which properties to keep from each product, or edit.
                 case "b":
                     name = target.name
                 case None:
-                    print("Merge aborted")
+                    print("Cancelled.")
                     return
                 case _:
                     name = self.input_str(
@@ -342,7 +342,7 @@ then choose which properties to keep from each product, or edit.
                 case "b":
                     price = target.price
                 case None:
-                    print("Merge aborted")
+                    print("Cancelled.")
                     return
                 case _:
                     price = self.input_int("Price", 1, 100000)
@@ -363,7 +363,7 @@ then choose which properties to keep from each product, or edit.
                 case "b":
                     hidden = target.hidden
                 case None:
-                    print("Merge aborted")
+                    print("Cancelled.")
                     return
                 case _:
                     hidden = self.confirm("Hidden", default=target.hidden)
@@ -386,7 +386,7 @@ then choose which properties to keep from each product, or edit.
             case "sum":
                 stock = source.stock + target.stock
             case None:
-                print("Merge aborted")
+                print("Cancelled.")
                 return
             case _:
                 stock = self.input_int("Stock", 0, 100000)
@@ -436,8 +436,7 @@ class AdjustStockMenu(Menu):
         try:
             adjust_stock(self.sql_session, user, product, add_stock)
             self.sql_session.commit()
-            print("Stock is now stored")
-            self.pause()
+            print(f"The stock is now {product.stock:d}")
         except (ValueError, SQLAlchemyError) as e:
             self.rollback_and_report(
                 e,
@@ -445,9 +444,7 @@ class AdjustStockMenu(Menu):
                 "Could not adjust stock of product %r",
                 product.name,
             )
-            self.pause()
-            return
-        print(f"The stock is now {product.stock:d}")
+        self.pause()
 
 
 class CleanupStockMenu(Menu):
@@ -470,7 +467,6 @@ class CleanupStockMenu(Menu):
         print("Every product in stock will be printed.")
         print("Entering no value will keep current stock or set it to 0 if it is negative.")
         print("Entering a value will set current stock to that value.")
-        print("Press enter to begin.")
 
         self.pause()
 
@@ -495,7 +491,6 @@ class CleanupStockMenu(Menu):
         try:
             self.sql_session.commit()
             print("New stocks are now stored.")
-            self.pause()
         except SQLAlchemyError as e:
             self.rollback_and_report(
                 e,
@@ -503,8 +498,4 @@ class CleanupStockMenu(Menu):
                 "Could not store stock cleanup for products %r",
                 [product.name for product, _ in changed_products],
             )
-            self.pause()
-            return
-
-        for p in changed_products:
-            print(p[0].name, ".", p[1], "->", p[0].stock)
+        self.pause()

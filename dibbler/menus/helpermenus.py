@@ -602,6 +602,7 @@ class Menu:
         print(self.header())
 
     def pause(self) -> None:
+        print("")
         self.input_str("Press enter to continue...", end_prompt="")
 
     @staticmethod

@@ -70,14 +70,15 @@ much money you're due in credits for the purchase when prompted.\n"""
                 # once we get something in the
                 # purchase, we want to protect the
                 # user from accidentally killing it
-                self.exit_confirm_msg = "Abort transaction?"
+                self.exit_confirm_msg = "Cancel transaction?"
             else:
                 if not self.complete_input():
                     if self.confirm(
-                        "Not enough information entered. Abort transaction?",
+                        "Not enough information entered. Cancel transaction?",
                         default=True,
                     ):
                         self.sql_session.rollback()
+                        print("Cancelled.")
                         return False
                     continue
                 break
@@ -171,3 +172,4 @@ much money you're due in credits for the purchase when prompted.\n"""
                 {product.name: amount for product, (amount, _) in self.products.items()},
                 [user.name for user in self.users],
             )
+        self.pause()

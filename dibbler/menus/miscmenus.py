@@ -30,10 +30,14 @@ def _format_last_activity(last_activity: datetime | None) -> str:
     return "never"
 
 
-def _page_transaction_log(entries: Iterator[TransactionLog]) -> None:
+def _page_transaction_log(
+    menu: Menu,
+    entries: Iterator[TransactionLog],
+) -> None:
     first = next(entries, None)
     if first is None:
         print("No transactions yet")
+        menu.pause()
         return
 
     streaming_pager(render_transaction_log(chain([first], entries)))
@@ -74,7 +78,7 @@ class TransferMenu(Menu):
                 user1.name,
                 user2.name,
             )
-            self.pause()
+        self.pause()
 
 
 class ShowUserMenu(Menu):
@@ -114,10 +118,11 @@ class ShowUserMenu(Menu):
         elif what == "edit":
             EditUserMenu(self.sql_session).execute(user=user)
         else:
-            print("What what?")
+            print("Cancelled.")
 
     def print_transactions(self, user: User) -> None:
         _page_transaction_log(
+            self,
             transaction_log_stream(self.sql_session, user=user, newest_first=True),
         )
 
@@ -126,6 +131,7 @@ class ShowUserMenu(Menu):
         first = next(stats, None)
         if first is None:
             print("No products bought or added yet")
+            self.pause()
             return
 
         count_width = len("bought")
@@ -214,7 +220,7 @@ class AdjustCreditMenu(Menu):
                 user.name,
                 amount,
             )
-            self.pause()
+        self.pause()
 
 
 class ProductListMenu(Menu):
@@ -287,12 +293,13 @@ class ProductSearchMenu(Menu):
         what = selector.execute()
         if what == "transactions":
             _page_transaction_log(
+                self,
                 transaction_log_stream(self.sql_session, product=product, newest_first=True),
             )
         elif what == "edit":
             EditProductMenu(self.sql_session).execute(product=product)
         else:
-            print("What what?")
+            print("Cancelled.")
 
 
 class TransactionLogMenu(Menu):
@@ -301,4 +308,7 @@ class TransactionLogMenu(Menu):
 
     def _execute(self, **_kwargs) -> None:
         self.print_header()
-        _page_transaction_log(transaction_log_stream(self.sql_session, newest_first=True))
+        _page_transaction_log(
+            self,
+            transaction_log_stream(self.sql_session, newest_first=True),
+        )

@@ -141,17 +141,18 @@ When finished, write an empty line to confirm the purchase.\n"""
             if thing is None:
                 if not self.complete_input():
                     if self.confirm(
-                        "Not enough information entered. Abort purchase?",
+                        "Not enough information entered. Cancel purchase?",
                         default=True,
                     ):
                         self.sql_session.rollback()
+                        print("Cancelled.")
                         return False
                     continue
                 break
             # once we get something in the
             # purchase, we want to protect the
             # user from accidentally killing it
-            self.exit_confirm_msg = "Abort purchase?"
+            self.exit_confirm_msg = "Cancel purchase?"
 
             # Add the thing to our purchase object:
             if not self.add_thing_to_purchase(thing, amount=num):
@@ -176,6 +177,7 @@ When finished, write an empty line to confirm the purchase.\n"""
                 {product.name: amount for product, amount in self.products.items()},
                 [user.name for user, _ in self.buyers],
             )
+            self.pause()
         else:
             print("Purchase stored.")
             self.print_purchase()
