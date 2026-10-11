@@ -143,6 +143,7 @@ class Menu:
         empty_string_is_none: bool = False,
         timeout: int | None = None,
         default: str | None = None,
+        validate: Callable[[str], None] | None = None,
     ) -> str | None:
         if prompt is None:
             prompt = self.prompt if self.prompt is not None else ""
@@ -206,6 +207,12 @@ class Menu:
                         print(f"Value must have length at least {length_range[0]:d}")
                     else:
                         print(f"Value must have length at most {length_range[1]:d}")
+                    continue
+            if validate is not None:
+                try:
+                    validate(result)
+                except ValueError as e:
+                    print(e)
                     continue
             return result
 
