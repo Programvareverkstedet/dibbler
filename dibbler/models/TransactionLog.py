@@ -42,7 +42,7 @@ class TransactionLog(Base, UidMixin):
         ),
     )
 
-    description_length = 50
+    description_length = 150
 
     time: Mapped[datetime] = mapped_column(DateTime, index=True)
     type: Mapped[TransactionLogEntryType] = mapped_column(TransactionLogEntryTypeSQL)
