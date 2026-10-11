@@ -50,6 +50,7 @@ def test_transfer_records_a_transaction_log_entry(sql_session: Session) -> None:
         pytest.param(False, -1, "", "Amount must be positive", id="negative-amount"),
 
         pytest.param(True, 10, "", "Cannot transfer to the same user", id="self-transfer"),
+        pytest.param(False, 10, "x" * (TransactionLog.description_length + 1), "Description must be at most", id="too-long-description"),
     ],
 )  # fmt: skip
 def test_invariants(

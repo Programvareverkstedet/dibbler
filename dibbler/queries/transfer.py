@@ -19,6 +19,11 @@ def transfer(
     if from_user == to_user:
         raise ValueError("Cannot transfer to the same user.")
 
+    if len(comment) > TransactionLog.description_length:
+        raise ValueError(
+            f"Description must be at most {TransactionLog.description_length} characters.",
+        )
+
     from_user.credit -= amount
     to_user.credit += amount
 
