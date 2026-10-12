@@ -54,6 +54,9 @@ class TransferMenu(Menu):
         user1 = self.input_user("From user")
         self.add_to_context(f" from {user1.name}")
         user2 = self.input_user("To user")
+        while user2 == user1:
+            print("Cannot transfer to the same user.")
+            user2 = self.input_user("To user")
         self.add_to_context(f" to {user2.name}")
         comment = self.input_str(
             "Comment",
