@@ -446,7 +446,12 @@ class AdjustStockMenu(Menu):
         print(f"The stock of this product is: {product.stock:d}")
         print("Write the number of products you have added to the stock")
         print("Alternatively, correct the stock for any mistakes")
-        add_stock = self.input_int("Added stock", -1000, 1000, zero_allowed=False)
+        add_stock = self.input_int(
+            "Added stock",
+            minimum=MIN_ADJUSTED_STOCK,
+            maximum=MAX_ADJUSTED_STOCK,
+            zero_allowed=False,
+        )
         if add_stock > 0:
             print(f"You added {add_stock:d} to the stock of {product}")
         else:
