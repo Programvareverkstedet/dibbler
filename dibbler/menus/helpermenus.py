@@ -13,7 +13,13 @@ from dibbler.lib.helpers import (
 )
 from dibbler.lib.syslog import get_syslog_logger
 from dibbler.models import Product, User
-from dibbler.queries import create_user, edit_user, search_product, search_user
+from dibbler.queries import (
+    check_user_name_available,
+    create_user,
+    edit_user,
+    search_product,
+    search_user,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
@@ -492,12 +498,21 @@ class Menu:
                 match selector.execute():
                     case "create":
                         username = self.input_str(
-                            prompt="Username for new user (should be same as PVV username)",
+                            prompt=(
+                                "Username for new user (should be same as PVV username, "
+                                "or empty to go back)"
+                            ),
                             end_prompt=None,
                             regex=User.name_re,
-                            length_range=(1, 10),
+                            length_range=(1, User.name_length),
+                            empty_string_is_none=True,
+                            validate=lambda name: check_user_name_available(
+                                self.sql_session,
+                                name,
+                            ),
                         )
-                        assert username is not None
+                        if username is None:
+                            return None
                         try:
                             user = create_user(self.sql_session, username, card=string)
                             self.sql_session.commit()
