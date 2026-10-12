@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 
 from dibbler.models import Product, TransactionLog, User
 from dibbler.queries import add_stock
+from dibbler.queries.add_stock import MAX_ADD_AMOUNT_PER_PRODUCT
 
 from .helpermenus import Menu
 
@@ -60,6 +61,18 @@ much money you're due in credits for the purchase when prompted.\n"""
                     continue
 
                 if isinstance(thing, Product):
+                    if amount <= 0:
+                        self.printc("Amount must be positive.")
+                        continue
+                    already_added = self.products[thing][0] if thing in self.products else 0
+                    if already_added + amount > MAX_ADD_AMOUNT_PER_PRODUCT:
+                        message = (
+                            f"At most {MAX_ADD_AMOUNT_PER_PRODUCT} of each product can be added"
+                        )
+                        if already_added:
+                            message += f" ({already_added} of {thing.name} already added)"
+                        self.printc(message + ".")
+                        continue
                     self.printc(f"{amount:d} of {thing.name} registered")
                     thing_price = (
                         self.input_int("What did you pay a piece?", 1, 100000, default=thing.price)
