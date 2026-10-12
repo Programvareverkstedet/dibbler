@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from dibbler import economy
 from dibbler.models import Product, User
 from dibbler.queries import buy_products
+from dibbler.queries.buy_products import MAX_BUY_AMOUNT_TOTAL
 
 from .helpermenus import Menu
 
@@ -81,6 +82,12 @@ When finished, write an empty line to confirm the purchase.\n"""
                 return False
             self.buyers.append((thing, penalty))
         elif isinstance(thing, Product):
+            if amount <= 0:
+                print("Amount must be positive.")
+                return False
+            if sum(self.products.values()) + amount > MAX_BUY_AMOUNT_TOTAL:
+                print(f"A single purchase at most be {MAX_BUY_AMOUNT_TOTAL} products.")
+                return False
             self.products[thing] = self.products.get(thing, 0) + amount
         return True
 
@@ -104,7 +111,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         def is_product(candidate: Any) -> bool:
             return isinstance(candidate[0], Product)
 
-        if len(initial_contents) > 0 and all(map(is_product, initial_contents)):
+        if len(self.products) > 0 and all(map(is_product, initial_contents)):
             self.superfast_mode = True
             print("***********************************************")
             print("****** Buy menu is in SUPERFASTmode[tm]! ******")
