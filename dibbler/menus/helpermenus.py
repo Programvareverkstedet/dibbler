@@ -179,6 +179,12 @@ class Menu:
                 print("quit")
                 self.exit_menu()
                 continue
+
+            # Force refresh of data from db
+            session = self.sql_session
+            if not (session.new or session.dirty or session.deleted):
+                session.expire_all()
+
             if result in exit_commands:
                 self.exit_menu()
                 continue
