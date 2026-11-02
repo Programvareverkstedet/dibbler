@@ -14,8 +14,10 @@ from dibbler.conf import config
 from dibbler.lib.syslog import get_syslog_logger
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
     from sqlalchemy.engine import Engine
 
+    Extension = Callable[[FastAPI], None]
 try:
     from dibbler._version import version
 except ImportError:
@@ -33,7 +35,7 @@ class Health(BaseModel):
     status: str
 
 
-def create_app(engine: Engine) -> FastAPI:
+def create_app(engine: Engine, extensions: Iterable[Extension] = ()) -> FastAPI:
     app = FastAPI(title="Dibbler", version=version or "unknown")
 
     @app.get("/")
@@ -47,6 +49,9 @@ def create_app(engine: Engine) -> FastAPI:
         with engine.connect() as connection:
             connection.execute(select(1))
         return Health(status="ok")
+
+    for extend in extensions:
+        extend(app)
 
     return app
 
@@ -87,7 +92,7 @@ def _set_up_syslog() -> None:
         uvicorn_logger.addHandler(handler)
 
 
-def start(engine: Engine) -> Server | None:
+def start(engine: Engine, extensions: Iterable[Extension] = ()) -> Server | None:
     section = config.get("http")
     if section is None:
         return None
@@ -95,7 +100,7 @@ def start(engine: Engine) -> Server | None:
     _set_up_syslog()
 
     try:
-        server = Server(create_app(engine), section["address"], section["port"])
+        server = Server(create_app(engine, extensions), section["address"], section["port"])
     except OSError as error:
         print(f"Not serving HTTP: {error}")
         logger.error("HTTP: not serving: %s", error)
