@@ -24,6 +24,9 @@ class User(Base, UidMixin):
     credit: Mapped[int] = mapped_column(Integer)
     card: Mapped[str | None] = mapped_column(String(card_length), unique=True)
     rfid: Mapped[str | None] = mapped_column(String(rfid_length), unique=True)
+    version: Mapped[int] = mapped_column(Integer, server_default="1")
+
+    __mapper_args__ = {"version_id_col": version}
 
     name_re = r"[a-z]+"
     card_re = r"(([Nn][Tt][Nn][Uu])?[0-9]+)?"
