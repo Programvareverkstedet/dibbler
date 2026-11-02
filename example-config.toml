@@ -28,6 +28,10 @@ dbname = 'dibbler'
 # password = 'superhemlig'
 # password_file = '/var/lib/dibbler/db-password'
 
+# [http]
+# address = '127.0.0.1'
+# port = 8080
+
 
 # See https://pypi.org/project/brother_ql/ for label types
 # Set rotate to False for endless labels

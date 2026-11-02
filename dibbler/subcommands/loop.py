@@ -19,6 +19,7 @@ from time import ctime, time_ns
 from sqlalchemy.orm import Session
 
 from ..conf import config
+from ..lib.http_server import start as start_http
 from ..lib.syslog import get_syslog_logger
 from ..menus import (
     AddProductMenu,
@@ -114,6 +115,8 @@ def main(sql_session: Session) -> None:
 
     if not config["general"]["stop_allowed"]:
         set_signal_handler(SIGTSTP, SIG_IGN)
+
+    start_http(sql_session.get_bind())
 
     main_menu = MainMenu(
         sql_session,

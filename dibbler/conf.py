@@ -45,6 +45,11 @@ GENERAL_SCHEMA: dict[str, ConfigField] = {
     "pager": ConfigField(str, default="less"),
 }
 
+HTTP_SCHEMA: dict[str, ConfigField] = {
+    "address": ConfigField(str, default="127.0.0.1"),
+    "port": ConfigField(int, default=8080),
+}
+
 SQLITE_SCHEMA: dict[str, ConfigField] = {
     "path": ConfigField(str, default="test.db"),
 }
@@ -96,6 +101,8 @@ def _fill_section_defaults(section: dict[str, Any], schema: dict[str, ConfigFiel
 
 def fill_config_defaults(cfg: dict[str, Any]) -> None:
     _fill_section_defaults(cfg.setdefault("general", {}), GENERAL_SCHEMA)
+    if isinstance(cfg.get("http"), dict):
+        _fill_section_defaults(cfg["http"], HTTP_SCHEMA)
 
     database = cfg.setdefault("database", {})
     if database.get("type") == "sqlite":
@@ -135,6 +142,9 @@ def validate_config(cfg: dict[str, Any]) -> None:
                 errors.append("Config key general.pager must not be empty")
         except ValueError as e:
             errors.append(f"Config key general.pager could not be parsed: {e}")
+
+    if "http" in cfg:
+        _validate_section(cfg["http"], HTTP_SCHEMA, "http", errors)
 
     database = _validate_section(cfg.get("database"), None, "database", errors)
     if database is not None:

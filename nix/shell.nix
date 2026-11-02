@@ -15,6 +15,8 @@ mkShell {
       psycopg2
       # python-barcode
       sqlalchemy
+      fastapi
+      uvicorn
     ]))
   ];
 }

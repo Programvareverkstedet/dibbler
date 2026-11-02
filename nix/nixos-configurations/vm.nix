@@ -33,7 +33,19 @@ nixpkgs.lib.nixosSystem {
         enable = true;
         createLocalDatabase = true;
         kioskMode = true;
+
+        settings = {
+          http = {
+            address = "0.0.0.0";
+            port = 8080;
+          };
+        };
       };
+
+      networking.firewall.allowedTCPPorts = [ 8080 ];
+      virtualisation.forwardPorts = [
+        { from = "host"; host.port = 8080; guest.port = 8080; }
+      ];
 
       systemd.services.dibbler-seed-database = {
         description = "Dibbler database seeding";

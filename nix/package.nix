@@ -35,6 +35,8 @@ python3Packages.buildPythonApplication {
     psycopg2-binary
     # python-barcode
     sqlalchemy
+    fastapi
+    uvicorn
   ]);
 
   pythonImportsCheck = [ "dibbler" ];

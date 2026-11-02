@@ -23,6 +23,8 @@ dependencies = [
     # "matplotlib",
     "psycopg2-binary >= 2.8, <2.10",
     # "python-barcode",
+    "fastapi >= 0.115, <1",
+    "uvicorn >= 0.30, <1",
 ]
 scripts.dibbler = "dibbler.main:main"
 
