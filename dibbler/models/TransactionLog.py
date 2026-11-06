@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import (
     DateTime,
     ForeignKey,
+    Integer,
     String,
     event,
 )
@@ -28,6 +29,12 @@ if TYPE_CHECKING:
     from .xref_tables import TransactionLogProduct, TransactionLogUser
 
 
+def _economy_version() -> int:
+    from dibbler import economy  # noqa: PLC0415 loop
+
+    return economy.VERSION
+
+
 class TransactionLog(Base, UidMixin):
     __tablename__ = "transaction_log"
     __table_args__ = (
@@ -47,6 +54,8 @@ class TransactionLog(Base, UidMixin):
     time: Mapped[datetime] = mapped_column(DateTime, index=True)
     type: Mapped[TransactionLogEntryType] = mapped_column(TransactionLogEntryTypeSQL)
     description: Mapped[str | None] = mapped_column(String(description_length))
+
+    economy_version: Mapped[int] = mapped_column(Integer, default=_economy_version)
 
     products: Mapped[set[TransactionLogProduct]] = relationship(back_populates="transaction")
     users: Mapped[set[TransactionLogUser]] = relationship(back_populates="transaction")
