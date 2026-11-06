@@ -1,3 +1,4 @@
+import random
 from datetime import datetime
 
 from sqlalchemy.orm import Session
@@ -19,7 +20,10 @@ def buy_products(
     sql_session: Session,
     buyers: list[tuple[User, int]],
     products: list[tuple[Product, int]],
-) -> None:
+    rng: random.Random | None = None,
+) -> list[tuple[User, int, int, int]]:
+    # (user, penalty, fee, charge)
+
     if not buyers:
         raise ValueError("At least one buyer must be specified.")
 
@@ -42,9 +46,9 @@ def buy_products(
         raise ValueError(f"Total product amount must be at most {MAX_BUY_AMOUNT_TOTAL}.")
 
     total_price = economy.purchase_price(products)
-    charges = economy.buyer_charges(total_price, buyers)
+    charges = economy.buyer_charges(total_price, buyers, rng)
 
-    for user, _penalty, charge in charges:
+    for user, _penalty, _fee, charge in charges:
         user.credit -= charge
 
     for product, amount in products:
@@ -53,8 +57,8 @@ def buy_products(
     header = TransactionLog(type=TransactionLogEntryType.BUY_PRODUCT, time=datetime.now())
     sql_session.add(header)
     sql_session.add_all(
-        TransactionLogUser(transaction=header, user=user, amount=charge, penalty=penalty)
-        for user, penalty, charge in charges
+        TransactionLogUser(transaction=header, user=user, amount=charge, penalty=penalty, fee=fee)
+        for user, penalty, fee, charge in charges
     )
     sql_session.add_all(
         TransactionLogProduct(
@@ -66,3 +70,4 @@ def buy_products(
         for product, amount in products
     )
     sql_session.flush()
+    return charges

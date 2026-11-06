@@ -3,6 +3,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from dibbler import economy
+from dibbler.lib.helpers import simplify_shares
 from dibbler.models import Product, User
 from dibbler.queries import buy_products
 from dibbler.queries.buy_products import MAX_BUY_AMOUNT_TOTAL
@@ -14,10 +15,13 @@ class BuyMenu(Menu):
     superfast_mode: bool
     buyers: list[tuple[User, int]]
     products: dict[Product, int]
+    # (user, penalty, fee, charge)
+    charges: list[tuple[User, int, int, int]] | None
 
     def __init__(self, sql_session: Session) -> None:
         super().__init__("Buy", sql_session)
         self.superfast_mode = False
+        self.charges = None
         self.help_text = """
 Each purchase may contain one or more products and one or more buyers.
 
@@ -99,6 +103,7 @@ When finished, write an empty line to confirm the purchase.\n"""
         self.print_header()
         self.buyers = []
         self.products = {}
+        self.charges = None
         self.exit_confirm_msg = None
         self.superfast_mode = False
 
@@ -170,12 +175,13 @@ When finished, write an empty line to confirm the purchase.\n"""
                 break
 
         try:
-            buy_products(
+            charges = buy_products(
                 self.sql_session,
                 self.buyers,
                 list(self.products.items()),
             )
             self.sql_session.commit()
+            self.charges = charges
         except Exception as e:
             self.rollback_and_report(
                 e,
@@ -236,23 +242,44 @@ When finished, write an empty line to confirm the purchase.\n"""
 
         string += f"\n  total price: {price:d} kr"
 
-        charges = economy.buyer_charges(price, self.buyers)
-        has_penalty = any(penalty > 1 for _, penalty, _ in charges)
+        if len(self.products) == 0:
+            return string
 
-        if len(charges) > 1:
-            price_per_person = economy.buyer_charge(price, len(charges), 1)
-            string += f"\n  price per person: {price_per_person:d} kr"
+        shares = simplify_shares(self.buyers)
+        has_penalty = any(penalty > 1 for _, penalty in shares)
+        fee_label = f"fee ({economy.PURCHASE_FEE_RATE * 100:g}%)"
+
+        # post charge
+        if self.charges is not None:
+            fee = sum(fee for _, _, fee, _ in self.charges)
+            # We have to work backgwards what the charge - penalties was
+            with_fee = sum(charge // penalty for _, penalty, _, charge in self.charges)
+
+            string += f"\n  {fee_label}: {fee:d} kr"
+            string += f"\n  total with fee: {with_fee:d} kr"
+
             if has_penalty:
-                price_with_penalty = economy.buyer_charge(
-                    price,
-                    len(charges),
-                    economy.PENALTY_MULTIPLIER,
-                )
-                string += f" *({price_with_penalty:d} kr)"
+                charged = sum(charge for _, _, _, charge in self.charges)
+                string += f"\n  *total with penalty: {charged:d} kr"
+            return string
+
+
+        # Pre charge
+        share_count = len(shares) or 1
+        price_per_share = economy.share_price(price, share_count)
+        fee_per_share = price_per_share * economy.PURCHASE_FEE_RATE
+        with_fee = price_per_share + fee_per_share
+        string += f"\n  {fee_label}: {share_count * fee_per_share:.2f} kr"
+        string += f"\n  total with fee: {share_count * with_fee:.2f} kr"
+
+        if len(shares) > 1:
+            string += f"\n  price per person: {with_fee:.2f} kr"
+            if has_penalty:
+                string += f" *({with_fee * economy.PENALTY_MULTIPLIER:.2f} kr)"
 
         if has_penalty:
-            total = sum(charge for _, _, charge in charges)
-            string += f"\n  *total with penalty: {total} kr"
+            with_penalty = sum(with_fee * penalty for _, penalty in shares)
+            string += f"\n  *total with penalty: {with_penalty:.2f} kr"
 
         return string
 

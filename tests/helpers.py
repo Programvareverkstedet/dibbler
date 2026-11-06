@@ -1,3 +1,4 @@
+import random
 from datetime import datetime, timedelta
 
 from dibbler.models import TransactionLog
@@ -26,3 +27,14 @@ def assert_id_order_similar_to_time_order(entries: list[TransactionLog]) -> None
             f"ID {e1.id} at time {e1.time}\n"
             f"ID {e2.id} at time {e2.time}"
         )
+
+
+class FixedRandom(random.Random):
+    """A generator whose every draw is `value`: 0 rounds every fee up, 1 rounds every fee down."""
+
+    def __init__(self, value: float) -> None:
+        super().__init__()
+        self.value = value
+
+    def random(self) -> float:
+        return self.value

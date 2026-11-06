@@ -28,7 +28,10 @@ class TransactionLogUser(XrefMixin, Base, UidMixin):
     user: Mapped[User] = relationship()
 
     amount: Mapped[int | None] = mapped_column(Integer)
-    """How much credit added or removed. Penalty is already applied."""
+    """How much credit added or removed. Penalty and fees are already applied."""
 
     penalty: Mapped[int | None] = mapped_column(Integer)
     """Multiplier that was applied to the amount."""
+
+    fee: Mapped[int | None] = mapped_column(Integer)
+    """fee that was added to the amount"""

@@ -145,6 +145,9 @@ def _render_children(entry: TransactionLog, width: int) -> list[str]:
         penalties = sorted({share.penalty for share in shares} - {None, 1})
         if penalties:
             line += f", penalty={'/'.join(map(str, penalties))}"
+        fee = sum(share.fee or 0 for share in shares)
+        if fee:
+            line += f", fee={fee}kr"
         children.append(_wrap(line, width))
 
     for product in sorted(entry.products, key=lambda p: (p.product.name, p.id)):

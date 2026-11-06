@@ -130,3 +130,5 @@ def _validate_transaction_log_entries(
                     f"Every user in a {entry.type} log entry must have {amount_description}, "
                     f"got {user.amount}.",
                 )
+            if user.fee is not None and entry.type != TransactionLogEntryType.BUY_PRODUCT:
+                raise ValueError(f"Only purchases have fees, not a {entry.type} log entry.")

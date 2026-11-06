@@ -1,6 +1,7 @@
 __all__ = [
     "LOW_CREDIT_LIMIT",
     "PENALTY_MULTIPLIER",
+    "PURCHASE_FEE_RATE",
     "VERSION",
     "buyer_charge",
     "buyer_charges",
@@ -9,12 +10,15 @@ __all__ = [
     "purchase_price",
     "restock_credits",
     "restock_price",
+    "share_fee",
+    "share_price",
     "stock_reset_before_restock",
 ]
 
-from .version_1 import (
+from .version_2 import (
     LOW_CREDIT_LIMIT,
     PENALTY_MULTIPLIER,
+    PURCHASE_FEE_RATE,
     VERSION,
     buyer_charge,
     buyer_charges,
@@ -23,5 +27,7 @@ from .version_1 import (
     purchase_price,
     restock_credits,
     restock_price,
+    share_fee,
+    share_price,
     stock_reset_before_restock,
 )
